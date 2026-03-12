@@ -15,6 +15,7 @@ import {
   CHAIN_ROTATION_THRESHOLD,
   COUNTDOWN_TICK_MS,
   CRASHED_DISPLAY_MS,
+  MAX_PENDING_PAYOUTS,
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
@@ -415,6 +416,12 @@ export class CrashGame extends Server<Env> {
         // Check if player is currently connected
         const isConnected = Array.from(this.getConnections()).some((c) => c.id === player.id);
         if (!isConnected) {
+          // Evict oldest entry if the map is at capacity [High-10]
+          if (this.pendingPayouts.size >= MAX_PENDING_PAYOUTS) {
+            const oldestPlayerId = this.pendingPayouts.keys().next().value as string;
+            this.pendingPayouts.delete(oldestPlayerId);
+            console.warn(`Evicting stale pending payout for ${oldestPlayerId}`);
+          }
           this.pendingPayouts.set(player.playerId, {
             roundId: this.gameState.roundId,
             wager: player.wager,

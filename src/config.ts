@@ -37,6 +37,10 @@ export const DRAND_FETCH_TIMEOUT_MS = 2_000;
 /** Maximum length of a playerId string (DoS prevention). */
 export const MAX_PLAYER_ID_LENGTH = 256;
 
+// ─── Memory limits ───────────────────────────────────────────────────────────
+/** Maximum number of pending payouts retained in-memory. Oldest entry is evicted (FIFO) when exceeded. Evicted payouts are permanently lost. */
+export const MAX_PENDING_PAYOUTS = 100;
+
 // ─── Game room ───────────────────────────────────────────────────────────────
 export const ROOM_ID = 'crash-main';
 
