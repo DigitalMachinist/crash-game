@@ -1000,6 +1000,162 @@ describe('transitionToWaiting', () => {
   });
 });
 
+// ─── Behavioral parity: O(n²) → O(n) fix (High-7) ───────────────────────────
+//
+// These tests confirm that handleTick and handleCrash behave correctly when
+// processing many players — the pure-function layer used by the O(n) fix in
+// crash-game.ts (connectionMap built once, then passed via lookup).
+
+describe('handleTick — auto-cashout behavioral parity (High-7)', () => {
+  it('all players with met auto-cashout targets are cashed out in a single tick', () => {
+    const nowMs = 1_000_000;
+    const state = createInitialState('abc');
+    // Ten players each with autoCashout = 2.0
+    let s = state;
+    for (let i = 1; i <= 10; i++) {
+      const { state: next } = handleJoin(
+        s,
+        { playerId: `player${i}`, wager: 10, autoCashout: 2.0 },
+        `conn${i}`,
+      );
+      s = next;
+    }
+    const running = handleStartingComplete(s, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+
+    const GROWTH_RATE = 0.00006;
+    const elapsed = Math.log(2.1) / GROWTH_RATE; // ~12397ms — past 2.0x threshold
+    const { state: afterTick, messages } = handleTick(running, nowMs + elapsed);
+
+    // All 10 players should have auto-cashed out
+    for (let i = 1; i <= 10; i++) {
+      expect(afterTick.players.get(`player${i}`)?.cashedOut).toBe(true);
+      expect(afterTick.players.get(`player${i}`)?.cashoutMultiplier).toBe(2.0);
+    }
+    const cashoutMsgs = messages.filter((m) => m.broadcast && m.message.type === 'playerCashedOut');
+    expect(cashoutMsgs).toHaveLength(10);
+  });
+
+  it('players below their auto-cashout threshold are not cashed out', () => {
+    const nowMs = 1_000_000;
+    const state = createInitialState('abc');
+    let s = state;
+    for (let i = 1; i <= 5; i++) {
+      // alternating thresholds: odd → 2.0 (triggered), even → 4.0 (not triggered)
+      const autoCashout = i % 2 === 1 ? 2.0 : 4.0;
+      const { state: next } = handleJoin(
+        s,
+        { playerId: `player${i}`, wager: 10, autoCashout },
+        `conn${i}`,
+      );
+      s = next;
+    }
+    const running = handleStartingComplete(s, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+
+    const GROWTH_RATE = 0.00006;
+    const elapsed = Math.log(2.1) / GROWTH_RATE; // past 2.0x, not yet 4.0x
+    const { state: afterTick } = handleTick(running, nowMs + elapsed);
+
+    // Odd-indexed players (1, 3, 5) should have cashed out; even (2, 4) should not
+    expect(afterTick.players.get('player1')?.cashedOut).toBe(true);
+    expect(afterTick.players.get('player2')?.cashedOut).toBe(false);
+    expect(afterTick.players.get('player3')?.cashedOut).toBe(true);
+    expect(afterTick.players.get('player4')?.cashedOut).toBe(false);
+    expect(afterTick.players.get('player5')?.cashedOut).toBe(true);
+  });
+
+  it('playerCashedOut messages carry the correct player connection id', () => {
+    const nowMs = 1_000_000;
+    const state = createInitialState('abc');
+    const { state: s1 } = handleJoin(
+      state,
+      { playerId: 'alice', wager: 100, autoCashout: 2.0 },
+      'conn-alice',
+    );
+    const { state: s2 } = handleJoin(
+      s1,
+      { playerId: 'bob', wager: 50, autoCashout: 2.0 },
+      'conn-bob',
+    );
+    const running = handleStartingComplete(s2, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+
+    const GROWTH_RATE = 0.00006;
+    const elapsed = Math.log(2.1) / GROWTH_RATE;
+    const { messages } = handleTick(running, nowMs + elapsed);
+
+    const cashoutMsgs = messages.filter((m) => m.broadcast && m.message.type === 'playerCashedOut');
+    expect(cashoutMsgs).toHaveLength(2);
+
+    const ids = cashoutMsgs
+      .filter((m) => m.broadcast && m.message.type === 'playerCashedOut')
+      .map((m) => (m.message as { type: 'playerCashedOut'; id: string }).id);
+    expect(ids).toContain('conn-alice');
+    expect(ids).toContain('conn-bob');
+  });
+});
+
+describe('handleCrash — behavioral parity (High-7)', () => {
+  it('all non-cashed-out players have payout = 0 regardless of player count', () => {
+    const nowMs = 1_000_000;
+    const state = createInitialState('abc');
+    let s = state;
+    for (let i = 1; i <= 20; i++) {
+      const { state: next } = handleJoin(
+        s,
+        { playerId: `player${i}`, wager: 10, autoCashout: null },
+        `conn${i}`,
+      );
+      s = next;
+    }
+    const running = handleStartingComplete(s, 2.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const { state: crashed } = handleCrash(running, 'seed123', 42, 'randval', nowMs + 5000);
+
+    for (let i = 1; i <= 20; i++) {
+      expect(crashed.players.get(`player${i}`)?.payout).toBe(0);
+    }
+  });
+
+  it('mixed cashed-out and non-cashed-out players retain correct payouts after crash', () => {
+    const nowMs = 1_000_000;
+    const state = createInitialState('abc');
+    let s = state;
+    // Players 1-5 get autoCashout, players 6-10 do not
+    for (let i = 1; i <= 10; i++) {
+      const autoCashout = i <= 5 ? 2.0 : null;
+      const { state: next } = handleJoin(
+        s,
+        { playerId: `player${i}`, wager: 100, autoCashout },
+        `conn${i}`,
+      );
+      s = next;
+    }
+    const running = handleStartingComplete(s, 3.0, 'seed', 1, 'rand', 'next', nowMs).state;
+
+    // Tick past 2.0x so players 1-5 auto-cashout
+    const GROWTH_RATE = 0.00006;
+    const elapsed = Math.log(2.1) / GROWTH_RATE;
+    const { state: afterTick } = handleTick(running, nowMs + elapsed);
+
+    // Then crash
+    const { state: crashed } = handleCrash(
+      afterTick,
+      'seed123',
+      42,
+      'randval',
+      nowMs + elapsed + 1000,
+    );
+
+    // Players 1-5 should retain their cashout payout (floor(100 * 2.0 * 100)/100 = 200)
+    for (let i = 1; i <= 5; i++) {
+      expect(crashed.players.get(`player${i}`)?.cashedOut).toBe(true);
+      expect(crashed.players.get(`player${i}`)?.payout).toBe(200);
+    }
+    // Players 6-10 should have payout = 0 (lost)
+    for (let i = 6; i <= 10; i++) {
+      expect(crashed.players.get(`player${i}`)?.payout).toBe(0);
+    }
+  });
+});
+
 // ─── Round lifecycle integration test ────────────────────────────────────────
 
 describe('round lifecycle', () => {

@@ -387,7 +387,9 @@ export class CrashGame extends Server<Env> {
   /**
    * Transitions from RUNNING to CRASHED. Broadcasts the `crashed` message with
    * provably-fair ingredients, then stores pending payouts for any auto-cashed-out
-   * players who are no longer connected (identified via `this.getConnections()`).
+   * players who are no longer connected. A `Map<connectionId, Connection>` is
+   * built once from `this.getConnections()` so disconnection checks are O(1) per
+   * player rather than O(n) — keeping the overall loop O(n) instead of O(n²).
    *
    * @see docs/game-state-machine.md §3.8 (balance management)
    * @see docs/game-state-machine.md §3.5 (disconnect semantics)
@@ -410,11 +412,17 @@ export class CrashGame extends Server<Env> {
     );
     this.gameState = result.state;
 
+    // Build a connection lookup map once (O(n)) to avoid O(n²) getConnections().some() per player
+    const connectionMap = new Map<string, Connection>();
+    for (const conn of this.getConnections()) {
+      connectionMap.set(conn.id, conn);
+    }
+
     // Store pending payouts for auto-cashed-out players who are disconnected
     for (const [, player] of this.gameState.players) {
       if (player.cashedOut && player.payout !== null && player.cashoutMultiplier !== null) {
-        // Check if player is currently connected
-        const isConnected = Array.from(this.getConnections()).some((c) => c.id === player.id);
+        // O(1) lookup instead of O(n) scan per player
+        const isConnected = connectionMap.has(player.id);
         if (!isConnected) {
           // Evict oldest entry if the map is at capacity [High-10]
           if (this.pendingPayouts.size >= MAX_PENDING_PAYOUTS) {
