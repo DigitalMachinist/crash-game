@@ -24,37 +24,37 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 *These issues harden the server against malformed/malicious input. They touch `crash-game.ts`, `game-state.ts`, `drand.ts`, and `types.ts` with minimal coupling between them. All can be parallelized.*
 
 ### Issue 1.1: [Security-3] Validate autoCashout value
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/game-state.ts`, `src/server/__tests__/game-state.test.ts`
 
 ---
 
 ### Issue 1.2: [Security-4] Validate playerId length
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/game-state.ts`, `src/config.ts`, `src/server/__tests__/game-state.test.ts`
 
 ---
 
 ### Issue 1.3: [High-1 + High-4] Runtime message validation (server + client)
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/crash-game.ts`, `src/server/validation.ts` (new), `src/server/__tests__/validation.test.ts` (new)
 
 ---
 
 ### Issue 1.4: [High-2] Validate drand beacon structure
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/drand.ts`, `src/server/validation.ts`, `src/server/__tests__/drand.test.ts`, `src/server/__tests__/validation.test.ts`
 
 ---
 
 ### Issue 1.5: [High-3] Validate storage fields on load
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/crash-game.ts`, `src/server/validation.ts`, `src/server/__tests__/validation.test.ts`
 
 ---
 
 ### Issue 1.6: [High-13] Exhaustive phase handling in onAlarm
-**Status:** `IN REVIEW`
+**Status:** `MERGED`
 **Files:** `src/server/crash-game.ts`
 
 ---
