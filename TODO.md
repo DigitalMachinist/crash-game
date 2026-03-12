@@ -93,7 +93,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/game-state.ts:268`, `src/server/crash-game.ts:335`, `src/server/game-state.ts:254-304`
   - Build `Map<connectionId, Connection>` lookup once per phase; check membership in O(1). For auto-cashout, pre-sort players by threshold or reduce tick frequency.
 
-- [ ] **[High-8]** buildStateSnapshot() is O(n) and called on every phase transition
+- [x] **[High-8]** buildStateSnapshot() is O(n) and called on every phase transition
   - File: `src/server/crash-game.ts:97-99`, `src/server/crash-game.ts:297-299`
   - Implement delta-based broadcasting or cache snapshots; only send full state on connect and phase changes.
 

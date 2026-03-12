@@ -315,7 +315,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 5.2: [High-8] Cache state snapshots
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/game-state.ts`
 **Depends on:** Nothing
 

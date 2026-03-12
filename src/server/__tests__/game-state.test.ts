@@ -8,6 +8,7 @@ import {
   WAITING_DURATION_MS,
 } from '../../config';
 import {
+  buildStateSnapshot,
   createInitialState,
   handleCashout,
   handleCountdownTick,
@@ -1153,6 +1154,109 @@ describe('handleCrash — behavioral parity (High-7)', () => {
     for (let i = 6; i <= 10; i++) {
       expect(crashed.players.get(`player${i}`)?.payout).toBe(0);
     }
+  });
+});
+
+// ─── buildStateSnapshot ───────────────────────────────────────────────────────
+
+describe('buildStateSnapshot', () => {
+  it('returns expected structure during WAITING phase', () => {
+    const state = createInitialState('testcommit');
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.phase).toBe('WAITING');
+    expect(snapshot.roundId).toBe(1);
+    expect(snapshot.countdown).toBe(WAITING_DURATION_MS);
+    expect(snapshot.multiplier).toBe(1.0);
+    expect(snapshot.elapsed).toBe(0);
+    expect(snapshot.crashPoint).toBeNull();
+    expect(Array.isArray(snapshot.players)).toBe(true);
+    expect(snapshot.players).toHaveLength(0);
+    expect(snapshot.chainCommitment).toBe('testcommit');
+    expect(snapshot.drandRound).toBeNull();
+    expect(snapshot.drandRandomness).toBeNull();
+    expect(Array.isArray(snapshot.history)).toBe(true);
+  });
+
+  it('includes all players in snapshot after joins', () => {
+    let state = createInitialState('commit1');
+    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
+    state = handleJoin(state, { playerId: 'p2', wager: 50, autoCashout: 2.5 }, 'conn2').state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.players).toHaveLength(2);
+    const p1 = snapshot.players.find((p) => p.playerId === 'p1');
+    const p2 = snapshot.players.find((p) => p.playerId === 'p2');
+    expect(p1).toBeDefined();
+    expect(p1?.wager).toBe(100);
+    expect(p2).toBeDefined();
+    expect(p2?.autoCashout).toBe(2.5);
+  });
+
+  it('does not expose crashPoint during RUNNING phase', () => {
+    const nowMs = 1_000_000;
+    let state = createInitialState('commit1');
+    state = handleStartingComplete(state, 3.5, 'seed', 1, 'rand', 'next', nowMs).state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.phase).toBe('RUNNING');
+    expect(snapshot.crashPoint).toBeNull();
+    expect(snapshot.drandRound).toBeNull();
+    expect(snapshot.drandRandomness).toBeNull();
+  });
+
+  it('reveals crashPoint, drandRound, drandRandomness during CRASHED phase', () => {
+    const nowMs = 1_000_000;
+    let state = createInitialState('commit1');
+    state = handleStartingComplete(state, 2.5, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleCrash(state, 'theSeed', 42, 'theRand', nowMs + 5000).state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.phase).toBe('CRASHED');
+    expect(snapshot.crashPoint).toBe(2.5);
+    expect(snapshot.drandRound).toBe(42);
+    expect(snapshot.drandRandomness).toBe('theRand');
+  });
+
+  it('snapshot after playerJoined includes the new player', () => {
+    // This validates behavioral parity: a connection joining after a playerJoined event
+    // should see the joined player in the snapshot.
+    let state = createInitialState('commit1');
+    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.players).toHaveLength(1);
+    expect(snapshot.players[0].playerId).toBe('p1');
+  });
+
+  it('snapshot after cashout shows player as cashed out', () => {
+    const nowMs = 1_000_000;
+    let state = createInitialState('commit1');
+    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
+    state = handleStartingComplete(state, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleCashout(state, 'p1', nowMs + 5000).state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    const p1 = snapshot.players.find((p) => p.playerId === 'p1');
+    expect(p1?.cashedOut).toBe(true);
+    expect(p1?.cashoutMultiplier).not.toBeNull();
+  });
+
+  it('snapshot reflects updated state after transitionToWaiting (empty players)', () => {
+    let state = createInitialState('commit1');
+    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
+    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    state = transitionToWaiting(state, 'newcomm', Date.now()).state;
+
+    const snapshot = buildStateSnapshot(state);
+
+    expect(snapshot.players).toHaveLength(0);
+    expect(snapshot.phase).toBe('WAITING');
   });
 });
 
