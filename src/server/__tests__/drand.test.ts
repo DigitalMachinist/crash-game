@@ -136,6 +136,42 @@ describe('fetchDrandBeacon', () => {
     expect(capturedSignal).toBeInstanceOf(AbortSignal);
   });
 
+  it('throws DrandFetchError when beacon has invalid structure (missing round)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ randomness: 'a'.repeat(64), signature: 'b'.repeat(96) }),
+      }),
+    );
+
+    await expect(fetchDrandBeacon(100)).rejects.toThrow(DrandFetchError);
+  });
+
+  it('throws DrandFetchError when beacon has non-hex randomness', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ round: 100, randomness: 'not-hex!', signature: 'b'.repeat(96) }),
+      }),
+    );
+
+    await expect(fetchDrandBeacon(100)).rejects.toThrow(DrandFetchError);
+  });
+
+  it('throws DrandFetchError when beacon has NaN round', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ round: NaN, randomness: 'a'.repeat(64), signature: 'b'.repeat(96) }),
+      }),
+    );
+
+    await expect(fetchDrandBeacon(100)).rejects.toThrow(DrandFetchError);
+  });
+
   it('calls fallback URL when primary fails', async () => {
     const mockFetch = vi
       .fn()

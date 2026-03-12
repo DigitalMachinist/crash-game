@@ -15,6 +15,8 @@
 
 ## Commands to Use
 
+When making tool calls to execute commands defined in package.json, prefer using them as written in this section.
+
 - Set correct node version: `nvm use v20.20.1`
 - Build client: `npm run build:client`
 - Host client locally for dev: `npm run dev:client`

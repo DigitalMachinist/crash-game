@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HISTORY_LENGTH, WAITING_DURATION_MS } from '../../config';
+import { HISTORY_LENGTH, MAX_PLAYER_ID_LENGTH, WAITING_DURATION_MS } from '../../config';
 import {
   createInitialState,
   handleCashout,
@@ -184,6 +184,127 @@ describe('handleJoin', () => {
 
     expect(newState.players.has('myplayer')).toBe(true);
     expect(newState.players.get('myplayer')?.playerId).toBe('myplayer');
+  });
+
+  // ─── [Security-3] autoCashout validation ─────────────────────────────────
+
+  it('returns error if autoCashout is negative', () => {
+    const state = createInitialState('abc');
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: -1 },
+      'conn1',
+    );
+    expect(newState.players.size).toBe(0);
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('returns error if autoCashout is 0.5 (below 1.0)', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: 0.5 },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('returns error if autoCashout is exactly 1.0 (would cashout immediately at 0 profit)', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: 1.0 },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('returns error if autoCashout is NaN', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: NaN },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('returns error if autoCashout is Infinity', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: Infinity },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('accepts autoCashout of 1.01', () => {
+    const state = createInitialState('abc');
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: 1.01 },
+      'conn1',
+    );
+    expect(newState.players.has('p1')).toBe(true);
+    expect(messages[0].broadcast).toBe(true);
+  });
+
+  // ─── [Security-4] playerId length validation ──────────────────────────────
+
+  it('returns error if playerId exceeds MAX_PLAYER_ID_LENGTH', () => {
+    const state = createInitialState('abc');
+    const longId = 'x'.repeat(MAX_PLAYER_ID_LENGTH + 1);
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: longId, wager: 100, autoCashout: null },
+      'conn1',
+    );
+    expect(newState.players.size).toBe(0);
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('accepts playerId at exactly MAX_PLAYER_ID_LENGTH', () => {
+    const state = createInitialState('abc');
+    const maxId = 'x'.repeat(MAX_PLAYER_ID_LENGTH);
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: maxId, wager: 100, autoCashout: null },
+      'conn1',
+    );
+    expect(newState.players.has(maxId)).toBe(true);
+    expect(messages[0].broadcast).toBe(true);
+  });
+
+  it('returns error if playerId is empty string', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: '', wager: 100, autoCashout: null },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
   });
 
   it('stores autoCashout: null correctly', () => {

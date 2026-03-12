@@ -15,6 +15,7 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
+import { isValidDrandBeacon } from './validation';
 
 export interface DrandBeacon {
   round: number;
@@ -54,7 +55,8 @@ export function drandRoundTime(round: number): number {
 /**
  * Fetches the drand beacon for a specific round number.
  * Tries the primary URL (`/public/{round}`) first; falls back to `/public/latest`.
- * Throws `DrandFetchError` if both attempts fail — triggers a void round in `startRound()`.
+ * Throws `DrandFetchError` if both attempts fail or if the response fails structure
+ * validation (`isValidDrandBeacon`) — triggers a void round in `startRound()`.
  *
  * @see docs/provably-fair.md §2.3
  * @see docs/game-state-machine.md §3.2 (void rounds)
@@ -72,7 +74,11 @@ export async function fetchDrandBeacon(
     try {
       const res = await fetch(url, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return (await res.json()) as DrandBeacon;
+      const data: unknown = await res.json();
+      if (!isValidDrandBeacon(data)) {
+        throw new Error('Invalid drand beacon structure');
+      }
+      return data;
     } finally {
       clearTimeout(timer);
     }

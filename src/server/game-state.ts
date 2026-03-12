@@ -8,7 +8,7 @@
  * @see docs/game-state-machine.md
  */
 
-import { HISTORY_LENGTH, WAITING_DURATION_MS } from '../config';
+import { HISTORY_LENGTH, MAX_PLAYER_ID_LENGTH, WAITING_DURATION_MS } from '../config';
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
 import { crashTimeMs as computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
@@ -69,6 +69,12 @@ function getPlayers(state: GameState): PlayerSnapshot[] {
  * Processes a player's bet. Only valid during WAITING phase.
  * Returns a `playerJoined` broadcast on success, or an `error` to the player.
  *
+ * Validation rules (returns error message if violated):
+ * - `playerId` must be a non-empty string of at most `MAX_PLAYER_ID_LENGTH` (256) characters.
+ * - `wager` must be a finite positive number.
+ * - `autoCashout`, if non-null, must be a finite number strictly greater than 1.0.
+ * - Player must not already be in the current round.
+ *
  * @see docs/game-state-machine.md §3.4
  */
 export function handleJoin(
@@ -89,6 +95,19 @@ export function handleJoin(
     };
   }
 
+  if (!msg.playerId || msg.playerId.length > MAX_PLAYER_ID_LENGTH) {
+    return {
+      state,
+      messages: [
+        {
+          broadcast: false,
+          targetPlayerId: msg.playerId || 'unknown',
+          message: { type: 'error', message: 'Invalid playerId' },
+        },
+      ],
+    };
+  }
+
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
     return {
       state,
@@ -97,6 +116,19 @@ export function handleJoin(
           broadcast: false,
           targetPlayerId: msg.playerId,
           message: { type: 'error', message: 'Wager must be a positive number' },
+        },
+      ],
+    };
+  }
+
+  if (msg.autoCashout != null && (!Number.isFinite(msg.autoCashout) || msg.autoCashout <= 1.0)) {
+    return {
+      state,
+      messages: [
+        {
+          broadcast: false,
+          targetPlayerId: msg.playerId,
+          message: { type: 'error', message: 'autoCashout must be greater than 1.0' },
         },
       ],
     };

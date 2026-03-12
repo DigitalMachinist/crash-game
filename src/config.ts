@@ -33,6 +33,10 @@ export const DRAND_PERIOD_SECS = 3;
 export const DRAND_BASE_URL = `https://drand.cloudflare.com/${DRAND_CHAIN_HASH}`;
 export const DRAND_FETCH_TIMEOUT_MS = 2_000;
 
+// ─── Input validation ────────────────────────────────────────────────────────
+/** Maximum length of a playerId string (DoS prevention). */
+export const MAX_PLAYER_ID_LENGTH = 256;
+
 // ─── Game room ───────────────────────────────────────────────────────────────
 export const ROOM_ID = 'crash-main';
 
