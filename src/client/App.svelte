@@ -119,7 +119,7 @@ onDestroy(() => {
   </header>
 
   {#if pendingPayoutToast}
-    <div class="toast">{pendingPayoutToast}</div>
+    <div class="toast" role="status" aria-live="polite" aria-atomic="true">{pendingPayoutToast}</div>
   {/if}
 
   <main>

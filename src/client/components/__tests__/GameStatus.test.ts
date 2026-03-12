@@ -125,4 +125,20 @@ describe('GameStatus component', () => {
       expect(screen.getByText('3s')).toBeTruthy();
     });
   });
+
+  describe('accessibility (Issue 8.4)', () => {
+    it('game status container has role="status"', () => {
+      render(GameStatus);
+      const container = document.querySelector('.game-status');
+      expect(container).toBeTruthy();
+      expect(container?.getAttribute('role')).toBe('status');
+    });
+
+    it('game status container has aria-live="assertive"', () => {
+      render(GameStatus);
+      const container = document.querySelector('.game-status');
+      expect(container).toBeTruthy();
+      expect(container?.getAttribute('aria-live')).toBe('assertive');
+    });
+  });
 });
