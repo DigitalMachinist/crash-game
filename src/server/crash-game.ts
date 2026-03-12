@@ -18,7 +18,7 @@ import {
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
-import type { ClientMessage, ServerMessage } from '../types';
+import type { ServerMessage } from '../types';
 import { deriveCrashPoint } from './crash-math';
 import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
 import {
@@ -39,6 +39,7 @@ import {
   getChainSeedForGame,
   sha256Hex,
 } from './hash-chain';
+import { isValidClientMessage, isValidStoredGameData } from './validation';
 
 interface Env {
   CRASH_DEBUG?: string;
@@ -60,23 +61,20 @@ export class CrashGame extends Server<Env> {
 
   // partyserver calls this when the DO is initialized (replaces constructor)
   override async onStart(): Promise<void> {
-    // Load persisted state
-    const stored = await this.ctx.storage.get<{
-      rootSeed: string;
-      gameNumber: number;
-      chainCommitment: string;
-      history: GameState['history'];
-      pendingPayouts: Array<[string, PendingPayout]>;
-    }>('gameData');
+    // Load persisted state, validating structure before use [High-3]
+    const stored = await this.ctx.storage.get('gameData');
 
-    if (stored) {
+    if (stored && isValidStoredGameData(stored)) {
       this.rootSeed = stored.rootSeed;
       this.gameNumber = stored.gameNumber;
       this.pendingPayouts = new Map(stored.pendingPayouts ?? []);
       this.gameState = createInitialState(stored.chainCommitment, stored.gameNumber + 1);
       this.gameState = { ...this.gameState, history: stored.history ?? [] };
     } else {
-      // First run — generate hash chain
+      if (stored) {
+        console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
+      }
+      // First run or corrupted state — generate hash chain
       this.rootSeed = await generateRootSeed();
       this.gameNumber = 0;
       const terminalHash = await computeTerminalHash(this.rootSeed);
@@ -100,13 +98,26 @@ export class CrashGame extends Server<Env> {
   }
 
   override async onMessage(conn: Connection, message: string): Promise<void> {
-    let msg: ClientMessage;
+    let parsed: unknown;
     try {
-      msg = JSON.parse(message) as ClientMessage;
+      parsed = JSON.parse(message);
     } catch {
       conn.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' } satisfies ServerMessage));
       return;
     }
+
+    // Runtime validation — reject malformed messages before processing [High-1][High-4]
+    if (!isValidClientMessage(parsed)) {
+      conn.send(
+        JSON.stringify({
+          type: 'error',
+          message: 'Invalid message format',
+        } satisfies ServerMessage),
+      );
+      return;
+    }
+
+    const msg = parsed;
 
     if (msg.type === 'join') {
       // Check for pending payout before processing join
@@ -234,6 +245,10 @@ export class CrashGame extends Server<Env> {
       // Alarm fired while still in STARTING (drand fetch in progress or failed).
       // Reschedule and wait for blockConcurrencyWhile to complete or retry.
       await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+    } else {
+      // Exhaustive check — TypeScript will error here if a new Phase is added [High-13]
+      const _exhaustive: never = this.gameState.phase;
+      throw new Error(`Unhandled phase: ${_exhaustive}`);
     }
   }
 
