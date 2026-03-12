@@ -10,9 +10,9 @@ import { myPlayerId, phase, playersList } from '../lib/stores';
     <table>
       <thead>
         <tr>
-          <th>Player</th>
-          <th>Wager</th>
-          <th>Result</th>
+          <th scope="col">Player</th>
+          <th scope="col">Wager</th>
+          <th scope="col">Result</th>
         </tr>
       </thead>
       <tbody>
@@ -27,7 +27,7 @@ import { myPlayerId, phase, playersList } from '../lib/stores';
             <td>{player.wager}</td>
             <td>
               {#if player.cashedOut && player.cashoutMultiplier !== null}
-                <span class="cashed-out">{player.cashoutMultiplier.toFixed(2)}x (+{player.payout})</span>
+                <span class="cashed-out">Won {player.cashoutMultiplier.toFixed(2)}x (+{player.payout})</span>
               {:else if $phase === 'CRASHED' && !player.cashedOut}
                 <span class="lost">Lost</span>
               {:else}

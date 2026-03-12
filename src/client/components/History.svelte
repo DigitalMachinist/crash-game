@@ -87,8 +87,8 @@ function closeVerify() {
 
   .verify-btn {
     background: none;
-    border: 1px solid #444;
-    color: #aaa;
+    border: 1px solid #666;
+    color: #ccc;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
     cursor: pointer;
@@ -96,7 +96,12 @@ function closeVerify() {
   }
 
   .verify-btn:hover {
-    border-color: #888;
+    border-color: #999;
     color: #fff;
+  }
+
+  .verify-btn:focus-visible {
+    outline: 2px solid #42a5f5;
+    outline-offset: 2px;
   }
 </style>

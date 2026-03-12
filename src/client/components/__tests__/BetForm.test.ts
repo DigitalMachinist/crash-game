@@ -228,6 +228,42 @@ describe('BetForm component', () => {
       expect(screen.getByText('Test error')).toBeTruthy();
     });
 
+    it('wager input gets aria-describedby="wager-error" when error is present', async () => {
+      render(BetForm);
+      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Bad wager' } }));
+      await tick();
+      const wagerInput = screen.getByLabelText('Wager');
+      expect(wagerInput.getAttribute('aria-describedby')).toBe('wager-error');
+    });
+
+    it('wager input gets aria-invalid="true" when error is present', async () => {
+      render(BetForm);
+      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Bad wager' } }));
+      await tick();
+      const wagerInput = screen.getByLabelText('Wager');
+      expect(wagerInput.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('wager input has no aria-describedby when there is no error', () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      expect(wagerInput.getAttribute('aria-describedby')).toBeNull();
+    });
+
+    it('wager input has no aria-invalid when there is no error', () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      expect(wagerInput.getAttribute('aria-invalid')).toBeNull();
+    });
+
+    it('error message div has id="wager-error" when error is shown', async () => {
+      render(BetForm);
+      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Some error' } }));
+      await tick();
+      const errorDiv = screen.getByText('Some error');
+      expect(errorDiv.getAttribute('id')).toBe('wager-error');
+    });
+
     it('error message is cleared on next join attempt', async () => {
       render(BetForm);
 
