@@ -19,7 +19,7 @@ import {
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
-import type { ServerMessage } from '../types';
+import type { GameStateSnapshot, ServerMessage } from '../types';
 import { deriveCrashPoint } from './crash-math';
 import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
 import {
@@ -59,6 +59,20 @@ export class CrashGame extends Server<Env> {
   private rootSeed!: string;
   private gameNumber!: number;
   private pendingPayouts: Map<string, PendingPayout> = new Map();
+  private cachedSnapshot: GameStateSnapshot | null = null;
+
+  /** Invalidates the cached snapshot so the next read rebuilds from current state. */
+  private invalidateSnapshot(): void {
+    this.cachedSnapshot = null;
+  }
+
+  /** Returns cached snapshot if valid; otherwise rebuilds and caches it. */
+  private getSnapshot(): GameStateSnapshot {
+    if (this.cachedSnapshot === null) {
+      this.cachedSnapshot = buildStateSnapshot(this.gameState);
+    }
+    return this.cachedSnapshot;
+  }
 
   // partyserver calls this when the DO is initialized (replaces constructor)
   override async onStart(): Promise<void> {
@@ -109,8 +123,8 @@ export class CrashGame extends Server<Env> {
   }
 
   override async onConnect(conn: Connection, _ctx: ConnectionContext): Promise<void> {
-    // Send current game state snapshot to the newly connected client
-    const snapshot = buildStateSnapshot(this.gameState);
+    // Send current game state snapshot to the newly connected client (use cache)
+    const snapshot = this.getSnapshot();
     const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
     conn.send(JSON.stringify(stateMsg));
   }
@@ -162,6 +176,10 @@ export class CrashGame extends Server<Env> {
         conn.id,
       );
       this.gameState = result.state;
+      // Invalidate cache if state changed (player was added successfully)
+      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerJoined')) {
+        this.invalidateSnapshot();
+      }
 
       // Persist player join so DO eviction does not lose the wager [Backend-1]
       const joinSucceeded = result.messages.some(
@@ -193,6 +211,10 @@ export class CrashGame extends Server<Env> {
 
       const result = handleCashout(this.gameState, player.playerId, Date.now());
       this.gameState = result.state;
+      // Invalidate cache if state changed (cashout was accepted)
+      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
+        this.invalidateSnapshot();
+      }
 
       // Persist cashout so DO eviction does not lose the payout record [Backend-2]
       const cashoutSucceeded = result.messages.some(
@@ -245,10 +267,13 @@ export class CrashGame extends Server<Env> {
     // block can skip rescheduling if nextRound() already scheduled the alarm.
     let alarmScheduled = false;
 
+
     try {
       if (this.gameState.phase === 'WAITING') {
         const result = handleCountdownTick(this.gameState, now);
         this.gameState = result.state;
+        // Countdown changed (or phase transitioned to STARTING); invalidate cache
+        this.invalidateSnapshot();
 
         for (const outbound of result.messages) {
           if (outbound.broadcast) {
@@ -269,6 +294,10 @@ export class CrashGame extends Server<Env> {
       } else if (this.gameState.phase === 'RUNNING') {
         const result = handleTick(this.gameState, now);
         this.gameState = result.state;
+        // Invalidate if any auto-cashouts fired (player state changed)
+        if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
+          this.invalidateSnapshot();
+        }
 
         for (const outbound of result.messages) {
           if (outbound.broadcast) {
@@ -355,6 +384,7 @@ export class CrashGame extends Server<Env> {
       // Void round — drand fetch failed; rewind game number and return to WAITING
       this.gameNumber -= 1;
       this.gameState = { ...this.gameState, phase: 'WAITING', countdown: WAITING_DURATION_MS };
+      this.invalidateSnapshot();
       await this.persistState();
       await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
       return;
@@ -374,9 +404,10 @@ export class CrashGame extends Server<Env> {
       now,
     );
     this.gameState = result.state;
+    this.invalidateSnapshot();
 
     // Broadcast full state update to all connections so clients know the round started
-    const snapshot = buildStateSnapshot(this.gameState);
+    const snapshot = this.getSnapshot();
     const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
     this.broadcast(JSON.stringify(stateMsg));
 
@@ -411,6 +442,7 @@ export class CrashGame extends Server<Env> {
       now,
     );
     this.gameState = result.state;
+    this.invalidateSnapshot();
 
     // Build a connection lookup map once (O(n)) to avoid O(n²) getConnections().some() per player
     const connectionMap = new Map<string, Connection>();
@@ -454,6 +486,7 @@ export class CrashGame extends Server<Env> {
   private async nextRound(): Promise<void> {
     const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment, Date.now());
     this.gameState = result.state;
+    this.invalidateSnapshot();
 
     for (const outbound of result.messages) {
       if (outbound.broadcast) {

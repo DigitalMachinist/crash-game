@@ -12,6 +12,7 @@
 - Always review the implementation plan yourself, report the results, and don't move forward with implementation until the plan is approved
 - If an implementation step encounters problems due to system configuration that require the user's attention, always stop and ask for their intervention rather than working around the problem
 - If there is any risk of context/conversation compacting when performing an operation, always warn the user first rather than executing the instructions without confirmation
+- After resolving conflicts, always rerun all tests to confirm there are no regression failures
 
 ## Commands to Use
 
