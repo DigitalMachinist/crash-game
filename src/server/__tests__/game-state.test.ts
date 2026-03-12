@@ -149,6 +149,63 @@ describe('handleJoin', () => {
     }
   });
 
+  // ─── [High-5] Idempotent join ─────────────────────────────────────────────
+
+  it('[High-5] same playerId rejoins with same wager → returns success, state unchanged', () => {
+    const state = createInitialState('abc');
+    const { state: stateAfterFirst } = handleJoin(
+      state,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn1',
+    );
+
+    const { state: stateAfterSecond, messages } = handleJoin(
+      stateAfterFirst,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn2',
+    );
+
+    // Should return a success (broadcast) message
+    expect(messages).toHaveLength(1);
+    expect(messages[0].broadcast).toBe(true);
+    if (messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('playerJoined');
+    }
+
+    // State should be unchanged — only 1 player, wager unchanged
+    expect(stateAfterSecond.players.size).toBe(1);
+    expect(stateAfterSecond.players.get('player1')?.wager).toBe(10);
+  });
+
+  it('[High-5] same playerId rejoins with different wager → returns error "Already joined with different wager"', () => {
+    const state = createInitialState('abc');
+    const { state: stateAfterFirst } = handleJoin(
+      state,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn1',
+    );
+
+    const { state: stateAfterSecond, messages } = handleJoin(
+      stateAfterFirst,
+      { playerId: 'player1', wager: 20, autoCashout: null },
+      'conn2',
+    );
+
+    // Should return an error targeted at the player
+    expect(messages).toHaveLength(1);
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+      if (messages[0].message.type === 'error') {
+        expect(messages[0].message.message).toBe('Already joined with different wager');
+      }
+    }
+
+    // State should be unchanged — wager still 10
+    expect(stateAfterSecond.players.size).toBe(1);
+    expect(stateAfterSecond.players.get('player1')?.wager).toBe(10);
+  });
+
   it('defaults name to first 8 chars of playerId if name is absent', () => {
     const state = createInitialState('abc');
     const playerId = 'abcdef1234567890';

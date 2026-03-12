@@ -83,7 +83,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:105`
   - NOTE: Overlaps with High-1. **Implement together as one PR** — create discriminating type guard that checks `type` field presence and validates field types per message type.
 
-- [ ] **[High-5]** Player join is not idempotent (poor reconnection resilience)
+- [x] **[High-5]** Player join is not idempotent (poor reconnection resilience)
   - File: `src/server/game-state.ts:105-116`
   - Return success if player already joined with same playerId and wager; update join timestamp silently to indicate reconnection.
 

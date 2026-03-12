@@ -135,13 +135,33 @@ export function handleJoin(
   }
 
   if (state.players.has(msg.playerId)) {
+    const existing = state.players.get(msg.playerId)!;
+    if (existing.wager !== msg.wager) {
+      return {
+        state,
+        messages: [
+          {
+            broadcast: false,
+            targetPlayerId: msg.playerId,
+            message: { type: 'error', message: 'Already joined with different wager' },
+          },
+        ],
+      };
+    }
+    // Same wager — idempotent reconnect: return success without modifying state
     return {
       state,
       messages: [
         {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'Already in the current round' },
+          broadcast: true,
+          message: {
+            type: 'playerJoined',
+            id: existing.id,
+            playerId: existing.playerId,
+            name: existing.name,
+            wager: existing.wager,
+            autoCashout: existing.autoCashout,
+          },
         },
       ],
     };

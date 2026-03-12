@@ -187,7 +187,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 *Feature improvements that enhance resilience and enforce game rules.*
 
 ### Issue 4.1: [High-5] Idempotent player join
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/game-state.ts`, `src/server/__tests__/game-state.test.ts`
 **Depends on:** Nothing
 
