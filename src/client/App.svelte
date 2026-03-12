@@ -18,6 +18,8 @@ import { get } from 'svelte/store';
 import type { GameStateSnapshot, ServerMessage } from '../types';
 import BetForm from './components/BetForm.svelte';
 import CashoutButton from './components/CashoutButton.svelte';
+import ConnectionStatus from './components/ConnectionStatus.svelte';
+import FairnessModal from './components/FairnessModal.svelte';
 import GameStatus from './components/GameStatus.svelte';
 import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
@@ -34,6 +36,7 @@ import { balance, gameState, myPlayerId } from './lib/stores';
 
 let pendingPayoutToast: string | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let fairnessModalOpen = false;
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -111,12 +114,20 @@ onDestroy(() => {
 <div class="app">
   <header>
     <h1>Crash</h1>
-    <div class="balance-display">
-      Balance: <span class:positive={$balance >= 0} class:negative={$balance < 0}>
-        {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}
-      </span>
+    <div class="header-right">
+      <button class="fairness-btn" on:click={() => (fairnessModalOpen = true)}>Fairness</button>
+      <ConnectionStatus />
+      <div class="balance-display">
+        Balance: <span class:positive={$balance >= 0} class:negative={$balance < 0}>
+          {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}
+        </span>
+      </div>
     </div>
   </header>
+
+  {#if fairnessModalOpen}
+    <FairnessModal onClose={() => (fairnessModalOpen = false)} />
+  {/if}
 
   {#if pendingPayoutToast}
     <div class="toast">{pendingPayoutToast}</div>
@@ -173,9 +184,31 @@ onDestroy(() => {
     color: #fff;
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
   .balance-display {
     font-size: 1rem;
     color: #888;
+  }
+
+  .fairness-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .fairness-btn:hover {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border-color: #666;
   }
 
   .positive { color: #00c853; }
