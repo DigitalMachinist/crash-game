@@ -50,7 +50,7 @@ function handleJoin() {
     <h3>Place Your Bet</h3>
 
     {#if errorMessage}
-      <div class="error">{errorMessage}</div>
+      <div id="wager-error" class="error">{errorMessage}</div>
     {/if}
 
     <div class="field">
@@ -63,6 +63,8 @@ function handleJoin() {
         min={MIN_WAGER.toFixed(2)}
         max={MAX_WAGER.toFixed(2)}
         step="0.01"
+        aria-describedby={errorMessage ? 'wager-error' : undefined}
+        aria-invalid={errorMessage ? 'true' : undefined}
       />
     </div>
 
@@ -147,8 +149,12 @@ function handleJoin() {
   }
 
   input:focus {
-    outline: none;
     border-color: #666;
+  }
+
+  input:focus-visible {
+    outline: 2px solid #42a5f5;
+    outline-offset: 2px;
   }
 
   .join-btn {

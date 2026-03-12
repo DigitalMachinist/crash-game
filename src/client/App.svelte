@@ -117,7 +117,10 @@ onDestroy(() => {
     <div class="header-right">
       <button class="fairness-btn" on:click={() => (fairnessModalOpen = true)}>Fairness</button>
       <ConnectionStatus />
-      <div class="balance-display">
+      <div
+        class="balance-display"
+        aria-label="Balance: {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}"
+      >
         Balance: <span class:positive={$balance >= 0} class:negative={$balance < 0}>
           {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}
         </span>

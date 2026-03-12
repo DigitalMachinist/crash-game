@@ -406,4 +406,21 @@ describe('App component', () => {
       expect(toast?.getAttribute('aria-live')).toBe('polite');
     });
   });
+
+  describe('balance display aria-label', () => {
+    it('balance display has aria-label with positive balance', () => {
+      render(App);
+      const balanceEl = document.querySelector('[aria-label^="Balance:"]');
+      expect(balanceEl).not.toBeNull();
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: +100.00');
+    });
+
+    it('balance display aria-label updates when balance goes negative', async () => {
+      render(App);
+      balance.set(-50);
+      await tick();
+      const balanceEl = document.querySelector('[aria-label^="Balance:"]');
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00');
+    });
+  });
 });
