@@ -204,7 +204,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 4.2: [High-10] Cap pending payouts map
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 
@@ -333,7 +333,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 5.3: [High-9] Memoize playersList derived store
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/client/lib/stores.ts`, `src/client/lib/__tests__/stores.test.ts`
 **Depends on:** Nothing
 
@@ -343,8 +343,10 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 - Setting same players object reference does NOT trigger recomputation
 
 **Implementation:**
-- Replace `derived(players, ($p) => Object.values($p))` with a memoized version that compares player IDs and count before creating new array
-- Alternative: since `players` is keyed by playerId, we can use a shallow equality check on the store value itself (Svelte already does reference equality)
+- Svelte's `safe_not_equal` always treats objects as changed (even for the same reference), so Svelte does NOT handle memoization natively for object stores.
+- Replaced `derived(players, ($p) => Object.values($p))` with a `createMemoizedPlayersList()` factory that uses the two-argument derived form with a persistent `prevPlayers` / `prevList` closure.
+- Added `playersEqual()` helper: shallow equality check (same keys + same value references per key).
+- The derived callback only calls `set(newList)` when `playersEqual` returns false, preventing unnecessary array creation and subscriber notifications when player data has not changed.
 
 ---
 
@@ -446,7 +448,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 7.3: [High-17] In-app provably-fair explanation
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** New `src/client/components/FairnessModal.svelte`, `src/client/App.svelte`, component tests
 **Depends on:** Nothing
 

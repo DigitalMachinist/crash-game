@@ -8,7 +8,14 @@
  * @see docs/game-state-machine.md
  */
 
-import { HISTORY_LENGTH, MAX_PLAYER_ID_LENGTH, WAITING_DURATION_MS } from '../config';
+import {
+  HISTORY_LENGTH,
+  MAX_PLAYER_ID_LENGTH,
+  MAX_PLAYERS_PER_ROUND,
+  MAX_WAGER,
+  MIN_WAGER,
+  WAITING_DURATION_MS,
+} from '../config';
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
 import { crashTimeMs as computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
@@ -108,6 +115,19 @@ export function handleJoin(
     };
   }
 
+  if (state.players.size >= MAX_PLAYERS_PER_ROUND) {
+    return {
+      state,
+      messages: [
+        {
+          broadcast: false,
+          targetPlayerId: msg.playerId,
+          message: { type: 'error', message: 'Room full' },
+        },
+      ],
+    };
+  }
+
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
     return {
       state,
@@ -116,6 +136,32 @@ export function handleJoin(
           broadcast: false,
           targetPlayerId: msg.playerId,
           message: { type: 'error', message: 'Wager must be a positive number' },
+        },
+      ],
+    };
+  }
+
+  if (msg.wager < MIN_WAGER) {
+    return {
+      state,
+      messages: [
+        {
+          broadcast: false,
+          targetPlayerId: msg.playerId,
+          message: { type: 'error', message: `Minimum wager is $${MIN_WAGER.toFixed(2)}` },
+        },
+      ],
+    };
+  }
+
+  if (msg.wager > MAX_WAGER) {
+    return {
+      state,
+      messages: [
+        {
+          broadcast: false,
+          targetPlayerId: msg.playerId,
+          message: { type: 'error', message: `Maximum wager is $${MAX_WAGER.toFixed(2)}` },
         },
       ],
     };

@@ -5,6 +5,7 @@
  * to surface server-side validation errors (e.g., invalid wager, already joined).
  */
 
+import { MAX_WAGER, MIN_WAGER } from '../../config';
 import { sendJoin } from '../lib/commands';
 import { balance, phase } from '../lib/stores';
 
@@ -30,7 +31,7 @@ onDestroy(() => {
 
 $: wagerNum = parseFloat(wager);
 $: autoCashoutNum = autoCashoutStr ? parseFloat(autoCashoutStr) : null;
-$: isValid = !isNaN(wagerNum) && wagerNum > 0;
+$: isValid = !isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER;
 
 function handleJoin() {
   if (!isValid) return;
@@ -56,7 +57,8 @@ function handleJoin() {
         type="number"
         bind:value={wager}
         placeholder="0"
-        min="0.01"
+        min={MIN_WAGER}
+        max={MAX_WAGER}
         step="0.01"
       />
     </div>
