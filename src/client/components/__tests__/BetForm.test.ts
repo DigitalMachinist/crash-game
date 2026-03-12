@@ -141,7 +141,7 @@ describe('BetForm component', () => {
     it('wager input has max="1000" attribute', () => {
       render(BetForm);
       const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
-      expect(wagerInput.getAttribute('max')).toBe('1000');
+      expect(wagerInput.getAttribute('max')).toBe('1000.00');
     });
   });
 

@@ -60,8 +60,8 @@ function handleJoin() {
         type="number"
         bind:value={wager}
         placeholder="0"
-        min={MIN_WAGER}
-        max={MAX_WAGER}
+        min={MIN_WAGER.toFixed(2)}
+        max={MAX_WAGER.toFixed(2)}
         step="0.01"
       />
     </div>
