@@ -99,6 +99,50 @@ describe('BetForm component', () => {
       const button = screen.getByRole('button', { name: 'Join Round' });
       expect(button).not.toBeDisabled();
     });
+
+    it('button is disabled when wager is below minimum (0.05)', async () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '0.05' } });
+      await tick();
+      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
+    });
+
+    it('button is enabled when wager equals minimum (0.10)', async () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '0.10' } });
+      await tick();
+      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+    });
+
+    it('button is enabled when wager equals maximum (1000.00)', async () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '1000' } });
+      await tick();
+      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+    });
+
+    it('button is disabled when wager exceeds maximum (1000.01)', async () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '1000.01' } });
+      await tick();
+      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
+    });
+
+    it('wager input has min="0.10" attribute', () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
+      expect(wagerInput.getAttribute('min')).toBe('0.10');
+    });
+
+    it('wager input has max="1000" attribute', () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
+      expect(wagerInput.getAttribute('max')).toBe('1000');
+    });
   });
 
   describe('sendJoin calls', () => {

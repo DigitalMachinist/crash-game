@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { HISTORY_LENGTH, MAX_PLAYER_ID_LENGTH, WAITING_DURATION_MS } from '../../config';
+import {
+  HISTORY_LENGTH,
+  MAX_PLAYER_ID_LENGTH,
+  MAX_PLAYERS_PER_ROUND,
+  MAX_WAGER,
+  MIN_WAGER,
+  WAITING_DURATION_MS,
+} from '../../config';
 import {
   createInitialState,
   handleCashout,
@@ -356,6 +363,88 @@ describe('handleJoin', () => {
     const { messages } = handleJoin(
       state,
       { playerId: '', wager: 100, autoCashout: null },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  // ─── [High-11] Max players per round ─────────────────────────────────────
+
+  it('allows join when player count is below MAX_PLAYERS_PER_ROUND', () => {
+    const state = createInitialState('abc');
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: 100, autoCashout: null },
+      'conn1',
+    );
+    expect(newState.players.has('p1')).toBe(true);
+    expect(messages[0].broadcast).toBe(true);
+  });
+
+  it('returns "Room full" error when player count equals MAX_PLAYERS_PER_ROUND', () => {
+    let state = createInitialState('abc');
+    // Fill the room to capacity
+    for (let i = 0; i < MAX_PLAYERS_PER_ROUND; i++) {
+      const r = handleJoin(state, { playerId: `p${i}`, wager: 100, autoCashout: null }, `c${i}`);
+      state = r.state;
+    }
+    const { state: fullState, messages } = handleJoin(
+      state,
+      { playerId: 'overflow', wager: 100, autoCashout: null },
+      'conn-overflow',
+    );
+    expect(fullState.players.has('overflow')).toBe(false);
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast && messages[0].message.type === 'error') {
+      expect(messages[0].message.message).toBe('Room full');
+    }
+  });
+
+  // ─── [High-16] Min/max wager limits ──────────────────────────────────────
+
+  it('returns error when wager is below MIN_WAGER', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: MIN_WAGER - 0.01, autoCashout: null },
+      'conn1',
+    );
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('allows join when wager equals MIN_WAGER', () => {
+    const state = createInitialState('abc');
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: MIN_WAGER, autoCashout: null },
+      'conn1',
+    );
+    expect(newState.players.has('p1')).toBe(true);
+    expect(messages[0].broadcast).toBe(true);
+  });
+
+  it('allows join when wager equals MAX_WAGER', () => {
+    const state = createInitialState('abc');
+    const { state: newState, messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: MAX_WAGER, autoCashout: null },
+      'conn1',
+    );
+    expect(newState.players.has('p1')).toBe(true);
+    expect(messages[0].broadcast).toBe(true);
+  });
+
+  it('returns error when wager exceeds MAX_WAGER', () => {
+    const state = createInitialState('abc');
+    const { messages } = handleJoin(
+      state,
+      { playerId: 'p1', wager: MAX_WAGER + 0.01, autoCashout: null },
       'conn1',
     );
     expect(messages[0].broadcast).toBe(false);

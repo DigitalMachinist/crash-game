@@ -28,9 +28,12 @@ onDestroy(() => {
   document.removeEventListener('crash:error', handleErrorEvent);
 });
 
+const MIN_WAGER = 0.1;
+const MAX_WAGER = 1_000.0;
+
 $: wagerNum = parseFloat(wager);
 $: autoCashoutNum = autoCashoutStr ? parseFloat(autoCashoutStr) : null;
-$: isValid = !isNaN(wagerNum) && wagerNum > 0;
+$: isValid = !isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER;
 
 function handleJoin() {
   if (!isValid) return;
@@ -56,7 +59,8 @@ function handleJoin() {
         type="number"
         bind:value={wager}
         placeholder="0"
-        min="0.01"
+        min="0.10"
+        max="1000"
         step="0.01"
       />
     </div>

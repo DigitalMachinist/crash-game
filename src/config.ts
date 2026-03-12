@@ -36,6 +36,12 @@ export const DRAND_FETCH_TIMEOUT_MS = 2_000;
 // ─── Input validation ────────────────────────────────────────────────────────
 /** Maximum length of a playerId string (DoS prevention). */
 export const MAX_PLAYER_ID_LENGTH = 256;
+/** Maximum concurrent players in a single round. */
+export const MAX_PLAYERS_PER_ROUND = 5_000;
+/** Minimum allowed wager (inclusive). */
+export const MIN_WAGER = 0.1;
+/** Maximum allowed wager (inclusive). */
+export const MAX_WAGER = 1_000.0;
 
 // ─── Memory limits ───────────────────────────────────────────────────────────
 /** Maximum number of pending payouts retained in-memory. Oldest entry is evicted (FIFO) when exceeded. Evicted payouts are permanently lost. */
