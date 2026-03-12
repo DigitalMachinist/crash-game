@@ -212,4 +212,55 @@ describe('playersList derived store', () => {
     players.set({});
     expect(get(playersList)).toHaveLength(0);
   });
+
+  it('returns a new array when a player is added', () => {
+    const alice = makePlayer({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
+    players.set({ p1: alice });
+    const list1 = get(playersList);
+    const bob = makePlayer({ playerId: 'p2', id: 'conn-2', name: 'Bob' });
+    players.set({ p1: alice, p2: bob });
+    const list2 = get(playersList);
+    expect(list2).toHaveLength(2);
+    expect(list2).not.toBe(list1);
+  });
+
+  it('returns a new array when a player is removed', () => {
+    const alice = makePlayer({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
+    const bob = makePlayer({ playerId: 'p2', id: 'conn-2', name: 'Bob' });
+    players.set({ p1: alice, p2: bob });
+    const list1 = get(playersList);
+    players.set({ p1: alice });
+    const list2 = get(playersList);
+    expect(list2).toHaveLength(1);
+    expect(list2).not.toBe(list1);
+  });
+
+  it('returns the same array reference when players store is set to an equal object (same keys and values)', () => {
+    const alice = makePlayer({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
+    players.set({ p1: alice });
+    const list1 = get(playersList);
+    // Set to a new object with same content — memoization should detect no key/value change
+    players.set({ p1: alice });
+    const list2 = get(playersList);
+    expect(list2).toBe(list1);
+  });
+
+  it('reflects updated player data (e.g. cashout) when player set changes', () => {
+    const alice = makePlayer({ playerId: 'p1', id: 'conn-1', name: 'Alice', cashedOut: false });
+    players.set({ p1: alice });
+    const list1 = get(playersList);
+    expect(list1[0]?.cashedOut).toBe(false);
+    const aliceCashedOut = makePlayer({
+      playerId: 'p1',
+      id: 'conn-1',
+      name: 'Alice',
+      cashedOut: true,
+      cashoutMultiplier: 2.5,
+    });
+    players.set({ p1: aliceCashedOut });
+    const list2 = get(playersList);
+    expect(list2[0]?.cashedOut).toBe(true);
+    expect(list2[0]?.cashoutMultiplier).toBe(2.5);
+    expect(list2).not.toBe(list1);
+  });
 });

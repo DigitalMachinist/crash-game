@@ -4,7 +4,9 @@
  * Writable stores are updated by `messageHandler.ts`. Derived stores:
  * - `phase`       — current `Phase` derived from `gameState`
  * - `countdown`   — ms remaining in WAITING
- * - `playersList` — `Object.values($players)` array
+ * - `playersList` — memoized `Object.values($players)` array; only produces a
+ *                   new array reference when player keys or value references
+ *                   actually change, avoiding unnecessary re-renders
  * - `isInRound`   — true when phase is RUNNING or STARTING AND the local
  *                   player is active (in `$players` and not cashed out)
  *
@@ -25,7 +27,53 @@ export const balance = writable<number>(0);
 export const connectionStatus = writable<
   'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 >('connecting');
-export const playersList = derived(players, ($p) => Object.values($p));
+
+/**
+ * Shallow-equality check for two players Records.
+ *
+ * Returns true when both objects have identical keys and each corresponding
+ * value is the same reference (===). Used by the memoized `playersList`
+ * derived store to skip array recreation when nothing has actually changed.
+ */
+function playersEqual(
+  a: Record<string, PlayerSnapshot>,
+  b: Record<string, PlayerSnapshot>,
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
+
+/**
+ * Memoized derived store: produces a new array only when the players Record
+ * has different keys or any player value reference has changed. Svelte's
+ * built-in `safe_not_equal` always treats objects as changed (even same
+ * reference), so we build the store with a writable + subscribe approach to
+ * keep memoization state in a persistent closure.
+ */
+function createMemoizedPlayersList() {
+  let prevPlayers: Record<string, PlayerSnapshot> = {};
+  let prevList: PlayerSnapshot[] = [];
+
+  return derived<typeof players, PlayerSnapshot[]>(
+    players,
+    ($p, set) => {
+      if (!playersEqual(prevPlayers, $p)) {
+        prevPlayers = $p;
+        prevList = Object.values($p);
+        set(prevList);
+      }
+    },
+    [],
+  );
+}
+
+export const playersList = createMemoizedPlayersList();
+
 export const isInRound = derived(
   [phase, players, myPlayerId],
   ([$phase, $players, $id]) =>
