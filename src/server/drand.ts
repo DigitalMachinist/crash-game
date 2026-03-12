@@ -42,17 +42,6 @@ export function getCurrentDrandRound(nowMs?: number): number {
 }
 
 /**
- * Inverse of `getCurrentDrandRound`: returns the Unix timestamp (seconds) when
- * the given round was produced. Useful for debugging timing drift.
- *
- * @see docs/provably-fair.md §2.3
- */
-export function drandRoundTime(round: number): number {
-  // Returns Unix timestamp (seconds) when this round was produced
-  return DRAND_GENESIS_TIME + (round - 1) * DRAND_PERIOD_SECS;
-}
-
-/**
  * Fetches the drand beacon for a specific round number.
  * Tries the primary URL (`/public/{round}`) first; falls back to `/public/latest`.
  * Throws `DrandFetchError` if both attempts fail or if the response fails structure

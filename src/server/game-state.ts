@@ -643,5 +643,6 @@ export function buildStateSnapshot(
     drandRound: state.phase === 'CRASHED' ? state.drandRound : null,
     drandRandomness: state.phase === 'CRASHED' ? state.drandRandomness : null,
     history: state.history,
+    serverVersion: '1.0.0',
   };
 }

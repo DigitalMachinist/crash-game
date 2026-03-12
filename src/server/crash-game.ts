@@ -58,6 +58,7 @@ export class CrashGame extends Server<Env> {
   private gameState!: GameState;
   private rootSeed!: string;
   private gameNumber!: number;
+  /** Transient in-memory map; lost on DO eviction. Scoped to DO lifetime (~5 min idle). */
   private pendingPayouts: Map<string, PendingPayout> = new Map();
   private cachedSnapshot: GameStateSnapshot | null = null;
 
