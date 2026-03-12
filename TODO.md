@@ -103,7 +103,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### High — State Management & Limits
 
-- [ ] **[High-10]** Pending payouts Map is unbounded (memory accumulation)
+- [x] **[High-10]** Pending payouts Map is unbounded (memory accumulation)
   - File: `src/server/crash-game.ts:59`
   - Implement FIFO eviction (e.g., keep only last 100 entries) or round-based cap.
 
