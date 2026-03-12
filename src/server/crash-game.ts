@@ -1,0 +1,414 @@
+/**
+ * `CrashGame` Durable Object — the authoritative game server.
+ *
+ * Extends `partyserver.Server` to handle WebSocket connections, the game alarm
+ * loop, and HTTP debug requests. Delegates all pure state transitions to
+ * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, and `crash-math.ts`
+ * for provably fair seed and crash point computation.
+ *
+ * @see docs/project-architecture.md §1.4
+ * @see docs/game-state-machine.md
+ */
+import { type Connection, type ConnectionContext, Server } from 'partyserver';
+import {
+  CHAIN_LENGTH,
+  CHAIN_ROTATION_THRESHOLD,
+  COUNTDOWN_TICK_MS,
+  CRASHED_DISPLAY_MS,
+  TICK_INTERVAL_MS,
+  WAITING_DURATION_MS,
+} from '../config';
+import type { ClientMessage, ServerMessage } from '../types';
+import { deriveCrashPoint } from './crash-math';
+import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
+import {
+  buildStateSnapshot,
+  createInitialState,
+  type GameState,
+  handleCashout,
+  handleCountdownTick,
+  handleCrash,
+  handleJoin,
+  handleStartingComplete,
+  handleTick,
+  transitionToWaiting,
+} from './game-state';
+import {
+  computeTerminalHash,
+  generateRootSeed,
+  getChainSeedForGame,
+  sha256Hex,
+} from './hash-chain';
+
+interface Env {
+  CRASH_DEBUG?: string;
+}
+
+interface PendingPayout {
+  roundId: number;
+  wager: number;
+  payout: number;
+  cashoutMultiplier: number;
+  crashPoint: number;
+}
+
+export class CrashGame extends Server<Env> {
+  private gameState!: GameState;
+  private rootSeed!: string;
+  private gameNumber!: number;
+  private pendingPayouts: Map<string, PendingPayout> = new Map();
+
+  // partyserver calls this when the DO is initialized (replaces constructor)
+  override async onStart(): Promise<void> {
+    // Load persisted state
+    const stored = await this.ctx.storage.get<{
+      rootSeed: string;
+      gameNumber: number;
+      chainCommitment: string;
+      history: GameState['history'];
+      pendingPayouts: Array<[string, PendingPayout]>;
+    }>('gameData');
+
+    if (stored) {
+      this.rootSeed = stored.rootSeed;
+      this.gameNumber = stored.gameNumber;
+      this.pendingPayouts = new Map(stored.pendingPayouts ?? []);
+      this.gameState = createInitialState(stored.chainCommitment, stored.gameNumber + 1);
+      this.gameState = { ...this.gameState, history: stored.history ?? [] };
+    } else {
+      // First run — generate hash chain
+      this.rootSeed = await generateRootSeed();
+      this.gameNumber = 0;
+      const terminalHash = await computeTerminalHash(this.rootSeed);
+      this.gameState = createInitialState(terminalHash);
+      await this.persistState();
+    }
+
+    // Start the alarm loop if not already running, or if the stored alarm is stale (past timestamp from a previous wrangler dev run)
+    const alarm = await this.ctx.storage.getAlarm();
+    const now = Date.now();
+    if (alarm === null || alarm <= now) {
+      await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+    }
+  }
+
+  override async onConnect(conn: Connection, _ctx: ConnectionContext): Promise<void> {
+    // Send current game state snapshot to the newly connected client
+    const snapshot = buildStateSnapshot(this.gameState);
+    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
+    conn.send(JSON.stringify(stateMsg));
+  }
+
+  override async onMessage(conn: Connection, message: string): Promise<void> {
+    let msg: ClientMessage;
+    try {
+      msg = JSON.parse(message) as ClientMessage;
+    } catch {
+      conn.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' } satisfies ServerMessage));
+      return;
+    }
+
+    if (msg.type === 'join') {
+      // Check for pending payout before processing join
+      const pending = this.pendingPayouts.get(msg.playerId);
+      if (pending) {
+        this.pendingPayouts.delete(msg.playerId);
+        conn.send(
+          JSON.stringify({
+            type: 'pendingPayout',
+            ...pending,
+          } satisfies ServerMessage),
+        );
+        await this.persistState();
+      }
+
+      const result = handleJoin(
+        this.gameState,
+        {
+          playerId: msg.playerId,
+          ...(msg.name !== undefined ? { name: msg.name } : {}),
+          wager: msg.wager,
+          autoCashout: msg.autoCashout ?? null,
+        },
+        conn.id,
+      );
+      this.gameState = result.state;
+
+      for (const outbound of result.messages) {
+        if (outbound.broadcast) {
+          this.broadcast(JSON.stringify(outbound.message));
+        } else {
+          conn.send(JSON.stringify(outbound.message));
+        }
+      }
+    } else if (msg.type === 'cashout') {
+      // Find the player by connection ID
+      const player = Array.from(this.gameState.players.values()).find((p) => p.id === conn.id);
+      if (!player) {
+        conn.send(
+          JSON.stringify({
+            type: 'error',
+            message: 'Not in current round',
+          } satisfies ServerMessage),
+        );
+        return;
+      }
+
+      const result = handleCashout(this.gameState, player.playerId, Date.now());
+      this.gameState = result.state;
+
+      for (const outbound of result.messages) {
+        if (outbound.broadcast) {
+          this.broadcast(JSON.stringify(outbound.message));
+        } else {
+          conn.send(JSON.stringify(outbound.message));
+        }
+      }
+    }
+  }
+
+  /**
+   * Intentional no-op. Disconnected players' entries persist in `gameState.players`
+   * so that server-side auto-cashout processing continues to fire on every alarm
+   * tick. If an auto-cashout fires for a disconnected player, the payout is stored
+   * in `pendingPayouts` (keyed by `playerId`) and delivered on their next `join`.
+   *
+   * @see docs/game-state-machine.md §3.5
+   */
+  override onClose(_conn: Connection, _code: number, _reason: string, _wasClean: boolean): void {
+    // If player had an active bet (no auto-cashout), their bet is lost on disconnect.
+    // Auto-cashout stays active on server — the player entry persists in gameState.players
+    // so auto-cashout processing in onAlarm continues to work.
+    // No-op here intentionally.
+  }
+
+  /**
+   * Game loop driver. Dispatches to the appropriate phase handler:
+   * - WAITING → `handleCountdownTick`; triggers `startRound` when countdown = 0.
+   * - STARTING → safety reschedule (alarm fired while `blockConcurrencyWhile` in progress).
+   * - RUNNING → `handleTick`; triggers `crashRound` when multiplier ≥ crashPoint.
+   * - CRASHED → `nextRound` after display timer.
+   *
+   * @see docs/game-state-machine.md §3.1
+   */
+  override async onAlarm(): Promise<void> {
+    const now = Date.now();
+
+    if (this.gameState.phase === 'WAITING') {
+      const result = handleCountdownTick(this.gameState, now);
+      this.gameState = result.state;
+
+      for (const outbound of result.messages) {
+        if (outbound.broadcast) {
+          this.broadcast(JSON.stringify(outbound.message));
+        }
+      }
+
+      if (result.shouldStartRound) {
+        // Transition to STARTING — use blockConcurrencyWhile for isolation
+        await this.ctx.blockConcurrencyWhile(async () => {
+          await this.startRound();
+        });
+      } else {
+        await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+      }
+    } else if (this.gameState.phase === 'RUNNING') {
+      const result = handleTick(this.gameState, now);
+      this.gameState = result.state;
+
+      for (const outbound of result.messages) {
+        if (outbound.broadcast) {
+          this.broadcast(JSON.stringify(outbound.message));
+        }
+      }
+
+      if (result.shouldCrash) {
+        await this.crashRound(now);
+      } else {
+        await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
+      }
+    } else if (this.gameState.phase === 'CRASHED') {
+      // Display timer expired — transition to WAITING
+      await this.nextRound();
+    } else if (this.gameState.phase === 'STARTING') {
+      // Alarm fired while still in STARTING (drand fetch in progress or failed).
+      // Reschedule and wait for blockConcurrencyWhile to complete or retry.
+      await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+    }
+  }
+
+  /**
+   * Transitions from STARTING to RUNNING. Runs inside `blockConcurrencyWhile`
+   * so no WebSocket messages can interleave during the drand fetch and crash
+   * point computation. On `DrandFetchError`, rewinds `gameNumber` and resets
+   * to WAITING (void round).
+   *
+   * @see docs/provably-fair.md §2.4
+   * @see docs/game-state-machine.md §3.2 (void rounds)
+   */
+  private async startRound(): Promise<void> {
+    // STARTING phase: fetch drand beacon and compute crash point.
+    // Runs inside blockConcurrencyWhile so no messages can interleave.
+    this.gameNumber += 1;
+
+    // Rotate chain if we are within CHAIN_ROTATION_THRESHOLD games of exhausting it
+    if (this.gameNumber > CHAIN_LENGTH - CHAIN_ROTATION_THRESHOLD) {
+      this.rootSeed = await generateRootSeed();
+      this.gameNumber = 1;
+    }
+
+    const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
+    const nextChainCommitment = await sha256Hex(chainSeed);
+
+    let beacon: import('./drand').DrandBeacon;
+    let drandRound: number;
+    let drandRandomness: string;
+
+    try {
+      const round = getCurrentDrandRound();
+      beacon = await fetchDrandBeacon(round);
+      drandRound = beacon.round;
+      drandRandomness = beacon.randomness;
+    } catch {
+      // Void round — drand fetch failed; rewind game number and return to WAITING
+      this.gameNumber -= 1;
+      this.gameState = { ...this.gameState, phase: 'WAITING', countdown: WAITING_DURATION_MS };
+      await this.persistState();
+      await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+      return;
+    }
+
+    const effectiveSeed = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const crashPoint = deriveCrashPoint(effectiveSeed);
+    const now = Date.now();
+
+    const result = handleStartingComplete(
+      this.gameState,
+      crashPoint,
+      chainSeed,
+      drandRound,
+      drandRandomness,
+      nextChainCommitment,
+      now,
+    );
+    this.gameState = result.state;
+
+    // Broadcast full state update to all connections so clients know the round started
+    const snapshot = buildStateSnapshot(this.gameState);
+    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
+    this.broadcast(JSON.stringify(stateMsg));
+
+    await this.persistState();
+    await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
+  }
+
+  /**
+   * Transitions from RUNNING to CRASHED. Broadcasts the `crashed` message with
+   * provably-fair ingredients, then stores pending payouts for any auto-cashed-out
+   * players who are no longer connected (identified via `this.getConnections()`).
+   *
+   * @see docs/game-state-machine.md §3.8 (balance management)
+   * @see docs/game-state-machine.md §3.5 (disconnect semantics)
+   */
+  private async crashRound(now: number): Promise<void> {
+    if (
+      !this.gameState.chainSeed ||
+      this.gameState.drandRound === null ||
+      !this.gameState.drandRandomness
+    ) {
+      return;
+    }
+
+    const result = handleCrash(
+      this.gameState,
+      this.gameState.chainSeed,
+      this.gameState.drandRound,
+      this.gameState.drandRandomness,
+      now,
+    );
+    this.gameState = result.state;
+
+    // Store pending payouts for auto-cashed-out players who are disconnected
+    for (const [, player] of this.gameState.players) {
+      if (player.cashedOut && player.payout !== null && player.cashoutMultiplier !== null) {
+        // Check if player is currently connected
+        const isConnected = Array.from(this.getConnections()).some((c) => c.id === player.id);
+        if (!isConnected) {
+          this.pendingPayouts.set(player.playerId, {
+            roundId: this.gameState.roundId,
+            wager: player.wager,
+            payout: player.payout,
+            cashoutMultiplier: player.cashoutMultiplier,
+            crashPoint: this.gameState.crashPoint ?? 1,
+          });
+        }
+      }
+    }
+
+    for (const outbound of result.messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      }
+    }
+
+    await this.persistState();
+    await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
+  }
+
+  private async nextRound(): Promise<void> {
+    const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment, Date.now());
+    this.gameState = result.state;
+
+    for (const outbound of result.messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      }
+    }
+
+    await this.persistState();
+    await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+  }
+
+  /**
+   * Persists all durable game state under the single key `'gameData'`.
+   * Called after every crash, void round, and pending payout consumption.
+   * Not called on every tick to avoid unnecessary storage writes.
+   *
+   * @see docs/game-state-machine.md §3.9
+   */
+  private async persistState(): Promise<void> {
+    await this.ctx.storage.put('gameData', {
+      rootSeed: this.rootSeed,
+      gameNumber: this.gameNumber,
+      chainCommitment: this.gameState.chainCommitment,
+      history: this.gameState.history,
+      pendingPayouts: Array.from(this.pendingPayouts.entries()),
+    });
+  }
+
+  /**
+   * Debug HTTP endpoint. Returns a JSON snapshot of non-sensitive game state.
+   * Gated by `CRASH_DEBUG === 'true'` env var — disabled in production.
+   * `crashPoint`, `chainSeed`, and `drandRandomness` are intentionally omitted
+   * from the response to prevent leaking provably-fair ingredients.
+   *
+   * @see docs/project-architecture.md §1.7
+   */
+  // Debug HTTP endpoint (only when CRASH_DEBUG=true)
+  override async onRequest(req: Request): Promise<Response> {
+    const url = new URL(req.url);
+
+    if (url.searchParams.get('debug') === 'true' && this.env.CRASH_DEBUG === 'true') {
+      return Response.json({
+        phase: this.gameState.phase,
+        roundId: this.gameState.roundId,
+        countdown: this.gameState.countdown,
+        playerCount: this.gameState.players.size,
+        gameNumber: this.gameNumber,
+        // SECURITY: crashPoint, chainSeed, and drandRandomness are intentionally omitted
+      });
+    }
+
+    return new Response('Not found', { status: 404 });
+  }
+}

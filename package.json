@@ -1,0 +1,52 @@
+{
+  "name": "crash-game",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "dev:server": "wrangler dev",
+    "dev:client": "vite",
+    "build:client": "vite build",
+    "test": "vitest run",
+    "test:workers": "CLOUDFLARE_TEST_LOG_LEVEL=warn vitest run --config vitest.workers.config.ts",
+    "test:all": "npm run test && npm run test:workers",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "typecheck:server": "tsc --project tsconfig.server.json --noEmit",
+    "lint": "biome lint src",
+    "format": "biome format src --write",
+    "check": "biome check src",
+    "prepare": "simple-git-hooks"
+  },
+  "dependencies": {
+    "partyserver": "latest",
+    "partysocket": "latest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "@cloudflare/vitest-pool-workers": "latest",
+    "@cloudflare/workers-types": "latest",
+    "@sveltejs/vite-plugin-svelte": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/svelte": "latest",
+    "@vitest/coverage-v8": "~3.2.4",
+    "fast-check": "latest",
+    "jsdom": "^24.1.3",
+    "lint-staged": "latest",
+    "simple-git-hooks": "latest",
+    "svelte": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "~3.2.4",
+    "wrangler": "latest"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,svelte}": [
+      "biome check --write --no-errors-on-unmatched",
+      "git add"
+    ]
+  }
+}
