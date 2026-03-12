@@ -235,7 +235,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 4.4: [High-15] Fix targeted error message routing
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 
