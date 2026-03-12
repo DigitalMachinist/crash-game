@@ -5,7 +5,7 @@ $: countdownSec = Math.ceil($countdown / 1000);
 $: playerCount = Object.keys($players).length;
 </script>
 
-<div class="game-status">
+<div class="game-status" role="status" aria-live="assertive">
   {#if $phase === 'WAITING'}
     <div class="status waiting">
       <span class="label">Next round in</span>

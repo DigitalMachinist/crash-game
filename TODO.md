@@ -61,7 +61,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/VerifyModal.svelte:35-41`
   - Implement focus trap using `inert` on page content; manage focus on modal open/close; use proper ARIA markup or `<dialog>` element.
 
-- [ ] **[A11y-2]** Toast notifications not announced to screen readers
+- [x] **[A11y-2]** Toast notifications not announced to screen readers
   - File: `src/client/App.svelte:122`
   - Add `role="status" aria-live="polite" aria-atomic="true"` to toast container.
 
@@ -139,11 +139,11 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### High — Accessibility
 
-- [ ] **[High-19]** Multiplier display not announced to screen readers
+- [x] **[High-19]** Multiplier display not announced to screen readers
   - File: `src/client/Multiplier.svelte:12-21`
   - Add `aria-live="polite" aria-atomic="true"` to multiplier display. NOTE: The multiplier changes very quickly so screen readers may struggle — consider throttling announcements or announcing only at key thresholds (e.g., every 0.5x).
 
-- [ ] **[High-20]** Game phase transitions not announced to screen readers
+- [x] **[High-20]** Game phase transitions not announced to screen readers
   - File: `src/client/GameStatus.svelte:8-29`
   - Add `role="status" aria-live="assertive"` to game status container.
 

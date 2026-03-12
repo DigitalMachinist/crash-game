@@ -1,8 +1,18 @@
 <script lang="ts">
 import { displayMultiplier, multiplierAnimating, phase } from '../lib/stores';
+
+// Throttled accessible label: only announce at 0.5x thresholds to avoid
+// overwhelming screen readers with rapid 100ms updates during play.
+$: accessibleMultiplier = Math.floor($displayMultiplier * 2) / 2;
+$: accessibleLabel =
+  $phase === 'STARTING'
+    ? 'Round starting'
+    : $phase === 'CRASHED'
+      ? `Crashed at ${$displayMultiplier.toFixed(2)}x`
+      : `${accessibleMultiplier.toFixed(1)}x`;
 </script>
 
-<div class="multiplier-container" class:crashed-container={$phase === 'CRASHED'}>
+<div class="multiplier-container" aria-live="off" class:crashed-container={$phase === 'CRASHED'}>
   {#if $phase === 'STARTING'}
     <div class="multiplier starting">STARTING...</div>
   {:else}
@@ -18,9 +28,23 @@ import { displayMultiplier, multiplierAnimating, phase } from '../lib/stores';
       {$displayMultiplier.toFixed(2)}x
     </div>
   {/if}
+  <span class="sr-only" aria-live="polite" aria-atomic="true">{accessibleLabel}</span>
 </div>
 
 <style>
+  /* Visually hidden but available to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .multiplier-container {
     display: flex;
     align-items: center;

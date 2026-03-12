@@ -366,4 +366,44 @@ describe('App component', () => {
       expect(screen.queryByText(/Auto-cashout:/)).toBeNull();
     });
   });
+
+  describe('toast accessibility (Issue 8.2)', () => {
+    it('toast container has role="status"', async () => {
+      render(App);
+      document.dispatchEvent(
+        new CustomEvent('crash:pendingPayout', {
+          detail: {
+            roundId: 1,
+            wager: 50,
+            payout: 120,
+            cashoutMultiplier: 2.4,
+            crashPoint: 3.0,
+          },
+        }),
+      );
+      await tick();
+      const toast = document.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast?.getAttribute('role')).toBe('status');
+    });
+
+    it('toast container has aria-live="polite"', async () => {
+      render(App);
+      document.dispatchEvent(
+        new CustomEvent('crash:pendingPayout', {
+          detail: {
+            roundId: 1,
+            wager: 50,
+            payout: 120,
+            cashoutMultiplier: 2.4,
+            crashPoint: 3.0,
+          },
+        }),
+      );
+      await tick();
+      const toast = document.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast?.getAttribute('aria-live')).toBe('polite');
+    });
+  });
 });

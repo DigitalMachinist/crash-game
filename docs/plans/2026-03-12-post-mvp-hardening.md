@@ -508,7 +508,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 8.2: [A11y-2] Toast notifications announced to screen readers
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/client/App.svelte`
 **Depends on:** Nothing
 
@@ -523,7 +523,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 8.3: [High-19] Multiplier display aria-live
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/client/components/Multiplier.svelte`
 **Depends on:** Nothing
 
@@ -540,7 +540,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 8.4: [High-20] Game phase transitions announced
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/client/components/GameStatus.svelte`
 **Depends on:** Nothing
 

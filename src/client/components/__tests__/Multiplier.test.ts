@@ -94,4 +94,13 @@ describe('Multiplier component', () => {
     expect(screen.queryByText('1.00x')).toBeNull();
     expect(screen.getByText('7.25x')).toBeTruthy();
   });
+
+  describe('accessibility (Issue 8.3)', () => {
+    it('multiplier container has aria-live attribute', () => {
+      render(Multiplier);
+      const container = document.querySelector('.multiplier-container');
+      expect(container).toBeTruthy();
+      expect(container?.hasAttribute('aria-live')).toBe(true);
+    });
+  });
 });
