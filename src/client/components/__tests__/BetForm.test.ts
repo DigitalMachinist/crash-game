@@ -248,4 +248,22 @@ describe('BetForm component', () => {
       expect(screen.queryByText('Previous error')).toBeNull();
     });
   });
+
+  describe('RTP notice', () => {
+    it('shows house edge and RTP text when WAITING', () => {
+      render(BetForm);
+      expect(screen.getByText(/House edge:/)).toBeTruthy();
+      expect(screen.getByText(/RTP:/)).toBeTruthy();
+    });
+
+    it('shows "House edge: 1%" when HOUSE_EDGE is 0.01', () => {
+      render(BetForm);
+      expect(screen.getByText(/House edge: 1%/)).toBeTruthy();
+    });
+
+    it('shows "RTP: 99%" when HOUSE_EDGE is 0.01', () => {
+      render(BetForm);
+      expect(screen.getByText(/RTP: 99%/)).toBeTruthy();
+    });
+  });
 });

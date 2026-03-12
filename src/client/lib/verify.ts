@@ -2,13 +2,9 @@
  * Client-side provably fair verification. No server dependency — all inputs
  * are public and available in the round history.
  *
- * Note: `deriveCrashPoint` here uses the hardcoded literal `99`, equivalent
- * to `(1 - HOUSE_EDGE) * 100` when `HOUSE_EDGE = 0.01`. If the server's house
- * edge changes, this file must be updated in sync with `src/config.ts`.
- *
  * @see docs/provably-fair.md §2.7
- * @see docs/project-architecture.md §1.5 (house-edge sync dependency)
  */
+import { HOUSE_EDGE } from '../../config';
 import type { VerificationResult } from '../../types';
 
 function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
@@ -63,9 +59,12 @@ function hashToFloat(hex: string): number {
   return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
 }
 
+/** Numerator for crash point formula: `(1 - HOUSE_EDGE) * 100`. Matches server `crash-math.ts`. */
+const CRASH_NUMERATOR = Math.round((1 - HOUSE_EDGE) * 100);
+
 function deriveCrashPoint(effectiveSeed: string): number {
   const h = hashToFloat(effectiveSeed);
-  return Math.max(1.0, Math.floor(99 / (1 - h)) / 100);
+  return Math.max(1.0, Math.floor(CRASH_NUMERATOR / (1 - h)) / 100);
 }
 
 /**
