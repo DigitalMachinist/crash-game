@@ -19,11 +19,11 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:113-123`
   - Bind pending payouts to both playerId AND WebSocket connection ID; verify reconnecting player identity via token or similar mechanism.
 
-- [ ] **[Security-3]** No validation on autoCashout value
+- [x] **[Security-3]** No validation on autoCashout value
   - File: `src/server/game-state.ts:74-149`
   - Validate in `handleJoin()`: reject if autoCashout is not null and is not finite or < 1.0.
 
-- [ ] **[Security-4]** No length validation on playerId (DoS via memory exhaustion)
+- [x] **[Security-4]** No length validation on playerId (DoS via memory exhaustion)
   - File: `src/server/crash-game.ts:125-143`
   - Reject playerId values exceeding 256 characters.
 
@@ -67,19 +67,19 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### High — Security & Validation
 
-- [ ] **[High-1]** No type validation on JSON messages (bypasses safety)
+- [x] **[High-1]** No type validation on JSON messages (bypasses safety)
   - File: `src/server/crash-game.ts:105`, `src/client/socket.ts:36`
   - Create type guard or use validation library (zod/valibot) to validate message shape and field types before processing.
 
-- [ ] **[High-2]** No validation of drand beacon structure (cryptic failures on malformed data)
+- [x] **[High-2]** No validation of drand beacon structure (cryptic failures on malformed data)
   - File: `src/server/drand.ts:75`
   - Validate beacon structure: ensure `round` is number, `randomness` and `signature` are hex strings; fail round with clear error if invalid.
 
-- [ ] **[High-3]** Storage fields loaded without validation (corrupted state recovery)
+- [x] **[High-3]** Storage fields loaded without validation (corrupted state recovery)
   - File: `src/server/crash-game.ts:64-70`
   - Validate all required fields after loading from storage; reinitialize from scratch if any field is missing or invalid.
 
-- [ ] **[High-4]** Server JSON cast provides zero runtime safety for client messages
+- [x] **[High-4]** Server JSON cast provides zero runtime safety for client messages
   - File: `src/server/crash-game.ts:105`
   - NOTE: Overlaps with High-1. **Implement together as one PR** — create discriminating type guard that checks `type` field presence and validates field types per message type.
 
@@ -115,7 +115,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/lib/verify.ts:68`, `src/config.ts:22`
   - Import `HOUSE_EDGE` from config.ts into verify.ts; add build-time test asserting `(1 - HOUSE_EDGE) * 100 === 99`.
 
-- [ ] **[High-13]** Phase handling has no exhaustiveness check (new phases won't cause compile error)
+- [x] **[High-13]** Phase handling has no exhaustiveness check (new phases won't cause compile error)
   - File: `src/server/crash-game.ts:194-237`
   - Add `const _exhaustive: never = phase;` in final else clause, or convert to switch with `default: throw`.
 
