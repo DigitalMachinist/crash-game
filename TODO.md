@@ -121,7 +121,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### High — Error Routing & UX
 
-- [ ] **[High-15]** Targeting routed error messages to specific players is broken
+- [x] **[High-15]** Targeting routed error messages to specific players is broken
   - File: `src/server/crash-game.ts:137-166`
   - Implement proper routing: if `broadcast === true` use `this.broadcast()`, else look up target player's connection and route to it.
 

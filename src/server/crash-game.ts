@@ -175,7 +175,7 @@ export class CrashGame extends Server<Env> {
         if (outbound.broadcast) {
           this.broadcast(JSON.stringify(outbound.message));
         } else {
-          conn.send(JSON.stringify(outbound.message));
+          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
         }
       }
     } else if (msg.type === 'cashout') {
@@ -206,7 +206,7 @@ export class CrashGame extends Server<Env> {
         if (outbound.broadcast) {
           this.broadcast(JSON.stringify(outbound.message));
         } else {
-          conn.send(JSON.stringify(outbound.message));
+          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
         }
       }
     }
@@ -464,6 +464,20 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/game-state-machine.md §3.9
    */
+  /**
+   * Resolves a targeted outbound message to the correct connection. [High-15]
+   * Looks up the target player's current connection by playerId; falls back to
+   * `fallback` (the sender) if the player is not found or disconnected.
+   */
+  private sendToTarget(targetPlayerId: string, fallback: Connection): Connection {
+    const player = this.gameState.players.get(targetPlayerId);
+    if (player) {
+      const target = Array.from(this.getConnections()).find((c) => c.id === player.id);
+      if (target) return target;
+    }
+    return fallback;
+  }
+
   private async persistState(): Promise<void> {
     await this.ctx.storage.put('gameData', {
       rootSeed: this.rootSeed,

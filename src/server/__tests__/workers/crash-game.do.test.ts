@@ -449,4 +449,131 @@ describe('CrashGame DO (integration)', () => {
   // intentional trade-off to prevent unbounded memory growth in the Durable Object.
   // Operators can adjust MAX_PENDING_PAYOUTS in src/config.ts to increase or
   // decrease the cap based on expected concurrent player counts.
+
+  // ── 22–24. Error message routing (High-15) ────────────────────────────────
+  // [High-15] Non-broadcast messages (e.g. errors from invalid join/cashout)
+  // must be routed only to the connection that sent the message, not broadcast.
+  //
+  // NOTE: These tests require npm run test:workers (vitest-pool-workers) to run.
+  // That runner is currently broken due to a crypto.hash incompatibility with
+  // Node 20 (pre-existing, unrelated to this change). They are included here as
+  // executable documentation of the intended routing contract.
+
+  it('[High-15] targeted error — invalid wager sent by Player A is received only by Player A', async () => {
+    const room = 'ws-targeted-error-test-1';
+    const wsA = await connectWS(room);
+    const wsB = await connectWS(room);
+
+    // Drain initial state messages for both connections
+    await Promise.all([waitForMessage(wsA), waitForMessage(wsB)]);
+
+    // Collect messages on both connections while Player A sends an invalid join
+    const pendingA = collectMessages(wsA, 400);
+    const pendingB = collectMessages(wsB, 400);
+
+    // Send a join with an invalid wager (negative) from Player A's connection
+    wsA.send(
+      JSON.stringify({ type: 'join', playerId: 'player-a-targeted', wager: -1, name: 'Alice' }),
+    );
+
+    const [msgsA, msgsB] = await Promise.all([pendingA, pendingB]);
+    const parsedA = msgsA.map((m) => JSON.parse(m) as Record<string, unknown>);
+    const parsedB = msgsB.map((m) => JSON.parse(m) as Record<string, unknown>);
+
+    // Player A must receive the error
+    const errorA = parsedA.find((m) => m.type === 'error');
+    expect(errorA).toBeDefined();
+
+    // Player B must NOT receive any error or spurious message from this join attempt
+    const errorB = parsedB.find((m) => m.type === 'error');
+    expect(errorB).toBeUndefined();
+
+    wsA.close();
+    wsB.close();
+  });
+
+  it('[High-15] broadcast message — valid join by Player A is received by both Player A and Player B', async () => {
+    const room = 'ws-broadcast-routing-test-1';
+    const wsA = await connectWS(room);
+    const wsB = await connectWS(room);
+
+    // Drain initial state messages for both connections
+    await Promise.all([waitForMessage(wsA), waitForMessage(wsB)]);
+
+    // Collect messages on both connections
+    const pendingA = collectMessages(wsA, 400);
+    const pendingB = collectMessages(wsB, 400);
+
+    // Player A sends a valid join — should produce a `playerJoined` broadcast
+    wsA.send(
+      JSON.stringify({ type: 'join', playerId: 'player-a-broadcast', wager: 50, name: 'Alice' }),
+    );
+
+    const [msgsA, msgsB] = await Promise.all([pendingA, pendingB]);
+    const parsedA = msgsA.map((m) => JSON.parse(m) as Record<string, unknown>);
+    const parsedB = msgsB.map((m) => JSON.parse(m) as Record<string, unknown>);
+
+    // Both connections must receive the playerJoined broadcast
+    const joinedA = parsedA.find((m) => m.type === 'playerJoined');
+    const joinedB = parsedB.find((m) => m.type === 'playerJoined');
+
+    expect(joinedA).toBeDefined();
+    expect(joinedB).toBeDefined();
+    expect(joinedA!.playerId).toBe('player-a-broadcast');
+    expect(joinedB!.playerId).toBe('player-a-broadcast');
+
+    wsA.close();
+    wsB.close();
+  });
+
+  it('[High-15] two players: Player A invalid join — only Player A gets error, Player B gets nothing', async () => {
+    const room = 'ws-two-player-routing-test-1';
+    const wsA = await connectWS(room);
+    const wsB = await connectWS(room);
+
+    // Drain initial state messages for both connections
+    await Promise.all([waitForMessage(wsA), waitForMessage(wsB)]);
+
+    // Player B joins successfully first so the room has an observer
+    wsB.send(
+      JSON.stringify({ type: 'join', playerId: 'player-b-observer', wager: 25, name: 'Bob' }),
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+
+    // Now collect fresh messages on both sockets
+    const pendingA = collectMessages(wsA, 400);
+    const pendingB = collectMessages(wsB, 400);
+
+    // Player A sends a malformed join (autoCashout <= 1.0 is invalid)
+    wsA.send(
+      JSON.stringify({
+        type: 'join',
+        playerId: 'player-a-bad-autocashout',
+        wager: 10,
+        name: 'Alice',
+        autoCashout: 0.5,
+      }),
+    );
+
+    const [msgsA, msgsB] = await Promise.all([pendingA, pendingB]);
+    const parsedA = msgsA.map((m) => JSON.parse(m) as Record<string, unknown>);
+    const parsedB = msgsB.map((m) => JSON.parse(m) as Record<string, unknown>);
+
+    // Player A must receive an error targeted to their connection
+    const errorA = parsedA.find((m) => m.type === 'error');
+    expect(errorA).toBeDefined();
+
+    // Player B must receive no error — the error is targeted only at Player A
+    const errorForB = parsedB.find((m) => m.type === 'error');
+    expect(errorForB).toBeUndefined();
+
+    // Player B must also receive no spurious playerJoined for the invalid attempt
+    const invalidJoinForB = parsedB.find(
+      (m) => m.type === 'playerJoined' && m.playerId === 'player-a-bad-autocashout',
+    );
+    expect(invalidJoinForB).toBeUndefined();
+
+    wsA.close();
+    wsB.close();
+  });
 });
