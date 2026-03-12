@@ -5,9 +5,12 @@
  * to surface server-side validation errors (e.g., invalid wager, already joined).
  */
 
-import { MAX_WAGER, MIN_WAGER } from '../../config';
+import { HOUSE_EDGE, MAX_WAGER, MIN_WAGER } from '../../config';
 import { sendJoin } from '../lib/commands';
 import { balance, phase } from '../lib/stores';
+
+const houseEdgePct = Math.round(HOUSE_EDGE * 100);
+const rtpPct = 100 - houseEdgePct;
 
 let wager = '';
 let playerName = '';
@@ -57,8 +60,8 @@ function handleJoin() {
         type="number"
         bind:value={wager}
         placeholder="0"
-        min={MIN_WAGER}
-        max={MAX_WAGER}
+        min={MIN_WAGER.toFixed(2)}
+        max={MAX_WAGER.toFixed(2)}
         step="0.01"
       />
     </div>
@@ -95,6 +98,7 @@ function handleJoin() {
     </button>
 
     <div class="balance">Balance: {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}</div>
+    <p class="rtp-notice">Game of chance · House edge: {houseEdgePct}% · RTP: {rtpPct}%</p>
   </div>
 {/if}
 
@@ -174,5 +178,12 @@ function handleJoin() {
     text-align: center;
     font-size: 0.9rem;
     color: #888;
+  }
+
+  .rtp-notice {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #555;
   }
 </style>

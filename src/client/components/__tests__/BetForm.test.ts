@@ -141,7 +141,7 @@ describe('BetForm component', () => {
     it('wager input has max="1000" attribute', () => {
       render(BetForm);
       const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
-      expect(wagerInput.getAttribute('max')).toBe('1000');
+      expect(wagerInput.getAttribute('max')).toBe('1000.00');
     });
   });
 
@@ -246,6 +246,24 @@ describe('BetForm component', () => {
       await tick();
 
       expect(screen.queryByText('Previous error')).toBeNull();
+    });
+  });
+
+  describe('RTP notice', () => {
+    it('shows house edge and RTP text when WAITING', () => {
+      render(BetForm);
+      expect(screen.getByText(/House edge:/)).toBeTruthy();
+      expect(screen.getByText(/RTP:/)).toBeTruthy();
+    });
+
+    it('shows "House edge: 1%" when HOUSE_EDGE is 0.01', () => {
+      render(BetForm);
+      expect(screen.getByText(/House edge: 1%/)).toBeTruthy();
+    });
+
+    it('shows "RTP: 99%" when HOUSE_EDGE is 0.01', () => {
+      render(BetForm);
+      expect(screen.getByText(/RTP: 99%/)).toBeTruthy();
     });
   });
 });

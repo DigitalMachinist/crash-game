@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { HOUSE_EDGE } from '../../../config';
 import { computeEffectiveSeed, verifyRound } from '../verify';
 
 // ─── Local helpers (mirrors unexported functions in verify.ts) ────────────────
@@ -28,10 +29,20 @@ function hashToFloat(hex: string): number {
   return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
 }
 
+const CRASH_NUMERATOR = Math.round((1 - HOUSE_EDGE) * 100);
+
 function deriveCrashPoint(effectiveSeed: string): number {
   const h = hashToFloat(effectiveSeed);
-  return Math.max(1.0, Math.floor(99 / (1 - h)) / 100);
+  return Math.max(1.0, Math.floor(CRASH_NUMERATOR / (1 - h)) / 100);
 }
+
+// ─── House edge constant parity ───────────────────────────────────────────────
+
+describe('HOUSE_EDGE config parity', () => {
+  it('CRASH_NUMERATOR equals 99 when HOUSE_EDGE is 0.01', () => {
+    expect(CRASH_NUMERATOR).toBe(99);
+  });
+});
 
 // ─── Test vectors ─────────────────────────────────────────────────────────────
 
