@@ -194,9 +194,26 @@ export function handleJoin(
         ],
       };
     }
-    // Same wager — idempotent reconnect: silent success, no broadcast.
-    // The reconnecting client already received full state via onConnect.
-    return { state, messages: [] };
+    // Same wager — idempotent reconnect: update connection ID and broadcast playerJoined.
+    const updatedPlayer = { ...existing, id: connectionId };
+    const reconnectedPlayers = new Map(state.players);
+    reconnectedPlayers.set(msg.playerId, updatedPlayer);
+    return {
+      state: { ...state, players: reconnectedPlayers },
+      messages: [
+        {
+          broadcast: true,
+          message: {
+            type: 'playerJoined',
+            id: connectionId,
+            playerId: msg.playerId,
+            name: existing.name,
+            wager: existing.wager,
+            autoCashout: existing.autoCashout,
+          },
+        },
+      ],
+    };
   }
 
   const name = msg.name?.trim() || msg.playerId.slice(0, 8);
