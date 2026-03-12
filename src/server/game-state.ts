@@ -194,7 +194,12 @@ export function handleJoin(
         ],
       };
     }
-    // Same wager — idempotent reconnect: update connection ID and broadcast playerJoined.
+    // Same wager — idempotent reconnect: only update connection ID and broadcast playerJoined
+    // when the connection ID has changed (actual reconnect). Duplicate joins on the same
+    // connection are silently ignored.
+    if (existing.id === connectionId) {
+      return { state, messages: [] };
+    }
     const updatedPlayer = { ...existing, id: connectionId };
     const reconnectedPlayers = new Map(state.players);
     reconnectedPlayers.set(msg.playerId, updatedPlayer);
