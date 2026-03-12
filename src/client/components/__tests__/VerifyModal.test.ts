@@ -24,6 +24,14 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // jsdom has limited <dialog> support — mock showModal to set open attribute
+  // so the element is accessible to getByRole('dialog') in tests.
+  HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
 });
 
 describe('VerifyModal component', () => {
@@ -128,6 +136,23 @@ describe('VerifyModal component', () => {
     });
   });
 
+  describe('dialog element', () => {
+    it('renders a native <dialog> element', () => {
+      vi.mocked(verifyRound).mockReturnValue(new Promise(() => {}));
+      const entry = makeEntry();
+      const { container } = render(VerifyModal, { props: { entry, onClose: vi.fn() } });
+      const dialogEl = container.querySelector('dialog');
+      expect(dialogEl).toBeInTheDocument();
+    });
+
+    it('calls showModal() on mount', () => {
+      vi.mocked(verifyRound).mockReturnValue(new Promise(() => {}));
+      const entry = makeEntry();
+      render(VerifyModal, { props: { entry, onClose: vi.fn() } });
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('interactions', () => {
     it('clicking "Close" button calls onClose', () => {
       vi.mocked(verifyRound).mockReturnValue(new Promise(() => {}));
@@ -138,21 +163,24 @@ describe('VerifyModal component', () => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('clicking the backdrop calls onClose', () => {
+    it('clicking the backdrop (dialog element itself) calls onClose', () => {
       vi.mocked(verifyRound).mockReturnValue(new Promise(() => {}));
       const onClose = vi.fn();
       const entry = makeEntry();
-      render(VerifyModal, { props: { entry, onClose } });
-      fireEvent.click(document.querySelector('.modal-backdrop')!);
+      const { container } = render(VerifyModal, { props: { entry, onClose } });
+      const dialogEl = container.querySelector('dialog')!;
+      // Simulate a click where target === dialog (backdrop click)
+      fireEvent.click(dialogEl);
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('pressing Escape on the backdrop calls onClose', () => {
+    it('pressing Escape (cancel event on dialog) calls onClose', () => {
       vi.mocked(verifyRound).mockReturnValue(new Promise(() => {}));
       const onClose = vi.fn();
       const entry = makeEntry();
-      render(VerifyModal, { props: { entry, onClose } });
-      fireEvent.keyDown(document.querySelector('.modal-backdrop')!, { key: 'Escape' });
+      const { container } = render(VerifyModal, { props: { entry, onClose } });
+      const dialogEl = container.querySelector('dialog')!;
+      fireEvent(dialogEl, new Event('cancel'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });

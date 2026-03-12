@@ -135,8 +135,10 @@ describe('History component', () => {
       history.set([makeEntry()]);
       render(History);
       fireEvent.click(screen.getByText('Verify'));
-      expect(screen.getByRole('dialog')).toBeTruthy();
-      fireEvent.click(document.querySelector('.modal-backdrop')!);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeTruthy();
+      // Native <dialog> backdrop click: clicking the dialog element itself (not its content)
+      fireEvent.click(dialog);
       expect(screen.queryByRole('dialog')).toBeNull();
     });
 
@@ -144,8 +146,10 @@ describe('History component', () => {
       history.set([makeEntry()]);
       render(History);
       fireEvent.click(screen.getByText('Verify'));
-      expect(screen.getByRole('dialog')).toBeTruthy();
-      fireEvent.keyDown(document.querySelector('.modal-backdrop')!, { key: 'Escape' });
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeTruthy();
+      // Native <dialog> fires a 'cancel' event on Escape; simulate it
+      fireEvent(dialog, new Event('cancel'));
       expect(screen.queryByRole('dialog')).toBeNull();
     });
 

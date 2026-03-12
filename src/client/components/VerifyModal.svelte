@@ -4,6 +4,9 @@
  * Calls `verifyRound()` on mount and displays the chain link validity and
  * computed crash point alongside the round's public ingredients.
  *
+ * Uses the native <dialog> element for built-in focus trap, Escape key handling,
+ * and proper ARIA semantics via showModal()/close().
+ *
  * @see docs/provably-fair.md §2.7
  */
 import { onMount } from 'svelte';
@@ -15,8 +18,10 @@ export let onClose: () => void;
 
 let result: VerificationResult | null = null;
 let loading = true;
+let dialogEl: HTMLDialogElement;
 
 onMount(async () => {
+  dialogEl.showModal();
   result = await verifyRound({
     roundSeed: entry.roundSeed,
     chainCommitment: entry.chainCommitment,
@@ -27,68 +32,56 @@ onMount(async () => {
   loading = false;
 });
 
-function handleBackdropKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') onClose();
+function handleDialogClick(e: MouseEvent) {
+  // Backdrop click: the target is the <dialog> element itself (not its content)
+  if (e.target === dialogEl) {
+    onClose();
+  }
+}
+
+function handleCancel(e: Event) {
+  // Native cancel event fires when Escape is pressed; prevent default close and delegate to onClose
+  e.preventDefault();
+  onClose();
 }
 </script>
 
-<div
-  class="modal-backdrop"
-  on:click={onClose}
-  role="button"
-  tabindex="0"
-  on:keydown={handleBackdropKeydown}
+<dialog
+  bind:this={dialogEl}
+  class="modal"
+  on:click={handleDialogClick}
+  on:cancel={handleCancel}
 >
-  <div
-    class="modal"
-    on:click|stopPropagation
-    on:keydown={() => {}}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <h3>Verify Round #{entry.roundId}</h3>
-    <p><strong>Crash Point:</strong> {entry.crashPoint.toFixed(2)}x</p>
-    <p><strong>Round Seed:</strong> <code>{entry.roundSeed.slice(0, 16)}...</code></p>
-    <p><strong>drand Round:</strong> {entry.drandRound}</p>
-    <p><strong>Chain Commitment:</strong> <code>{entry.chainCommitment.slice(0, 16)}...</code></p>
+  <h3>Verify Round #{entry.roundId}</h3>
+  <p><strong>Crash Point:</strong> {entry.crashPoint.toFixed(2)}x</p>
+  <p><strong>Round Seed:</strong> <code>{entry.roundSeed.slice(0, 16)}...</code></p>
+  <p><strong>drand Round:</strong> {entry.drandRound}</p>
+  <p><strong>Chain Commitment:</strong> <code>{entry.chainCommitment.slice(0, 16)}...</code></p>
 
-    <div class="verification-status">
-      {#if loading}
-        <p class="status-loading">Verifying...</p>
-      {:else if result !== null && result.valid}
-        <p class="status-valid">✓ Verified</p>
-        {#if result.computedCrashPoint !== undefined}
-          <p class="computed">Computed crash point: {result.computedCrashPoint.toFixed(2)}x</p>
-        {/if}
-      {:else if result !== null && result.reason === 'chain link invalid'}
-        <p class="status-invalid">✗ Chain link invalid</p>
-      {:else if result !== null && result.reason === 'crash point mismatch'}
-        <p class="status-invalid">✗ Crash point mismatch</p>
-        {#if result.computedCrashPoint !== undefined}
-          <p class="mismatch-detail">
-            Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
-          </p>
-        {/if}
+  <div class="verification-status">
+    {#if loading}
+      <p class="status-loading">Verifying...</p>
+    {:else if result !== null && result.valid}
+      <p class="status-valid">✓ Verified</p>
+      {#if result.computedCrashPoint !== undefined}
+        <p class="computed">Computed crash point: {result.computedCrashPoint.toFixed(2)}x</p>
       {/if}
-    </div>
-
-    <button on:click={onClose}>Close</button>
+    {:else if result !== null && result.reason === 'chain link invalid'}
+      <p class="status-invalid">✗ Chain link invalid</p>
+    {:else if result !== null && result.reason === 'crash point mismatch'}
+      <p class="status-invalid">✗ Crash point mismatch</p>
+      {#if result.computedCrashPoint !== undefined}
+        <p class="mismatch-detail">
+          Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
+        </p>
+      {/if}
+    {/if}
   </div>
-</div>
+
+  <button on:click={onClose}>Close</button>
+</dialog>
 
 <style>
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    cursor: pointer;
-  }
-
   .modal {
     background: #1a1a2e;
     border: 1px solid #333;
@@ -97,6 +90,12 @@ function handleBackdropKeydown(e: KeyboardEvent) {
     max-width: 500px;
     width: 90%;
     cursor: default;
+    color: #fff;
+  }
+
+  .modal::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
   }
 
   .modal h3 {
