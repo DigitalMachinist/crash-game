@@ -33,19 +33,19 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Critical — Backend / Durable Objects
 
-- [ ] **[Backend-1]** Player join state not persisted (data loss on DO eviction)
+- [x] **[Backend-1]** Player join state not persisted (data loss on DO eviction)
   - File: `src/server/crash-game.ts:125-143`
   - Call `persistState()` immediately after `handleJoin()` returns, before sending confirmation.
 
-- [ ] **[Backend-2]** Player cashout state not persisted (data loss on DO eviction)
+- [x] **[Backend-2]** Player cashout state not persisted (data loss on DO eviction)
   - File: `src/server/crash-game.ts:157-167`
   - Call `persistState()` immediately after `handleCashout()` returns.
 
-- [ ] **[Backend-3]** Durable Object initialization has no error handling
+- [x] **[Backend-3]** Durable Object initialization has no error handling
   - File: `src/server/crash-game.ts:62-85`
   - Wrap all initialization in try/catch; log errors; implement graceful fallback so the game loop can continue.
 
-- [ ] **[Backend-4]** Durable Object game loop has no error handling (frozen multiplier on crash)
+- [x] **[Backend-4]** Durable Object game loop has no error handling (frozen multiplier on crash)
   - File: `src/server/crash-game.ts:194-238`
   - Wrap all game loop handlers in try/catch; always reschedule alarm even on error; dispatch error message to clients; log exception with full context.
 
