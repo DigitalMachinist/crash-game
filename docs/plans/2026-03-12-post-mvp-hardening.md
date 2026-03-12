@@ -64,7 +64,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 *Critical backend fixes that prevent data loss and game loop freezes. These touch `crash-game.ts` lifecycle methods and should be implemented sequentially since they modify overlapping code regions.*
 
 ### Issue 2.1: [Backend-1 + Backend-2] Persist state on join and cashout
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 
@@ -81,7 +81,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 2.2: [Backend-3] Error handling in onStart()
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 
@@ -99,7 +99,7 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 ---
 
 ### Issue 2.3: [Backend-4] Error handling in onAlarm()
-**Status:** `PLANNED`
+**Status:** `IN REVIEW`
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 

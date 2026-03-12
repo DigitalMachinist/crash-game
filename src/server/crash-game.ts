@@ -61,32 +61,49 @@ export class CrashGame extends Server<Env> {
 
   // partyserver calls this when the DO is initialized (replaces constructor)
   override async onStart(): Promise<void> {
-    // Load persisted state, validating structure before use [High-3]
-    const stored = await this.ctx.storage.get('gameData');
+    try {
+      // Load persisted state, validating structure before use [High-3]
+      const stored = await this.ctx.storage.get('gameData');
 
-    if (stored && isValidStoredGameData(stored)) {
-      this.rootSeed = stored.rootSeed;
-      this.gameNumber = stored.gameNumber;
-      this.pendingPayouts = new Map(stored.pendingPayouts ?? []);
-      this.gameState = createInitialState(stored.chainCommitment, stored.gameNumber + 1);
-      this.gameState = { ...this.gameState, history: stored.history ?? [] };
-    } else {
-      if (stored) {
-        console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
+      if (stored && isValidStoredGameData(stored)) {
+        this.rootSeed = stored.rootSeed;
+        this.gameNumber = stored.gameNumber;
+        this.pendingPayouts = new Map(stored.pendingPayouts ?? []);
+        this.gameState = createInitialState(stored.chainCommitment, stored.gameNumber + 1);
+        this.gameState = { ...this.gameState, history: stored.history ?? [] };
+      } else {
+        if (stored) {
+          console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
+        }
+        // First run or corrupted state — generate hash chain
+        this.rootSeed = await generateRootSeed();
+        this.gameNumber = 0;
+        const terminalHash = await computeTerminalHash(this.rootSeed);
+        this.gameState = createInitialState(terminalHash);
+        await this.persistState();
       }
-      // First run or corrupted state — generate hash chain
-      this.rootSeed = await generateRootSeed();
-      this.gameNumber = 0;
-      const terminalHash = await computeTerminalHash(this.rootSeed);
-      this.gameState = createInitialState(terminalHash);
-      await this.persistState();
-    }
 
-    // Start the alarm loop if not already running, or if the stored alarm is stale (past timestamp from a previous wrangler dev run)
-    const alarm = await this.ctx.storage.getAlarm();
-    const now = Date.now();
-    if (alarm === null || alarm <= now) {
-      await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+      // Start the alarm loop if not already running, or if the stored alarm is stale (past timestamp from a previous wrangler dev run)
+      const alarm = await this.ctx.storage.getAlarm();
+      const now = Date.now();
+      if (alarm === null || alarm <= now) {
+        await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+      }
+    } catch (error) {
+      console.error('CrashGame initialization failed:', error);
+      // Attempt to initialize fresh state so the game loop can continue [Backend-3]
+      try {
+        this.rootSeed = await generateRootSeed();
+        this.gameNumber = 0;
+        const terminalHash = await computeTerminalHash(this.rootSeed);
+        this.gameState = createInitialState(terminalHash);
+        await this.persistState();
+        const now = Date.now();
+        await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+      } catch (fallbackError) {
+        // If even fresh initialization fails, log and let the DO restart naturally
+        console.error('CrashGame fallback initialization also failed:', fallbackError);
+      }
     }
   }
 
@@ -145,6 +162,14 @@ export class CrashGame extends Server<Env> {
       );
       this.gameState = result.state;
 
+      // Persist player join so DO eviction does not lose the wager [Backend-1]
+      const joinSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerJoined',
+      );
+      if (joinSucceeded) {
+        await this.persistState();
+      }
+
       for (const outbound of result.messages) {
         if (outbound.broadcast) {
           this.broadcast(JSON.stringify(outbound.message));
@@ -167,6 +192,14 @@ export class CrashGame extends Server<Env> {
 
       const result = handleCashout(this.gameState, player.playerId, Date.now());
       this.gameState = result.state;
+
+      // Persist cashout so DO eviction does not lose the payout record [Backend-2]
+      const cashoutSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerCashedOut',
+      );
+      if (cashoutSucceeded) {
+        await this.persistState();
+      }
 
       for (const outbound of result.messages) {
         if (outbound.broadcast) {
@@ -200,55 +233,88 @@ export class CrashGame extends Server<Env> {
    * - RUNNING → `handleTick`; triggers `crashRound` when multiplier ≥ crashPoint.
    * - CRASHED → `nextRound` after display timer.
    *
+   * Wrapped in try/catch so that any unexpected error is logged and the game loop
+   * is always rescheduled via the finally block. [Backend-4]
+   *
    * @see docs/game-state-machine.md §3.1
    */
   override async onAlarm(): Promise<void> {
     const now = Date.now();
+    // Track whether we are in the CRASHED→WAITING transition so the finally
+    // block can skip rescheduling if nextRound() already scheduled the alarm.
+    let alarmScheduled = false;
 
-    if (this.gameState.phase === 'WAITING') {
-      const result = handleCountdownTick(this.gameState, now);
-      this.gameState = result.state;
+    try {
+      if (this.gameState.phase === 'WAITING') {
+        const result = handleCountdownTick(this.gameState, now);
+        this.gameState = result.state;
 
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
+        for (const outbound of result.messages) {
+          if (outbound.broadcast) {
+            this.broadcast(JSON.stringify(outbound.message));
+          }
         }
-      }
 
-      if (result.shouldStartRound) {
-        // Transition to STARTING — use blockConcurrencyWhile for isolation
-        await this.ctx.blockConcurrencyWhile(async () => {
-          await this.startRound();
-        });
-      } else {
+        if (result.shouldStartRound) {
+          // Transition to STARTING — use blockConcurrencyWhile for isolation
+          await this.ctx.blockConcurrencyWhile(async () => {
+            await this.startRound();
+          });
+          alarmScheduled = true; // startRound() schedules its own alarm
+        } else {
+          await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+          alarmScheduled = true;
+        }
+      } else if (this.gameState.phase === 'RUNNING') {
+        const result = handleTick(this.gameState, now);
+        this.gameState = result.state;
+
+        for (const outbound of result.messages) {
+          if (outbound.broadcast) {
+            this.broadcast(JSON.stringify(outbound.message));
+          }
+        }
+
+        if (result.shouldCrash) {
+          await this.crashRound(now);
+          alarmScheduled = true; // crashRound() schedules its own alarm
+        } else {
+          await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
+          alarmScheduled = true;
+        }
+      } else if (this.gameState.phase === 'CRASHED') {
+        // Display timer expired — transition to WAITING
+        await this.nextRound();
+        alarmScheduled = true; // nextRound() schedules its own alarm
+      } else if (this.gameState.phase === 'STARTING') {
+        // Alarm fired while still in STARTING (drand fetch in progress or failed).
+        // Reschedule and wait for blockConcurrencyWhile to complete or retry.
         await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+        alarmScheduled = true;
+      } else {
+        // Exhaustive check — TypeScript will error here if a new Phase is added [High-13]
+        const _exhaustive: never = this.gameState.phase;
+        throw new Error(`Unhandled phase: ${_exhaustive}`);
       }
-    } else if (this.gameState.phase === 'RUNNING') {
-      const result = handleTick(this.gameState, now);
-      this.gameState = result.state;
-
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
+    } catch (error) {
+      console.error('CrashGame alarm error:', error);
+      // Broadcast error to all connected clients so they can display a retry indicator
+      this.broadcast(
+        JSON.stringify({
+          type: 'error',
+          message: 'Server error \u2014 retrying',
+        } satisfies ServerMessage),
+      );
+    } finally {
+      // Always reschedule the alarm unless the successful handler already did so,
+      // ensuring the game loop never freezes after an unexpected error. [Backend-4]
+      if (!alarmScheduled) {
+        try {
+          await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+        } catch (rescheduleError) {
+          console.error('CrashGame: failed to reschedule alarm after error:', rescheduleError);
         }
       }
-
-      if (result.shouldCrash) {
-        await this.crashRound(now);
-      } else {
-        await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
-      }
-    } else if (this.gameState.phase === 'CRASHED') {
-      // Display timer expired — transition to WAITING
-      await this.nextRound();
-    } else if (this.gameState.phase === 'STARTING') {
-      // Alarm fired while still in STARTING (drand fetch in progress or failed).
-      // Reschedule and wait for blockConcurrencyWhile to complete or retry.
-      await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
-    } else {
-      // Exhaustive check — TypeScript will error here if a new Phase is added [High-13]
-      const _exhaustive: never = this.gameState.phase;
-      throw new Error(`Unhandled phase: ${_exhaustive}`);
     }
   }
 
