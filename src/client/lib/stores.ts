@@ -18,7 +18,7 @@ import type { GameStateSnapshot, HistoryEntry, Phase, PlayerSnapshot } from '../
 export const gameState = writable<GameStateSnapshot | null>(null);
 export const players = writable<Record<string, PlayerSnapshot>>({});
 export const history = writable<HistoryEntry[]>([]);
-export const phase = derived(gameState, ($s) => ($s?.phase ?? 'WAITING') as Phase);
+export const phase = derived(gameState, ($s) => $s?.phase ?? 'WAITING');
 export const countdown = derived(gameState, ($s) => $s?.countdown ?? 10000);
 export const displayMultiplier = writable(1.0);
 export const multiplierAnimating = writable(false);
