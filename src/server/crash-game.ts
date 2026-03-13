@@ -268,7 +268,6 @@ export class CrashGame extends Server<Env> {
     // block can skip rescheduling if nextRound() already scheduled the alarm.
     let alarmScheduled = false;
 
-
     try {
       if (this.gameState.phase === 'WAITING') {
         const result = handleCountdownTick(this.gameState, now);
@@ -329,19 +328,27 @@ export class CrashGame extends Server<Env> {
       }
     } catch (error) {
       console.error('CrashGame alarm error:', error);
-      // Broadcast error to all connected clients so they can display a retry indicator
-      this.broadcast(
-        JSON.stringify({
-          type: 'error',
-          message: 'Server error \u2014 retrying',
-        } satisfies ServerMessage),
-      );
+      // Broadcast error to all connected clients so they can display a retry indicator.
+      // Wrapped in try/catch: a broken connection must not throw out of the catch block,
+      // which would cause the CF output gate to roll back the finally block's setAlarm().
+      try {
+        this.broadcast(
+          JSON.stringify({
+            type: 'error',
+            message: 'Server error \u2014 retrying',
+          } satisfies ServerMessage),
+        );
+      } catch (broadcastError) {
+        console.error('CrashGame: failed to broadcast error to clients:', broadcastError);
+      }
     } finally {
       // Always reschedule the alarm unless the successful handler already did so,
       // ensuring the game loop never freezes after an unexpected error. [Backend-4]
       if (!alarmScheduled) {
         try {
-          await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+          const recoveryInterval =
+            this.gameState.phase === 'RUNNING' ? TICK_INTERVAL_MS : COUNTDOWN_TICK_MS;
+          await this.ctx.storage.setAlarm(Date.now() + recoveryInterval);
         } catch (rescheduleError) {
           console.error('CrashGame: failed to reschedule alarm after error:', rescheduleError);
         }
@@ -432,7 +439,13 @@ export class CrashGame extends Server<Env> {
       this.gameState.drandRound === null ||
       !this.gameState.drandRandomness
     ) {
-      return;
+      // Throw instead of returning silently: the caller (onAlarm) sets
+      // alarmScheduled = true AFTER this method returns, so a silent return
+      // without scheduling an alarm would kill the alarm loop. Throwing
+      // ensures the catch/finally recovery path fires instead.
+      throw new Error(
+        'crashRound: missing provably-fair ingredients (chainSeed, drandRound, or drandRandomness)',
+      );
     }
 
     const result = handleCrash(

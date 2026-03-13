@@ -249,3 +249,30 @@ interface PendingPayout {
   crashPoint: number;
 }
 ```
+
+---
+
+## 3.10 Alarm Error Recovery
+
+The `onAlarm()` game loop uses a **try/catch/finally** strategy to guarantee the alarm is always rescheduled, even after unexpected errors. This prevents the game loop from permanently dying ("alarm loop death").
+
+**Cloudflare output gate constraint**: Cloudflare Durable Objects use an "output gate" that rolls back side effects (including `setAlarm()`) if the handler throws. This means a `setAlarm()` in the `finally` block is only durable if the `finally` block itself completes without throwing.
+
+**Three failure chains and their mitigations**:
+
+| Failure | Risk | Mitigation |
+|---|---|---|
+| `this.broadcast()` throws in `catch` block (broken WebSocket connection) | Exception propagates out of catch → CF output gate rolls back `finally` block's `setAlarm()` → alarm loop dies | `broadcast()` call in catch block is wrapped in its own try/catch |
+| `crashRound()` returns early (missing provably-fair ingredients) | Caller sets `alarmScheduled = true` after the call, but no alarm was actually scheduled → finally block skips recovery → alarm loop dies | Guard throws instead of returning, so catch/finally recovery fires |
+| Recovery alarm uses wrong interval for current phase | RUNNING phase recovers at 1 s (`COUNTDOWN_TICK_MS`) instead of 100 ms (`TICK_INTERVAL_MS`) → visible stutter to players | Finally block checks `gameState.phase` and uses `TICK_INTERVAL_MS` for RUNNING, `COUNTDOWN_TICK_MS` otherwise |
+
+**`alarmScheduled` flag**: Set to `true` only after a successful `setAlarm()` or a method that internally schedules one (`startRound`, `crashRound`, `nextRound`). If the try block throws before setting this flag, the finally block knows it must schedule a recovery alarm.
+
+**Recovery flow**:
+
+```
+onAlarm()
+├── try: run phase handler, set alarmScheduled = true
+├── catch: log error, broadcast "retrying" (guarded)
+└── finally: if (!alarmScheduled) → setAlarm(phase-appropriate interval)
+```
