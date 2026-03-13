@@ -1,11 +1,13 @@
-name: Deploy
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +24,3 @@ jobs:
       - run: npm run typecheck:server
       - run: npm run test
       - run: npm run lint
-
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
