@@ -33,6 +33,11 @@ When making tool calls to execute commands defined in package.json, prefer using
 
 - Hosted at: http://localhost:8787
 
+## Worktrees
+
+- Always create and execute worktrees inside of `/home/jrose/.claude/worktrees/`.
+- Creating worktrees in `./claude/` will result in problems because the root project folder is already a git repository and checking out another branch into a subfolder is a problem
+
 ## Tech Stack
 
 - Svelte 5 with Vite

@@ -11,6 +11,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Big Ideas
 
+- Build a debug view that users can switch to that shows the fields displayed by VerifyModal for the current round and the previous round for the user to validate. The values for the current round should fill in one at a time as they become available from the backend.
 - Make this into a hacking game where the multiplier starts when the hacker says "I'm in!" and then as the multiplier increases you see bash terminal commands or maybe sftp/telnet commands to explore folder structures (ideally more or less real syntax), searching rapidly through folders recursively downloading files, quickly flashing folders and paths as they stream down and off the screen. Cashout becomes "logging out" or "bailing out" or "disconnecting" and the crash becomes being "traced" or "located" or "caught" complete with big DOS/Evangelion-ass danger/error UI and maybe an "FBI! Open up!". Lean heavily into hacking themes, "Hackers" the movie from the 90s, TUI but with visual effects. Sound and stuff would be excellent. That also implies having to offer the user sound options or at least mutes for sound and music (if there's music).
 - Remember the player's name between rounds
 - Remember the player's most recent bet between rounds
