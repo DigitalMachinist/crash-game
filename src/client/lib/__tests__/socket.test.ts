@@ -15,17 +15,19 @@ const mockState = {
   send: vi.fn(),
   addEventListener: vi.fn(),
   lastInstance: null as null | { close: () => void },
+  lastOptions: null as null | Record<string, unknown>,
 };
 
 vi.mock('partysocket', () => {
   // Must use regular function (not arrow) so `new PartySocket()` works
-  function MockPartySocket(this: Record<string, unknown>) {
+  function MockPartySocket(this: Record<string, unknown>, opts: Record<string, unknown>) {
     this['close'] = mockState.close;
     this['send'] = mockState.send;
     this['addEventListener'] = (event: string, handler: EventHandler) => {
       mockState.handlers[event] = handler;
     };
     mockState.lastInstance = this as unknown as { close: () => void };
+    mockState.lastOptions = opts;
   }
   return { default: MockPartySocket };
 });
@@ -40,6 +42,7 @@ beforeEach(() => {
   mockState.close.mockClear();
   mockState.send.mockClear();
   mockState.lastInstance = null;
+  mockState.lastOptions = null;
   connectionStatus.set('connecting');
   multiplierAnimating.set(false);
   // Disconnect any previous socket
@@ -88,6 +91,16 @@ describe('connect()', () => {
     const s = getRawSocket();
     // Socket was created — verify it's not null
     expect(s).not.toBeNull();
+  });
+
+  it('passes playerId as query param when provided', () => {
+    connect('my-player-id');
+    expect(mockState.lastOptions).toMatchObject({ query: { playerId: 'my-player-id' } });
+  });
+
+  it('omits query param when no playerId is provided', () => {
+    connect();
+    expect((mockState.lastOptions as Record<string, unknown>)?.['query']).toBeUndefined();
   });
 });
 

@@ -14,12 +14,13 @@ import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
 
-export function connect(): void {
+export function connect(playerId?: string): void {
   connectionStatus.set('connecting');
   socket = new PartySocket({
     host: typeof window !== 'undefined' ? window.location.host : 'localhost:8787',
     room: 'crash-main',
     party: 'crash-game',
+    ...(playerId ? { query: { playerId } } : {}),
   });
 
   socket.addEventListener('open', () => {

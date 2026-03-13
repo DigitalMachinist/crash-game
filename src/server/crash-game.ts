@@ -60,6 +60,8 @@ export class CrashGame extends Server<Env> {
   private gameNumber!: number;
   /** Transient in-memory map; lost on DO eviction. Scoped to DO lifetime (~5 min idle). */
   private pendingPayouts: Map<string, PendingPayout> = new Map();
+  /** Maps connectionId → playerId to support cashout from reconnected connections. [Phase 4.6] */
+  private connectionToPlayer: Map<string, string> = new Map();
   private cachedSnapshot: GameStateSnapshot | null = null;
 
   /** Invalidates the cached snapshot so the next read rebuilds from current state. */
@@ -123,7 +125,15 @@ export class CrashGame extends Server<Env> {
     }
   }
 
-  override async onConnect(conn: Connection, _ctx: ConnectionContext): Promise<void> {
+  override async onConnect(conn: Connection, ctx: ConnectionContext): Promise<void> {
+    // Register connection→player mapping immediately if playerId is in the URL query string.
+    // This lets reconnecting players cashout without re-sending a join. [Phase 4.6]
+    const url = new URL(ctx.request.url);
+    const playerId = url.searchParams.get('playerId');
+    if (playerId && this.gameState.players.has(playerId)) {
+      this.connectionToPlayer.set(conn.id, playerId);
+    }
+
     // Send current game state snapshot to the newly connected client (use cache)
     const snapshot = this.getSnapshot();
     const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
@@ -182,6 +192,12 @@ export class CrashGame extends Server<Env> {
         this.invalidateSnapshot();
       }
 
+      // Update connection→player mapping whenever the player is in the game,
+      // including RUNNING-phase reconnects where the join itself is rejected. [Phase 4.6]
+      if (this.gameState.players.has(msg.playerId)) {
+        this.connectionToPlayer.set(conn.id, msg.playerId);
+      }
+
       // Persist player join so DO eviction does not lose the wager [Backend-1]
       const joinSucceeded = result.messages.some(
         (m) => m.broadcast && m.message.type === 'playerJoined',
@@ -198,9 +214,9 @@ export class CrashGame extends Server<Env> {
         }
       }
     } else if (msg.type === 'cashout') {
-      // Find the player by connection ID
-      const player = Array.from(this.gameState.players.values()).find((p) => p.id === conn.id);
-      if (!player) {
+      // Resolve playerId via connection mapping to support reconnected players. [Phase 4.6]
+      const playerId = this.connectionToPlayer.get(conn.id);
+      if (!playerId || !this.gameState.players.has(playerId)) {
         conn.send(
           JSON.stringify({
             type: 'error',
@@ -210,7 +226,7 @@ export class CrashGame extends Server<Env> {
         return;
       }
 
-      const result = handleCashout(this.gameState, player.playerId, Date.now());
+      const result = handleCashout(this.gameState, playerId, Date.now());
       this.gameState = result.state;
       // Invalidate cache if state changed (cashout was accepted)
       if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
@@ -243,11 +259,10 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/game-state-machine.md §3.5
    */
-  override onClose(_conn: Connection, _code: number, _reason: string, _wasClean: boolean): void {
-    // If player had an active bet (no auto-cashout), their bet is lost on disconnect.
-    // Auto-cashout stays active on server — the player entry persists in gameState.players
-    // so auto-cashout processing in onAlarm continues to work.
-    // No-op here intentionally.
+  override onClose(conn: Connection, _code: number, _reason: string, _wasClean: boolean): void {
+    // Clean up the connection→player mapping. [Phase 4.6]
+    // The player entry persists in gameState.players so auto-cashout continues to fire.
+    this.connectionToPlayer.delete(conn.id);
   }
 
   /**
