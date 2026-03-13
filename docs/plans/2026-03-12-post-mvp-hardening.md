@@ -122,43 +122,33 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 
 ### Issue 3.1: [Security-5] Rate limiting on join/cashout messages
 **Status:** `PLANNED`
-**Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
+**Files:** Cloudflare WAF configuration (no application code changes required)
 **Depends on:** Nothing
 
-**Tests first:**
-- First join message from a connection → accepted
-- 5 join messages within 10 seconds → 6th is rejected with rate limit error
-- After 10 seconds, rate limit resets → next message accepted
-- Rate limit is per-connection, not global
+**Decision:** Use Cloudflare WAF rate limiting rules at the edge.
 
 **Implementation:**
-- Add `rateLimits: Map<connectionId, { count: number, windowStart: number }>` to CrashGame class
-- In `onMessage()`, before processing: check rate limit (5 messages per 10 seconds per connection)
-- On limit exceeded: send `{ type: 'error', message: 'Rate limited — try again shortly' }`
-- Clean up map entries in `onClose()`
+- Configure a WAF rate limiting rule on the PartyKit/Cloudflare Worker WebSocket route
+- Rule: limit by IP, e.g. 20 requests per 10 seconds
+- No server-side token bucket or DO changes required
 
 ---
 
 ### Issue 3.2: [Security-1] Drand beacon signature verification
-**Status:** `PLANNED`
+**Status:** `BLOCKED — DEFERRED`
 **Files:** `src/server/drand.ts`, `package.json`, `src/server/__tests__/drand.test.ts`
-**Depends on:** Nothing (but needs investigation of BLS library compatibility with Cloudflare Workers)
+**Depends on:** Resolution of BLS12-381 library compatibility with Cloudflare Workers
 
-**Tests first:**
-- `fetchDrandBeacon()` with valid signature → returns beacon
-- `fetchDrandBeacon()` with tampered signature → throws DrandFetchError
-- `fetchDrandBeacon()` with tampered randomness (signature doesn't match) → throws DrandFetchError
-- Verify against known drand quicknet test vectors
+**Blocker:** No BLS12-381 library confirmed compatible with Cloudflare Workers runtime. Options investigated:
+- `@noble/curves` (pure JS, likely works — unconfirmed)
+- `drand-client` (official, may have Node dependencies — unconfirmed)
 
-**Implementation:**
-- **INVESTIGATE FIRST:** Which BLS library works in Cloudflare Workers? Options:
-  - `@noble/curves` (pure JS, likely works)
-  - `drand-client` (official, may have Node dependencies)
-- Add BLS12-381 signature verification
-- Verify beacon signature against drand quicknet public key
-- Public key for quicknet chain hash `52db9ba7...`: fetch from `https://drand.cloudflare.com/{CHAIN_HASH}/info`
-- Add public key as constant in config (don't fetch on every round)
-- In `fetchDrandBeacon()`: verify signature before returning beacon
+**Decision:** Deferred to IMPLEMENT LATER in TODO.md until a compatible library is confirmed.
+
+**When unblocked:**
+- Verify beacon signature against drand quicknet public key before accepting beacon data
+- Public key for quicknet chain hash `52db9ba7...`: fetch from drand `/info` endpoint once and store as constant in config
+- In `fetchDrandBeacon()`: verify BLS12-381 signature before returning beacon
 
 ---
 
@@ -167,18 +157,21 @@ Issues within the same **Phase** can be worked in parallel by agent swarm unless
 **Files:** `src/server/crash-game.ts`, `src/server/__tests__/workers/crash-game.do.test.ts`
 **Depends on:** Nothing
 
+**Decision:** Server assigns a signed token to each player on join.
+
 **Tests first:**
-- Player A joins, disconnects, has pending payout → Player A reconnects with same playerId → receives payout
-- Player B connects with Player A's playerId → does NOT receive Player A's pending payout
+- Player A joins → receives a signed `sessionToken` in the `playerJoined` response
+- Player A disconnects, reconnects, sends `sessionToken` → receives pending payout
+- Player B connects with Player A's playerId but no/wrong token → does NOT receive Player A's pending payout
 - After legitimate reconnection and payout delivery, pending payout is cleared
 
 **Implementation:**
-- When storing pending payout, also store a `connectionToken` (random string sent to original client on join)
-- Modify `playerJoined` server message to include an opaque `connectionToken`
-- Client stores `connectionToken` in memory (not localStorage — it's per-session)
-- On reconnection `join` message, client includes `connectionToken`
-- Server validates token matches before delivering pending payout
-- If no token or mismatch: payout remains pending (don't error — could be legitimate new player with same UUID from localStorage)
+- On join: server generates a signed token (e.g. HMAC-SHA256 of `playerId + roundId + secret`) and includes it in the `playerJoined` message as `sessionToken`
+- Client stores `sessionToken` in memory (not localStorage — per-session only)
+- When storing a pending payout, also store the `sessionToken` that was issued at join time
+- On reconnection `join` message, client includes `sessionToken`
+- Server validates token before delivering pending payout
+- If no token or mismatch: payout remains pending (don't error — could be a legitimate new player sharing a localStorage UUID)
 
 ---
 

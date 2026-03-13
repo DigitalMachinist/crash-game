@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./public"
 
 [vars]
-CRASH_DEBUG = "true"
+CRASH_DEBUG = "false"
 
 [[durable_objects.bindings]]
 name = "CrashGame"

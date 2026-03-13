@@ -11,13 +11,9 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Critical — Security
 
-- [ ] **[Security-1]** Drand beacon signatures not verified (cryptographic attack vector)
-  - File: `src/server/drand.ts:62-90`, `src/client/lib/verify.ts`
-  - Import drand BLS signature verification; verify beacon signature against drand's public key before accepting beacon data; fail round with error if verification fails.
-
 - [ ] **[Security-2]** Client can spoof playerId to claim another player's pending payout
   - File: `src/server/crash-game.ts:113-123`
-  - Bind pending payouts to both playerId AND WebSocket connection ID; verify reconnecting player identity via token or similar mechanism.
+  - Server generates a signed session token (HMAC-SHA256 of `playerId + roundId + secret`) on join and includes it in `playerJoined`. Client stores token in memory (not localStorage). Token is required to claim a pending payout on reconnect.
 
 - [x] **[Security-3]** No validation on autoCashout value
   - File: `src/server/game-state.ts:74-149`
@@ -28,8 +24,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - Reject playerId values exceeding 256 characters.
 
 - [ ] **[Security-5]** No rate limiting on join/cashout messages (DoS vector)
-  - File: `src/server/crash-game.ts:102-168`
-  - Implement per-connection rate limiting; reject messages exceeding threshold (e.g., 5 joins per 10 seconds).
+  - Handled via Cloudflare WAF rate limiting rule on the WebSocket endpoint (no application code changes required). Configure rule by IP, e.g. 20 requests per 10 seconds.
 
 ### Critical — Backend / Durable Objects
 
@@ -237,6 +232,11 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 ---
 
 ## IMPLEMENT LATER
+
+- [ ] **[Security-1]** Drand beacon signatures not verified (cryptographic attack vector)
+  - File: `src/server/drand.ts:62-90`
+  - **BLOCKED:** No BLS12-381 library confirmed compatible with Cloudflare Workers. Candidates: `@noble/curves` (pure JS, unconfirmed), `drand-client` (may have Node dependencies, unconfirmed). Investigate library compatibility before implementing.
+  - When unblocked: verify beacon BLS12-381 signature against drand quicknet public key (fetched once from `/info` endpoint and stored as a constant) before accepting beacon data.
 
 - [ ] **[Backend-5]** No error logging or observability
   - File: `src/server/crash-game.ts` (entire file)
