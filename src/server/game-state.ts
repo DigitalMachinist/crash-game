@@ -89,6 +89,53 @@ export function handleJoin(
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
 ): { state: GameState; messages: OutboundMessage[] } {
+  // Handle existing player first (any phase) — must precede phase check so reconnects during
+  // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
+  if (state.players.has(msg.playerId)) {
+    const existing = state.players.get(msg.playerId)!;
+    if (existing.wager !== msg.wager) {
+      return {
+        state,
+        messages: [
+          {
+            broadcast: false,
+            targetPlayerId: msg.playerId,
+            message: { type: 'error', message: 'Already joined with different wager' },
+          },
+        ],
+      };
+    }
+    if (existing.id === connectionId) {
+      return { state, messages: [] }; // Same connection — no-op
+    }
+    const updatedPlayer = { ...existing, id: connectionId };
+    const updatedPlayers = new Map(state.players);
+    updatedPlayers.set(msg.playerId, updatedPlayer);
+    const updatedState = { ...state, players: updatedPlayers };
+    if (state.phase !== 'WAITING') {
+      // Reconnect during RUNNING/STARTING: update connection ID silently.
+      // All clients already know this player is in the round; re-broadcasting playerJoined
+      // would cause the reconnecting client to double-deduct their balance.
+      return { state: updatedState, messages: [] };
+    }
+    return {
+      state: updatedState,
+      messages: [
+        {
+          broadcast: true,
+          message: {
+            type: 'playerJoined',
+            id: connectionId,
+            playerId: msg.playerId,
+            name: existing.name,
+            wager: existing.wager,
+            autoCashout: existing.autoCashout,
+          },
+        },
+      ],
+    };
+  }
+
   if (state.phase !== 'WAITING') {
     return {
       state,
@@ -175,47 +222,6 @@ export function handleJoin(
           broadcast: false,
           targetPlayerId: msg.playerId,
           message: { type: 'error', message: 'autoCashout must be greater than 1.0' },
-        },
-      ],
-    };
-  }
-
-  if (state.players.has(msg.playerId)) {
-    const existing = state.players.get(msg.playerId)!;
-    if (existing.wager !== msg.wager) {
-      return {
-        state,
-        messages: [
-          {
-            broadcast: false,
-            targetPlayerId: msg.playerId,
-            message: { type: 'error', message: 'Already joined with different wager' },
-          },
-        ],
-      };
-    }
-    // Same wager — idempotent reconnect: only update connection ID and broadcast playerJoined
-    // when the connection ID has changed (actual reconnect). Duplicate joins on the same
-    // connection are silently ignored.
-    if (existing.id === connectionId) {
-      return { state, messages: [] };
-    }
-    const updatedPlayer = { ...existing, id: connectionId };
-    const reconnectedPlayers = new Map(state.players);
-    reconnectedPlayers.set(msg.playerId, updatedPlayer);
-    return {
-      state: { ...state, players: reconnectedPlayers },
-      messages: [
-        {
-          broadcast: true,
-          message: {
-            type: 'playerJoined',
-            id: connectionId,
-            playerId: msg.playerId,
-            name: existing.name,
-            wager: existing.wager,
-            autoCashout: existing.autoCashout,
-          },
         },
       ],
     };

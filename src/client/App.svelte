@@ -98,7 +98,7 @@ onMount(() => {
   const id = getOrCreatePlayerId();
   myPlayerId.set(id);
   balance.set(getBalance());
-  connect();
+  connect(id);
   document.addEventListener('crash:pendingPayout', handlePendingPayout);
   document.addEventListener('crash:crashed', handleCrashedResult);
 });

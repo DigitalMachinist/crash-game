@@ -185,6 +185,72 @@ describe('handleJoin', () => {
     expect(stateAfterSecond.players.get('player1')?.wager).toBe(10);
   });
 
+  it('[Phase 4.6] reconnect during RUNNING updates player.id silently (no messages)', () => {
+    const { state: waiting } = handleJoin(
+      createInitialState('abc'),
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn1',
+    );
+    const { state: running } = makeRunningState();
+    // Inject player into a RUNNING state
+    const runningWithPlayer = {
+      ...running,
+      players: new Map([['player1', waiting.players.get('player1')!]]),
+    };
+
+    const { state: reconnected, messages } = handleJoin(
+      runningWithPlayer,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn2',
+    );
+
+    expect(messages).toHaveLength(0);
+    expect(reconnected.players.get('player1')?.id).toBe('conn2');
+  });
+
+  it('[Phase 4.6] reconnect during RUNNING with wrong wager returns error', () => {
+    const { state: waiting } = handleJoin(
+      createInitialState('abc'),
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn1',
+    );
+    const { state: running } = makeRunningState();
+    const runningWithPlayer = {
+      ...running,
+      players: new Map([['player1', waiting.players.get('player1')!]]),
+    };
+
+    const { messages } = handleJoin(
+      runningWithPlayer,
+      { playerId: 'player1', wager: 99, autoCashout: null },
+      'conn2',
+    );
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0].broadcast).toBe(false);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+    }
+  });
+
+  it('[Phase 4.6] new player join during RUNNING still returns phase error', () => {
+    const { state: running } = makeRunningState();
+
+    const { messages } = handleJoin(
+      running,
+      { playerId: 'brand-new-player', wager: 10, autoCashout: null },
+      'conn1',
+    );
+
+    expect(messages).toHaveLength(1);
+    if (!messages[0].broadcast) {
+      expect(messages[0].message.type).toBe('error');
+      if (messages[0].message.type === 'error') {
+        expect(messages[0].message.message).toContain('RUNNING');
+      }
+    }
+  });
+
   it('[Phase 4.6] idempotent reconnect with new connId updates player.id in state', () => {
     const state = createInitialState('abc');
     const { state: s1 } = handleJoin(

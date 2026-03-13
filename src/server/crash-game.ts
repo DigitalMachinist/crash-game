@@ -125,7 +125,15 @@ export class CrashGame extends Server<Env> {
     }
   }
 
-  override async onConnect(conn: Connection, _ctx: ConnectionContext): Promise<void> {
+  override async onConnect(conn: Connection, ctx: ConnectionContext): Promise<void> {
+    // Register connection→player mapping immediately if playerId is in the URL query string.
+    // This lets reconnecting players cashout without re-sending a join. [Phase 4.6]
+    const url = new URL(ctx.request.url);
+    const playerId = url.searchParams.get('playerId');
+    if (playerId && this.gameState.players.has(playerId)) {
+      this.connectionToPlayer.set(conn.id, playerId);
+    }
+
     // Send current game state snapshot to the newly connected client (use cache)
     const snapshot = this.getSnapshot();
     const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };

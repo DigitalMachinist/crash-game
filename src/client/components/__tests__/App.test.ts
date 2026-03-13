@@ -61,9 +61,10 @@ beforeEach(() => {
 
 describe('App component', () => {
   describe('lifecycle', () => {
-    it('calls connect() on mount', () => {
+    it('calls connect() on mount with the local playerId', () => {
       render(App);
       expect(connect).toHaveBeenCalledTimes(1);
+      expect(connect).toHaveBeenCalledWith('test-player-id');
     });
 
     it('calls disconnect() on unmount', () => {
