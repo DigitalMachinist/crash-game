@@ -185,6 +185,45 @@ describe('handleJoin', () => {
     expect(stateAfterSecond.players.get('player1')?.wager).toBe(10);
   });
 
+  it('[Phase 4.6] idempotent reconnect with new connId updates player.id in state', () => {
+    const state = createInitialState('abc');
+    const { state: s1 } = handleJoin(
+      state,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn1',
+    );
+    expect(s1.players.get('player1')?.id).toBe('conn1');
+
+    const { state: s2 } = handleJoin(
+      s1,
+      { playerId: 'player1', wager: 10, autoCashout: null },
+      'conn2',
+    );
+    // Connection ID must be updated so sendToTarget can route to the new connection
+    expect(s2.players.get('player1')?.id).toBe('conn2');
+  });
+
+  it('[Phase 4.6] handleCashout resolves player by playerId — independent of connection ID', () => {
+    // Verifies the pure-function half of reconnect cashout: handleCashout looks up
+    // players by playerId, not by conn.id, so it works regardless of which connection
+    // ID was recorded. The DO layer (crash-game.ts) handles mapping conn.id → playerId.
+    const state = createInitialState('abc');
+    const { state: s1 } = handleJoin(
+      state,
+      { playerId: 'player1', wager: 100, autoCashout: null },
+      'conn1',
+    );
+    const nowMs = 1_000_000;
+    const s2 = handleStartingComplete(s1, 3.0, 'seed', 1, 'rand', 'nextcommit', nowMs).state;
+
+    // Cashout by playerId works even though we never updated player.id to a new conn
+    const elapsed = Math.log(1.5) / 0.00006;
+    const { messages } = handleCashout(s2, 'player1', nowMs + elapsed);
+
+    const cashoutMsg = messages.find((m) => m.broadcast && m.message.type === 'playerCashedOut');
+    expect(cashoutMsg).toBeDefined();
+  });
+
   it('[High-5] same playerId rejoins with different wager → returns error "Already joined with different wager"', () => {
     const state = createInitialState('abc');
     const { state: stateAfterFirst } = handleJoin(
