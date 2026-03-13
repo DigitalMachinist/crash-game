@@ -49,6 +49,7 @@ export interface GameStateSnapshot {
   drandRound: number | null; // null except when phase === 'CRASHED'
   drandRandomness: string | null; // null except when phase === 'CRASHED'
   history: HistoryEntry[];
+  serverVersion?: string; // semver; absent in older servers
 }
 
 // ─── Round history entry ─────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ export interface VerificationResult {
 export type ServerMessage =
   | ({ type: 'state' } & GameStateSnapshot)
   | { type: 'tick'; multiplier: number; elapsed: number }
+  /** cashedOut, cashoutMultiplier, and payout are omitted: the player is just entering the round and has not yet cashed out. */
   | {
       type: 'playerJoined';
       id: string;

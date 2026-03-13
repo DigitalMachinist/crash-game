@@ -218,19 +218,19 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Low — Documentation & Cleanup
 
-- [ ] **[Low-1]** `drandRoundTime()` exported but never called (unused utility)
+- [x] **[Low-1]** `drandRoundTime()` exported but never called (unused utility)
   - File: `src/server/drand.ts:49-52`
   - Move to test utilities or remove from production exports.
 
-- [ ] **[Low-2]** No protocol versioning (forward/backward compatibility)
+- [x] **[Low-2]** No protocol versioning (forward/backward compatibility)
   - File: `src/types.ts`
   - Add `serverVersion?: string` to initial state message; document breaking change policy.
 
-- [ ] **[Low-3]** `playerJoined` message omits null fields without documentation
+- [x] **[Low-3]** `playerJoined` message omits null fields without documentation
   - File: `src/types.ts:98-105`
   - Add `Omit<>` type or clarifying comment to `playerJoined` definition.
 
-- [ ] **[Low-4]** Pending payout transience not documented
+- [x] **[Low-4]** Pending payout transience not documented
   - File: `src/server/crash-game.ts:113-123`
   - Add doc comment explaining pending payouts are transient and scoped to DO lifetime.
 

@@ -3,10 +3,14 @@ import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../con
 import {
   computeEffectiveSeedFromBeacon,
   DrandFetchError,
-  drandRoundTime,
   fetchDrandBeacon,
   getCurrentDrandRound,
 } from '../drand';
+
+/** Local inverse of getCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
+function drandRoundTime(round: number): number {
+  return DRAND_GENESIS_TIME + (round - 1) * DRAND_PERIOD_SECS;
+}
 
 const mockBeacon = { round: 100, randomness: 'a'.repeat(64), signature: 'b'.repeat(96) };
 
