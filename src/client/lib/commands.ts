@@ -10,7 +10,7 @@
 import { get } from 'svelte/store';
 import type { ClientMessage } from '../../types';
 import { getRawSocket } from './socket';
-import { myPlayerId } from './stores';
+import { myPlayerId, sessionToken } from './stores';
 
 function send(msg: ClientMessage): void {
   const socket = getRawSocket();
@@ -19,12 +19,14 @@ function send(msg: ClientMessage): void {
 }
 
 export function sendJoin(wager: number, name: string, autoCashout: number | null): void {
+  const token = get(sessionToken);
   send({
     type: 'join',
     playerId: get(myPlayerId),
     wager,
     name,
     autoCashout,
+    ...(token !== null ? { sessionToken: token } : {}),
   });
 }
 

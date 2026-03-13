@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { myPlayerId } from '../stores';
+import { myPlayerId, sessionToken } from '../stores';
 
 // ─── Mock socket module ───────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ beforeEach(() => {
   mockSend.mockClear();
   mockSocketInstance = { send: mockSend };
   myPlayerId.set('');
+  sessionToken.set(null);
 });
 
 describe('sendJoin()', () => {
@@ -55,6 +56,22 @@ describe('sendJoin()', () => {
     mockSocketInstance = null;
     sendJoin(100, 'Alice', null);
     expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it('includes sessionToken in the message when the store has a value', () => {
+    myPlayerId.set('player-uuid-123');
+    sessionToken.set('tok-abc-123');
+    sendJoin(100, 'Alice', null);
+    const sent = JSON.parse(mockSend.mock.calls[0]![0] as string);
+    expect(sent.sessionToken).toBe('tok-abc-123');
+  });
+
+  it('omits sessionToken from the message when the store is null', () => {
+    myPlayerId.set('player-uuid-123');
+    sessionToken.set(null);
+    sendJoin(100, 'Alice', null);
+    const sent = JSON.parse(mockSend.mock.calls[0]![0] as string);
+    expect('sessionToken' in sent).toBe(false);
   });
 });
 

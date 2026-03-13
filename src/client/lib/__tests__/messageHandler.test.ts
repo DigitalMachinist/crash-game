@@ -10,6 +10,7 @@ import {
   multiplierAnimating,
   myPlayerId,
   players,
+  sessionToken,
 } from '../stores';
 
 function makeGameState(overrides: Partial<GameStateSnapshot> = {}): GameStateSnapshot {
@@ -51,6 +52,7 @@ beforeEach(() => {
   history.set([]);
   myPlayerId.set('');
   balance.set(0);
+  sessionToken.set(null);
   localStorage.clear();
 });
 
@@ -307,6 +309,19 @@ describe("handleMessage — 'error'", () => {
     handleMessage({ type: 'error', message: 'Something went wrong' });
     document.removeEventListener('crash:error', handler);
     expect(capturedDetail).toMatchObject({ message: 'Something went wrong' });
+  });
+});
+
+describe("handleMessage — 'sessionGranted'", () => {
+  it('sets the sessionToken store', () => {
+    handleMessage({ type: 'sessionGranted', sessionToken: 'abc123token' });
+    expect(get(sessionToken)).toBe('abc123token');
+  });
+
+  it('overwrites a prior sessionToken value', () => {
+    sessionToken.set('old-token');
+    handleMessage({ type: 'sessionGranted', sessionToken: 'new-token' });
+    expect(get(sessionToken)).toBe('new-token');
   });
 });
 

@@ -114,10 +114,20 @@ export type ServerMessage =
       cashoutMultiplier: number;
       crashPoint: number;
     }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  /** Sent directly (not broadcast) to a player after a successful join. Contains their session token. [Phase 3.3] */
+  | { type: 'sessionGranted'; sessionToken: string };
 
 // ─── Client → Server message union ──────────────────────────────────────────
 // @see docs/websocket-protocol.md §4.2
 export type ClientMessage =
-  | { type: 'join'; playerId: string; wager: number; name?: string; autoCashout?: number | null }
+  | {
+      type: 'join';
+      playerId: string;
+      wager: number;
+      name?: string;
+      autoCashout?: number | null;
+      /** Session token from a prior round; required to claim a pending payout. [Phase 3.3] */
+      sessionToken?: string;
+    }
   | { type: 'cashout' };

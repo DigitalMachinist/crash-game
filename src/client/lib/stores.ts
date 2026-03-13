@@ -12,7 +12,7 @@
  *
  * @see docs/project-architecture.md §1.3
  */
-import { derived, get, writable } from 'svelte/store';
+import { derived, get, type Writable, writable } from 'svelte/store';
 import type { GameStateSnapshot, HistoryEntry, Phase, PlayerSnapshot } from '../../types';
 
 export const gameState = writable<GameStateSnapshot | null>(null);
@@ -27,6 +27,8 @@ export const balance = writable<number>(0);
 export const connectionStatus = writable<
   'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 >('connecting');
+/** Session token issued by the server on join; sent with next join to claim a pending payout. [Phase 3.3] */
+export const sessionToken: Writable<string | null> = writable(null);
 
 /**
  * Shallow-equality check for two players Records.

@@ -25,6 +25,7 @@ function isValidJoinFields(obj: Record<string, unknown>): boolean {
     typeof obj.autoCashout !== 'number'
   )
     return false;
+  if (obj.sessionToken !== undefined && typeof obj.sessionToken !== 'string') return false;
   return true;
 }
 

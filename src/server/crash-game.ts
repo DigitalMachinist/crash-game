@@ -40,6 +40,7 @@ import {
   getChainSeedForGame,
   sha256Hex,
 } from './hash-chain';
+import { generateSessionToken, verifySessionToken } from './session-token';
 import { isValidClientMessage, isValidStoredGameData } from './validation';
 
 interface Env {
@@ -163,17 +164,32 @@ export class CrashGame extends Server<Env> {
     const msg = parsed;
 
     if (msg.type === 'join') {
-      // Check for pending payout before processing join
+      // Check for pending payout before processing join — require valid session token [Phase 3.3]
       const pending = this.pendingPayouts.get(msg.playerId);
       if (pending) {
-        this.pendingPayouts.delete(msg.playerId);
-        conn.send(
-          JSON.stringify({
-            type: 'pendingPayout',
-            ...pending,
-          } satisfies ServerMessage),
+        const tokenValid = await verifySessionToken(
+          this.rootSeed,
+          msg.playerId,
+          pending.roundId,
+          msg.sessionToken ?? '',
         );
-        await this.persistState();
+        if (tokenValid) {
+          this.pendingPayouts.delete(msg.playerId);
+          conn.send(
+            JSON.stringify({
+              type: 'pendingPayout',
+              ...pending,
+            } satisfies ServerMessage),
+          );
+          await this.persistState();
+        } else {
+          conn.send(
+            JSON.stringify({
+              type: 'error',
+              message: 'Invalid session token — pending payout not delivered',
+            } satisfies ServerMessage),
+          );
+        }
       }
 
       const result = handleJoin(
@@ -204,6 +220,15 @@ export class CrashGame extends Server<Env> {
       );
       if (joinSucceeded) {
         await this.persistState();
+        // Issue session token directly to the joining player [Phase 3.3]
+        const token = await generateSessionToken(
+          this.rootSeed,
+          msg.playerId,
+          this.gameState.roundId,
+        );
+        conn.send(
+          JSON.stringify({ type: 'sessionGranted', sessionToken: token } satisfies ServerMessage),
+        );
       }
 
       for (const outbound of result.messages) {

@@ -27,6 +27,7 @@ import {
   multiplierAnimating,
   myPlayerId,
   players,
+  sessionToken,
 } from './stores';
 
 export function handleMessage(msg: ServerMessage): void {
@@ -97,6 +98,10 @@ export function handleMessage(msg: ServerMessage): void {
     }
     case 'pendingPayout': {
       document.dispatchEvent(new CustomEvent('crash:pendingPayout', { detail: msg }));
+      break;
+    }
+    case 'sessionGranted': {
+      sessionToken.set(msg.sessionToken);
       break;
     }
     case 'error': {
