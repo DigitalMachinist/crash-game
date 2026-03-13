@@ -9,6 +9,23 @@ Each item should be implemented TDD-style, validated, and submitted as its own P
 
 Issues are ordered by severity (Critical > High > Medium > Low) and by ID within each severity tier.
 
+### Big Ideas
+
+- Make this into a hacking game where the multiplier starts when the hacker says "I'm in!" and then as the multiplier increases you see bash terminal commands or maybe sftp/telnet commands to explore folder structures (ideally more or less real syntax), searching rapidly through folders recursively downloading files, quickly flashing folders and paths as they stream down and off the screen. Cashout becomes "logging out" or "bailing out" or "disconnecting" and the crash becomes being "traced" or "located" or "caught" complete with big DOS/Evangelion-ass danger/error UI and maybe an "FBI! Open up!". Lean heavily into hacking themes, "Hackers" the movie from the 90s, TUI but with visual effects. Sound and stuff would be excellent. That also implies having to offer the user sound options or at least mutes for sound and music (if there's music).
+- Remember the player's name between rounds
+- Remember the player's most recent bet between rounds
+- Remember the player's auto-cashout setting between rounds
+- Add a button to clear auto-cashout field
+- Add a button to wager a default $100.00
+- Move the player's name choice to somewhere else in the UI rather than the wager form
+- Add up/down controls for raising and lowering the wager
+- Emphasize the wager controls over the auto-cashout field
+- Build a clear visual VerifyModal that both shows proof of fairness but diagetically describes it
+- Hook this up to an actual Games Service (-like) backend
+- Make a wallet service that maintains user authentication and wallet statuses
+- Hook this up to the wallet service to make this more "real money" (by abstracting money from the scope of this game)
+- Build a Unity/Unreal/Godot game client? Some other more Web-targeted engine? That would mostly replace this entire frontend.
+
 ### Critical — Security
 
 - [ ] **[Security-2]** Client can spoof playerId to claim another player's pending payout
