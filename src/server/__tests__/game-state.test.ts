@@ -1061,35 +1061,35 @@ describe('transitionToWaiting', () => {
     const { state: running } = makeRunningStateWithPlayer('p1', 100, null, 'c1', 2.0, nowMs);
     const { state: crashed } = handleCrash(running, 'seed', 1, 'rand', nowMs + 5000);
 
-    const { state: waiting } = transitionToWaiting(crashed, 'newcommit', Date.now());
+    const { state: waiting } = transitionToWaiting(crashed, 'newcommit');
     expect(waiting.players.size).toBe(0);
   });
 
   it('increments roundId', () => {
     let state = createInitialState('abc', 3);
     state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    const { state: waiting } = transitionToWaiting(state, 'newcommit');
     expect(waiting.roundId).toBe(4);
   });
 
   it('resets countdown to WAITING_DURATION_MS', () => {
     let state = createInitialState('abc');
     state = { ...state, countdown: 0 };
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    const { state: waiting } = transitionToWaiting(state, 'newcommit');
     expect(waiting.countdown).toBe(WAITING_DURATION_MS);
   });
 
   it('phase is WAITING', () => {
     let state = createInitialState('abc');
     state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    const { state: waiting } = transitionToWaiting(state, 'newcommit');
     expect(waiting.phase).toBe('WAITING');
   });
 
   it('broadcasts state message with empty players array', () => {
     let state = createInitialState('abc');
     state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { messages } = transitionToWaiting(state, 'newcommit', Date.now());
+    const { messages } = transitionToWaiting(state, 'newcommit');
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -1101,7 +1101,7 @@ describe('transitionToWaiting', () => {
 
   it('uses the new chain commitment', () => {
     const state = createInitialState('oldcommit');
-    const { state: waiting } = transitionToWaiting(state, 'freshcommit', Date.now());
+    const { state: waiting } = transitionToWaiting(state, 'freshcommit');
     expect(waiting.chainCommitment).toBe('freshcommit');
   });
 });
@@ -1356,7 +1356,7 @@ describe('buildStateSnapshot', () => {
     let state = createInitialState('commit1');
     state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
     state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    state = transitionToWaiting(state, 'newcomm', Date.now()).state;
+    state = transitionToWaiting(state, 'newcomm').state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1402,7 +1402,6 @@ describe('round lifecycle', () => {
 
     // 5. Tick past auto-cashout target (2x) — compute elapsed where multiplier > 2.0
     // multiplierAtTime(elapsed) > 2.0 → elapsed > ln(2)/0.00006 ≈ 11553ms
-    const { multiplierAtTime } = await import('../crash-math');
     const elapsed = Math.log(2.1) / 0.00006; // ~12397ms
     const tickTime = now + elapsed;
     const r4 = handleTick(state, tickTime);
@@ -1419,7 +1418,7 @@ describe('round lifecycle', () => {
     expect(state.players.get('p2')?.payout).toBe(0); // Bob didn't cash out
 
     // 7. Transition to WAITING
-    const r6 = transitionToWaiting(state, 'newcommit', Date.now());
+    const r6 = transitionToWaiting(state, 'newcommit');
     state = r6.state;
     expect(state.phase).toBe('WAITING');
     expect(state.roundId).toBe(2);

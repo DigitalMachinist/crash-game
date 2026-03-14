@@ -520,7 +520,7 @@ export class CrashGame extends Server<Env> {
   }
 
   private async nextRound(): Promise<void> {
-    const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment, Date.now());
+    const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment);
     this.gameState = result.state;
     this.invalidateSnapshot();
 

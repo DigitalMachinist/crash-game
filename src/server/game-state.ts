@@ -582,7 +582,6 @@ export function handleCountdownTick(
 export function transitionToWaiting(
   state: GameState,
   nextChainCommitment: string,
-  _nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
   const newState: GameState = {
     ...state,

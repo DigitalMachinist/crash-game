@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../config';
 import {
   computeEffectiveSeedFromBeacon,

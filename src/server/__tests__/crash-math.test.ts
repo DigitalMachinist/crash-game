@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { describe, expect, it, test, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { crashTimeMs, deriveCrashPoint, hashToFloat, multiplierAtTime } from '../crash-math';
 
 vi.setConfig({ testTimeout: 30000 });
