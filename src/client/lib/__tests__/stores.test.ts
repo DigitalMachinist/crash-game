@@ -1,12 +1,15 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
+import type { GameStateSnapshot, PlayerSnapshot, ServerMessage } from '../../../types';
 import {
   connectionStatus,
   countdown,
   displayMultiplier,
   gameState,
   isInRound,
+  lastCrashResult,
+  lastError,
+  lastPendingPayout,
   multiplierAnimating,
   myPlayerId,
   phase,
@@ -52,6 +55,9 @@ beforeEach(() => {
   multiplierAnimating.set(false);
   myPlayerId.set('');
   connectionStatus.set('connecting');
+  lastCrashResult.set(null);
+  lastPendingPayout.set(null);
+  lastError.set(null);
 });
 
 describe('phase derived store', () => {
@@ -262,5 +268,74 @@ describe('playersList derived store', () => {
     expect(list2[0]?.cashedOut).toBe(true);
     expect(list2[0]?.cashoutMultiplier).toBe(2.5);
     expect(list2).not.toBe(list1);
+  });
+});
+
+describe('lastCrashResult writable store', () => {
+  it('starts at null', () => {
+    expect(get(lastCrashResult)).toBeNull();
+  });
+
+  it('can be set to a GameStateSnapshot', () => {
+    const snapshot = makeGameState({ phase: 'CRASHED', crashPoint: 2.5 });
+    lastCrashResult.set(snapshot);
+    expect(get(lastCrashResult)).toEqual(snapshot);
+  });
+
+  it('can be reset to null', () => {
+    const snapshot = makeGameState({ phase: 'CRASHED', crashPoint: 2.5 });
+    lastCrashResult.set(snapshot);
+    lastCrashResult.set(null);
+    expect(get(lastCrashResult)).toBeNull();
+  });
+});
+
+describe('lastPendingPayout writable store', () => {
+  it('starts at null', () => {
+    expect(get(lastPendingPayout)).toBeNull();
+  });
+
+  it('can be set to a pendingPayout message', () => {
+    const msg: Extract<ServerMessage, { type: 'pendingPayout' }> = {
+      type: 'pendingPayout',
+      roundId: 7,
+      wager: 50,
+      payout: 120,
+      cashoutMultiplier: 2.4,
+      crashPoint: 3.0,
+    };
+    lastPendingPayout.set(msg);
+    expect(get(lastPendingPayout)).toEqual(msg);
+  });
+
+  it('can be reset to null', () => {
+    const msg: Extract<ServerMessage, { type: 'pendingPayout' }> = {
+      type: 'pendingPayout',
+      roundId: 7,
+      wager: 50,
+      payout: 120,
+      cashoutMultiplier: 2.4,
+      crashPoint: 3.0,
+    };
+    lastPendingPayout.set(msg);
+    lastPendingPayout.set(null);
+    expect(get(lastPendingPayout)).toBeNull();
+  });
+});
+
+describe('lastError writable store', () => {
+  it('starts at null', () => {
+    expect(get(lastError)).toBeNull();
+  });
+
+  it('can be set to an error string', () => {
+    lastError.set('Something went wrong');
+    expect(get(lastError)).toBe('Something went wrong');
+  });
+
+  it('can be reset to null', () => {
+    lastError.set('error');
+    lastError.set(null);
+    expect(get(lastError)).toBeNull();
   });
 });

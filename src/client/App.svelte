@@ -4,11 +4,11 @@
  *
  * Responsibilities beyond layout:
  * - Initializes `myPlayerId` and `balance` from localStorage on mount.
- * - Listens for `crash:crashed` DOM event (dispatched by `messageHandler.ts`)
- *   and applies cashout or records loss via `applyCashout` / `addHistoryEntry`,
- *   guarded by `hasPendingResult()` to prevent double-application.
- * - Listens for `crash:pendingPayout` DOM event and credits disconnected
- *   auto-cashout payouts, also guarded by `hasPendingResult()`.
+ * - Watches `lastCrashResult` store (set by `messageHandler.ts`) and applies
+ *   cashout or records loss via `applyCashout` / `addHistoryEntry`, guarded
+ *   by `hasPendingResult()` to prevent double-application.
+ * - Watches `lastPendingPayout` store and credits disconnected auto-cashout
+ *   payouts, also guarded by `hasPendingResult()`.
  * - Displays a toast notification for pending payout delivery.
  *
  * @see docs/game-state-machine.md §3.8
@@ -32,11 +32,11 @@ import {
   hasPendingResult,
 } from './lib/balance';
 import { connect, disconnect } from './lib/socket';
-import { balance, gameState, myPlayerId } from './lib/stores';
+import { balance, lastCrashResult, lastPendingPayout, myPlayerId } from './lib/stores';
 
-let pendingPayoutToast: string | null = null;
+let pendingPayoutToast: string | null = $state(null);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
-let fairnessModalOpen = false;
+let fairnessModalOpen = $state(false);
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -46,8 +46,7 @@ function showToast(msg: string) {
   }, 4000);
 }
 
-function handlePendingPayout(e: Event) {
-  const detail = (e as CustomEvent<Extract<ServerMessage, { type: 'pendingPayout' }>>).detail;
+function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
   // Guard against double-applying
   if (hasPendingResult(detail.roundId)) return;
   applyCashout(detail.payout);
@@ -63,8 +62,7 @@ function handlePendingPayout(e: Event) {
   showToast(`Auto-cashout: +${detail.payout.toFixed(2)} (${detail.cashoutMultiplier.toFixed(2)}x)`);
 }
 
-function handleCrashedResult(e: Event) {
-  const snapshot = (e as CustomEvent<GameStateSnapshot>).detail;
+function handleCrashedResult(snapshot: GameStateSnapshot) {
   const id = get(myPlayerId);
   if (!id) return;
   const myPlayer = snapshot.players.find((p) => p.playerId === id);
@@ -94,19 +92,31 @@ function handleCrashedResult(e: Event) {
   }
 }
 
+$effect(() => {
+  const result = $lastCrashResult;
+  if (result) {
+    handleCrashedResult(result);
+    lastCrashResult.set(null);
+  }
+});
+
+$effect(() => {
+  const payout = $lastPendingPayout;
+  if (payout) {
+    handlePendingPayout(payout);
+    lastPendingPayout.set(null);
+  }
+});
+
 onMount(() => {
   const id = getOrCreatePlayerId();
   myPlayerId.set(id);
   balance.set(getBalance());
   connect(id);
-  document.addEventListener('crash:pendingPayout', handlePendingPayout);
-  document.addEventListener('crash:crashed', handleCrashedResult);
 });
 
 onDestroy(() => {
   disconnect();
-  document.removeEventListener('crash:pendingPayout', handlePendingPayout);
-  document.removeEventListener('crash:crashed', handleCrashedResult);
   if (toastTimer) clearTimeout(toastTimer);
 });
 </script>
@@ -115,7 +125,7 @@ onDestroy(() => {
   <header>
     <h1>Crash</h1>
     <div class="header-right">
-      <button class="fairness-btn" on:click={() => (fairnessModalOpen = true)}>Fairness</button>
+      <button class="fairness-btn" onclick={() => (fairnessModalOpen = true)}>Fairness</button>
       <ConnectionStatus />
       <div
         class="balance-display"

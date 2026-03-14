@@ -1,16 +1,14 @@
 /**
  * WebSocket message dispatcher. Handles all `ServerMessage` types received
- * from the server, performing a dual dispatch:
- * 1. Updates Svelte stores (`gameState`, `players`, `history`, `displayMultiplier`).
- * 2. Dispatches DOM `CustomEvent`s as a decoupled event bus:
- *    - `crash:crashed`      → consumed by `App.svelte` (round result accounting);
- *                             detail is the `GameStateSnapshot` with phase='CRASHED'
- *    - `crash:pendingPayout`→ consumed by `App.svelte` (reconnect payout delivery)
- *    - `crash:error`        → consumed by `BetForm.svelte` (server validation errors)
+ * from the server and updates Svelte stores:
+ * - `gameState`, `players`, `history`, `displayMultiplier` — game state stores
+ * - `lastCrashResult`   → set when phase transitions to CRASHED; consumed by App.svelte
+ * - `lastPendingPayout` → set on reconnect payout delivery; consumed by App.svelte
+ * - `lastError`         → set on server validation errors; consumed by BetForm.svelte
  *
  * All phase transitions — including RUNNING→CRASHED — use `state` messages.
  * When a `state{phase:'CRASHED'}` arrives the handler freezes the multiplier
- * display and dispatches `crash:crashed`, covering both fresh crashes and
+ * display and sets `lastCrashResult`, covering both fresh crashes and
  * reconnects during the CRASHED display window.
  *
  * @see docs/websocket-protocol.md §4.3
@@ -24,6 +22,9 @@ import {
   displayMultiplier,
   gameState,
   history,
+  lastCrashResult,
+  lastError,
+  lastPendingPayout,
   multiplierAnimating,
   myPlayerId,
   players,
@@ -48,7 +49,7 @@ export function handleMessage(msg: ServerMessage): void {
       if (snapshot.phase === 'CRASHED' && snapshot.crashPoint !== null) {
         multiplierAnimating.set(false);
         displayMultiplier.set(snapshot.crashPoint);
-        document.dispatchEvent(new CustomEvent('crash:crashed', { detail: snapshot }));
+        lastCrashResult.set(snapshot);
       }
       break;
     }
@@ -96,11 +97,11 @@ export function handleMessage(msg: ServerMessage): void {
       break;
     }
     case 'pendingPayout': {
-      document.dispatchEvent(new CustomEvent('crash:pendingPayout', { detail: msg }));
+      lastPendingPayout.set(msg);
       break;
     }
     case 'error': {
-      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: msg.message } }));
+      lastError.set(msg.message);
       break;
     }
     default:

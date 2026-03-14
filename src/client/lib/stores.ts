@@ -13,7 +13,13 @@
  * @see docs/project-architecture.md §1.3
  */
 import { derived, get, writable } from 'svelte/store';
-import type { GameStateSnapshot, HistoryEntry, Phase, PlayerSnapshot } from '../../types';
+import type {
+  GameStateSnapshot,
+  HistoryEntry,
+  Phase,
+  PlayerSnapshot,
+  ServerMessage,
+} from '../../types';
 
 export const gameState = writable<GameStateSnapshot | null>(null);
 export const players = writable<Record<string, PlayerSnapshot>>({});
@@ -27,6 +33,29 @@ export const balance = writable<number>(0);
 export const connectionStatus = writable<
   'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 >('connecting');
+
+/**
+ * Set by messageHandler when a state{phase:'CRASHED'} message arrives.
+ * App.svelte watches this store and applies round-result accounting.
+ * Reset to null after consumption to avoid re-triggering the effect.
+ */
+export const lastCrashResult = writable<GameStateSnapshot | null>(null);
+
+/**
+ * Set by messageHandler when a pendingPayout message arrives.
+ * App.svelte watches this store and credits disconnected auto-cashout payouts.
+ * Reset to null after consumption to avoid re-triggering the effect.
+ */
+export const lastPendingPayout = writable<Extract<ServerMessage, { type: 'pendingPayout' }> | null>(
+  null,
+);
+
+/**
+ * Set by messageHandler when an error message arrives from the server.
+ * BetForm.svelte watches this store to surface server-side validation errors.
+ * Reset to null after consumption.
+ */
+export const lastError = writable<string | null>(null);
 
 /**
  * Shallow-equality check for two players Records.
