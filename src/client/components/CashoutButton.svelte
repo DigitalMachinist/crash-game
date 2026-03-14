@@ -3,29 +3,40 @@
  * Cashout button. Rendered only when `$phase === 'RUNNING'` and `$isInRound`
  * is true (the local player is active and has not yet cashed out).
  * Uses the `isInRound` derived store from `stores.ts`.
+ *
+ * Loading state resets reactively when `$isInRound` transitions to false
+ * (server confirmed cashout or round ended). A 5-second fallback timeout
+ * handles the edge case where the server never responds (e.g. socket drop).
  */
 
 import { sendCashout } from '../lib/commands';
 import { isInRound, phase } from '../lib/stores';
 
-let isLoading = false;
+let isLoading = $state(false);
+let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
 function handleCashout() {
   if (isLoading) return;
   isLoading = true;
   sendCashout();
-  // Reset loading after a timeout in case server doesn't respond
-  setTimeout(() => {
+  fallbackTimer = setTimeout(() => {
     isLoading = false;
-  }, 2000);
+  }, 5000);
 }
+
+$effect(() => {
+  if (!$isInRound && isLoading) {
+    clearTimeout(fallbackTimer);
+    isLoading = false;
+  }
+});
 </script>
 
 {#if $phase === 'RUNNING' && $isInRound}
   <div class="cashout-container">
     <button
       class="cashout-btn"
-      on:click={handleCashout}
+      onclick={handleCashout}
       disabled={isLoading}
     >
       {#if isLoading}

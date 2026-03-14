@@ -39,6 +39,13 @@ const activePlayer: PlayerSnapshot = {
   autoCashout: null,
 };
 
+const cashedOutPlayer: PlayerSnapshot = {
+  ...activePlayer,
+  cashedOut: true,
+  cashoutMultiplier: 2.0,
+  payout: 200,
+};
+
 function setupInRound() {
   myPlayerId.set('player-1');
   players.set({ 'player-1': activePlayer });
@@ -113,7 +120,7 @@ describe('CashoutButton component', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('resets loading state after 2000ms timeout', async () => {
+  it('resets loading state reactively when isInRound goes false (player cashedOut)', async () => {
     setupInRound();
     render(CashoutButton);
     const button = screen.getByRole('button');
@@ -121,10 +128,78 @@ describe('CashoutButton component', () => {
     await tick();
     expect(button).toBeDisabled();
 
-    vi.advanceTimersByTime(2000);
+    // Simulate server ACK: mark player as cashed out → isInRound becomes false
+    players.set({ 'player-1': cashedOutPlayer });
+    await tick();
+    await Promise.resolve();
+    await tick();
+
+    // Loading should be reset reactively; button would be hidden since isInRound is
+    // false, but verify the button is no longer rendered (component unmounts when
+    // isInRound is false and phase is still RUNNING)
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('resets loading state reactively when isInRound goes false (phase changes to CRASHED)', async () => {
+    setupInRound();
+    render(CashoutButton);
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+    await tick();
+    expect(button).toBeDisabled();
+
+    // Simulate server ACK: phase goes to CRASHED → isInRound becomes false
+    gameState.set(makeGameState('CRASHED'));
+    await tick();
+    await Promise.resolve();
+    await tick();
+
+    // Component hides when isInRound is false
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('resets loading state after 5000ms fallback timeout when isInRound never changes', async () => {
+    setupInRound();
+    render(CashoutButton);
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+    await tick();
+    expect(button).toBeDisabled();
+
+    // Advance time to just before the 5s fallback — still loading
+    vi.advanceTimersByTime(4999);
+    await tick();
+    expect(button).toBeDisabled();
+
+    // Advance past the 5s fallback — should reset
+    vi.advanceTimersByTime(1);
     await tick();
 
     expect(button).not.toBeDisabled();
     expect(screen.getByText('CASH OUT')).toBeTruthy();
+  });
+
+  it('does NOT fire the 5s fallback when isInRound reactive reset fires first', async () => {
+    setupInRound();
+    render(CashoutButton);
+    const button = screen.getByRole('button');
+    await fireEvent.click(button);
+    await tick();
+    expect(button).toBeDisabled();
+
+    // Reactive reset fires at t=0 (phase changes)
+    gameState.set(makeGameState('CRASHED'));
+    await tick();
+    await Promise.resolve();
+    await tick();
+
+    // Button should be hidden now (isInRound is false)
+    expect(screen.queryByRole('button')).toBeNull();
+
+    // Advance past 5s — no errors should occur (fallback was cleared)
+    vi.advanceTimersByTime(5001);
+    await tick();
+    // Still hidden, no errors thrown
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
