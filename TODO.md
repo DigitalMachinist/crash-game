@@ -28,10 +28,6 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Critical — Security
 
-- [ ] **[Security-2]** Client can spoof playerId to claim another player's pending payout
-  - File: `src/server/crash-game.ts:113-123`
-  - Server generates a signed session token (HMAC-SHA256 of `playerId + roundId + secret`) on join and includes it in `playerJoined`. Client stores token in memory (not localStorage). Token is required to claim a pending payout on reconnect.
-
 - [x] **[Security-3]** No validation on autoCashout value
   - File: `src/server/game-state.ts:74-149`
   - Validate in `handleJoin()`: reject if autoCashout is not null and is not finite or < 1.0.
@@ -40,7 +36,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:125-143`
   - Reject playerId values exceeding 256 characters.
 
-- [ ] **[Security-5]** No rate limiting on join/cashout messages (DoS vector)
+- [x] **[Security-5]** No rate limiting on join/cashout messages (DoS vector)
   - Handled via Cloudflare WAF rate limiting rule on the WebSocket endpoint (no application code changes required). Configure rule by IP, e.g. 20 requests per 10 seconds.
 
 ### Critical — Backend / Durable Objects
@@ -63,13 +59,13 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Critical — Frontend UX
 
-- [ ] **[UX-1]** No WebSocket connection status indicator visible
+- [x] **[UX-1]** No WebSocket connection status indicator visible
   - File: `src/client/stores.ts:20`, `src/client/App.svelte`
   - Add connection status indicator in app header (green=connected, yellow=reconnecting, red=disconnected).
 
 ### Critical — Accessibility
 
-- [ ] **[A11y-1]** Modal focus trap missing and backdrop role incorrect
+- [x] **[A11y-1]** Modal focus trap missing and backdrop role incorrect
   - File: `src/client/VerifyModal.svelte:35-41`
   - Implement focus trap using `inert` on page content; manage focus on modal open/close; use proper ARIA markup or `<dialog>` element.
 
@@ -101,7 +97,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### High — Performance
 
-- [ ] **[High-7]** O(n^2) iteration during crash and auto-cashout
+- [x] **[High-7]** O(n^2) iteration during crash and auto-cashout
   - File: `src/server/game-state.ts:268`, `src/server/crash-game.ts:335`, `src/server/game-state.ts:254-304`
   - Build `Map<connectionId, Connection>` lookup once per phase; check membership in O(1). For auto-cashout, pre-sort players by threshold or reduce tick frequency.
 
@@ -109,7 +105,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:97-99`, `src/server/crash-game.ts:297-299`
   - Implement delta-based broadcasting or cache snapshots; only send full state on connect and phase changes.
 
-- [ ] **[High-9]** playersList derived store creates new array on every update
+- [x] **[High-9]** playersList derived store creates new array on every update
   - File: `src/client/stores.ts:28`
   - Memoize `playersList` to only recompute when player count or identities change.
 
@@ -119,11 +115,11 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:59`
   - Implement FIFO eviction (e.g., keep only last 100 entries) or round-based cap.
 
-- [ ] **[High-11]** No max players per round (unbounded memory growth)
+- [x] **[High-11]** No max players per round (unbounded memory growth)
   - File: `src/server/game-state.ts:74-149`
   - Add configured cap (e.g., 5000 players) and reject excess joins with "room full" error.
 
-- [ ] **[High-12]** House edge hardcoded as literal '99' (sync risk with config.ts)
+- [x] **[High-12]** House edge hardcoded as literal '99' (sync risk with config.ts)
   - File: `src/client/lib/verify.ts:68`, `src/config.ts:22`
   - Import `HOUSE_EDGE` from config.ts into verify.ts; add build-time test asserting `(1 - HOUSE_EDGE) * 100 === 99`.
 
@@ -137,15 +133,15 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/server/crash-game.ts:137-166`
   - Implement proper routing: if `broadcast === true` use `this.broadcast()`, else look up target player's connection and route to it.
 
-- [ ] **[High-16]** No min/max wager limits enforced
+- [x] **[High-16]** No min/max wager limits enforced
   - File: `src/client/BetForm.svelte:33`, `src/config.ts`
   - Add `MIN_WAGER = 0.10` and `MAX_WAGER = 1000.00` to config.ts; enforce server-side in `handleJoin()` and client-side in BetForm.
 
-- [ ] **[High-17]** Provably-fair explanation is external only (not in-app)
+- [x] **[High-17]** Provably-fair explanation is external only (not in-app)
   - File: `docs/provably-fair.md`
   - Add in-app "Fairness" or "How to Verify" button with modal explaining drand, hash chains, and round verification.
 
-- [ ] **[High-18]** No in-app RTP display
+- [x] **[High-18]** No in-app RTP display
   - File: `src/client/BetForm.svelte`, `src/client/App.svelte`
   - Add notice: "This is a game of chance. House edge: 1%. RTP: 99%." No responsible gambling controls at this time.
 
@@ -159,17 +155,17 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/GameStatus.svelte:8-29`
   - Add `role="status" aria-live="assertive"` to game status container.
 
-- [ ] **[High-21]** Balance display uses color-only to indicate gain/loss (color-blind inaccessible)
+- [x] **[High-21]** Balance display uses color-only to indicate gain/loss (color-blind inaccessible)
   - File: `src/client/App.svelte:114-118`
   - Add text labels or aria-labels that include balance direction (e.g., "+$50 won" / "-$50 lost").
 
-- [ ] **[High-22]** Form error messages not associated with inputs
+- [x] **[High-22]** Form error messages not associated with inputs
   - File: `src/client/BetForm.svelte:48-50`
   - Add `id="wager-error"` to error div; add `aria-describedby="wager-error"` to wager input.
 
 ### High — Frontend Architecture
 
-- [ ] **[High-23]** Socket module has side effects on import; cleanup leaks event listeners
+- [x] **[High-23]** Socket module has side effects on import; cleanup leaks event listeners
   - File: `src/client/socket.ts:15-46`
   - Add explicit cleanup; return handle from `connect()`; implement singleton pattern or connection guard.
 
@@ -183,7 +179,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Medium — Disconnection & Resilience
 
-- [ ] **[Medium-15]** Disconnected players lose non-auto-cashout bets with no recovery
+- [x] **[Medium-15]** Disconnected players lose non-auto-cashout bets with no recovery
   - File: `src/server/crash-game.ts:178-183`
   - A player who has joined, disconnected, and reconnected while the round is still playing should still be able to cashout their wager — it should not automatically be cashed out or lost upon disconnect.
 
@@ -201,7 +197,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/CashoutButton.svelte:18-20`
   - Use server ACK event to reset loading state instead of 2000ms timeout.
 
-- [ ] **[Medium-21]** Redundant type cast in stores.ts
+- [x] **[Medium-21]** Redundant type cast in stores.ts
   - File: `src/client/stores.ts:19`
   - Remove the `as Phase` assertion — type is already `Phase` after the nullish coalescing operator.
 
@@ -212,19 +208,19 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Medium — Accessibility (continued)
 
-- [ ] **[Medium-23]** Color-only status indicators for players (color-blind inaccessible)
+- [x] **[Medium-23]** Color-only status indicators for players (color-blind inaccessible)
   - File: `src/client/PlayerList.svelte:29-35`
   - Add text labels or icons: "Won 2.5x" instead of green text alone.
 
-- [ ] **[Medium-24]** Verify button low-contrast text (below WCAG AA)
+- [x] **[Medium-24]** Verify button low-contrast text (below WCAG AA)
   - File: `src/client/History.svelte:32`
   - Increase button contrast to meet WCAG AA 4.5:1 ratio.
 
-- [ ] **[Medium-25]** Focus indicator removed and not replaced (keyboard navigation degraded)
+- [x] **[Medium-25]** Focus indicator removed and not replaced (keyboard navigation degraded)
   - File: `src/client/BetForm.svelte`
   - Replace `outline: none` with `outline: 2px solid #1565c0; outline-offset: 2px;` on `:focus-visible`.
 
-- [ ] **[Medium-26]** Table headers lack scope attribute (screen reader associations broken)
+- [x] **[Medium-26]** Table headers lack scope attribute (screen reader associations broken)
   - File: `src/client/PlayerList.svelte:5-42`
   - Add `scope="col"` to all `<th>` elements.
 
@@ -353,6 +349,9 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 ---
 
 ## WILL NOT IMPLEMENT
+
+- **[Security-2]** Client can spoof playerId to claim another player's pending payout
+  - Reason: Not a concern until real-money play is considered.
 
 - **[Compliance-1]** Client-side balance storage with no server authority
   - Reason: This game is not for real money. May revisit if real-money play is ever considered.
