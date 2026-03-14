@@ -20,6 +20,8 @@ import {
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
 import { crashTimeMs as computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
+const SERVER_VERSION = '1.0.0';
+
 export interface GameState {
   phase: Phase;
   roundId: number;
@@ -378,7 +380,6 @@ export function handleTick(
   const messages: OutboundMessage[] = [];
   const newPlayers = new Map(state.players);
 
-  // Process auto-cashouts
   for (const [pid, player] of newPlayers) {
     if (player.cashedOut || player.autoCashout === null) continue;
     if (currentMultiplier >= player.autoCashout) {
@@ -446,7 +447,6 @@ export function handleCrash(
 
   const playerSnapshots = Array.from(newPlayers.values()).map(playerToSnapshot);
 
-  // Build history entry
   const historyEntry: HistoryEntry = {
     roundId: state.roundId,
     crashPoint,
@@ -486,7 +486,7 @@ export function handleCrash(
           drandRound,
           drandRandomness,
           history: newHistory,
-          serverVersion: '1.0.0',
+          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -576,7 +576,7 @@ export function handleCountdownTick(state: GameState): {
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
-          serverVersion: '1.0.0',
+          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -628,7 +628,7 @@ export function transitionToWaiting(
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
-          serverVersion: '1.0.0',
+          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -662,6 +662,6 @@ export function buildStateSnapshot(
     drandRound: state.phase === 'CRASHED' ? state.drandRound : null,
     drandRandomness: state.phase === 'CRASHED' ? state.drandRandomness : null,
     history: state.history,
-    serverVersion: '1.0.0',
+    serverVersion: SERVER_VERSION,
   };
 }

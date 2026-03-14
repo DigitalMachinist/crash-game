@@ -25,11 +25,16 @@ const PLAYER_ID_KEY = 'crashPlayerId';
  * @see docs/game-state-machine.md §3.8
  */
 export function getOrCreatePlayerId(): string {
-  const existing = localStorage.getItem(PLAYER_ID_KEY);
-  if (existing) return existing;
-  const id = crypto.randomUUID();
-  localStorage.setItem(PLAYER_ID_KEY, id);
-  return id;
+  try {
+    const existing = localStorage.getItem(PLAYER_ID_KEY);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    localStorage.setItem(PLAYER_ID_KEY, id);
+    return id;
+  } catch {
+    // localStorage unavailable (private browsing, quota exceeded) — use a session-only ID
+    return crypto.randomUUID();
+  }
 }
 
 export function getBalance(): number {

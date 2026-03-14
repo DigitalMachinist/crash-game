@@ -5,7 +5,7 @@
  * @see docs/provably-fair.md §2.7
  */
 import { HOUSE_EDGE } from '../../config';
-import { bytesToHex, hexToBytes } from '../../crypto-hex';
+import { bytesToHex, hexToBytes, sha256Hex } from '../../crypto-hex';
 import type { VerificationResult } from '../../types';
 
 /**
@@ -32,13 +32,6 @@ export async function computeEffectiveSeedFromRandomness(
 
   const signature = await crypto.subtle.sign('HMAC', key, dataBytes);
   return bytesToHex(new Uint8Array(signature));
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return bytesToHex(new Uint8Array(hashBuffer));
 }
 
 function hashToFloat(hex: string): number {

@@ -78,6 +78,8 @@ function handleCancel(e: Event) {
           Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
         </p>
       {/if}
+    {:else if result !== null && !result.valid}
+      <p class="status-invalid">✗ {result.reason ?? 'Verification failed'}</p>
     {/if}
   </div>
 

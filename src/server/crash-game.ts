@@ -562,7 +562,6 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/project-architecture.md §1.7
    */
-  // Debug HTTP endpoint (only when CRASH_DEBUG=true)
   override async onRequest(req: Request): Promise<Response> {
     const url = new URL(req.url);
 
