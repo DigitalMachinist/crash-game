@@ -62,7 +62,7 @@ function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayo
   showToast(`Auto-cashout: +${detail.payout.toFixed(2)} (${detail.cashoutMultiplier.toFixed(2)}x)`);
 }
 
-function handleCrashedResult(snapshot: GameStateSnapshot) {
+function applyRoundResult(snapshot: GameStateSnapshot) {
   if (snapshot.crashPoint === null) return;
   const id = get(myPlayerId);
   if (!id) return;
@@ -96,7 +96,7 @@ function handleCrashedResult(snapshot: GameStateSnapshot) {
 $effect(() => {
   const result = $lastCrashResult;
   if (result) {
-    handleCrashedResult(result);
+    applyRoundResult(result);
     lastCrashResult.set(null);
   }
 });

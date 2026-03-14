@@ -15,7 +15,7 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
-import { bytesToHex, hexToBytes } from '../crypto-hex';
+import { hmacSha256Hex } from '../crypto-hex';
 import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
@@ -97,17 +97,5 @@ export async function computeEffectiveSeedFromBeacon(
   beacon: DrandBeacon,
 ): Promise<string> {
   // drandRandomness is the KEY (critical: uncontrollable external input in privileged position)
-  const keyBytes = hexToBytes(beacon.randomness);
-  const dataBytes = hexToBytes(chainSeed);
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyBytes,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, dataBytes);
-  return bytesToHex(new Uint8Array(signature));
+  return hmacSha256Hex(beacon.randomness, chainSeed);
 }

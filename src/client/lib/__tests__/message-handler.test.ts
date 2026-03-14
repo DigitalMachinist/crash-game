@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
-import { handleMessage } from '../message-handler';
+import { dispatchMessage } from '../message-handler';
 import {
   balance,
   displayMultiplier,
@@ -60,10 +60,10 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-describe("handleMessage — 'state'", () => {
+describe("dispatchMessage — 'state'", () => {
   it('updates gameState with the snapshot', () => {
     const state = makeGameState({ phase: 'WAITING', roundId: 10 });
-    handleMessage({ type: 'state', ...state });
+    dispatchMessage({ type: 'state', ...state });
     const gs = get(gameState);
     expect(gs?.phase).toBe('WAITING');
     expect(gs?.roundId).toBe(10);
@@ -73,7 +73,7 @@ describe("handleMessage — 'state'", () => {
     const p1 = makePlayerSnapshot({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
     const p2 = makePlayerSnapshot({ playerId: 'p2', id: 'conn-2', name: 'Bob' });
     const state = makeGameState({ players: [p1, p2] });
-    handleMessage({ type: 'state', ...state });
+    dispatchMessage({ type: 'state', ...state });
     const ps = get(players);
     expect(ps['p1']).toEqual(p1);
     expect(ps['p2']).toEqual(p2);
@@ -89,33 +89,33 @@ describe("handleMessage — 'state'", () => {
       chainCommitment: 'chain123',
     };
     const state = makeGameState({ history: [histEntry] });
-    handleMessage({ type: 'state', ...state });
+    dispatchMessage({ type: 'state', ...state });
     expect(get(history)).toEqual([histEntry]);
   });
 
   it('overwrites existing players Record on each state message', () => {
     players.set({ old: makePlayerSnapshot({ playerId: 'old' }) });
     const state = makeGameState({ players: [makePlayerSnapshot({ playerId: 'new-player' })] });
-    handleMessage({ type: 'state', ...state });
+    dispatchMessage({ type: 'state', ...state });
     const ps = get(players);
     expect('old' in ps).toBe(false);
     expect('new-player' in ps).toBe(true);
   });
 });
 
-describe("handleMessage — 'tick'", () => {
+describe("dispatchMessage — 'tick'", () => {
   it('sets multiplierAnimating to true', () => {
-    handleMessage({ type: 'tick', multiplier: 1.5, elapsed: 1000 });
+    dispatchMessage({ type: 'tick', multiplier: 1.5, elapsed: 1000 });
     expect(get(multiplierAnimating)).toBe(true);
   });
 
   it('updates displayMultiplier', () => {
-    handleMessage({ type: 'tick', multiplier: 3.14, elapsed: 2000 });
+    dispatchMessage({ type: 'tick', multiplier: 3.14, elapsed: 2000 });
     expect(get(displayMultiplier)).toBe(3.14);
   });
 });
 
-describe("handleMessage — 'state' with phase CRASHED", () => {
+describe("dispatchMessage — 'state' with phase CRASHED", () => {
   function makeCrashedState(overrides: Partial<GameStateSnapshot> = {}): GameStateSnapshot {
     return makeGameState({
       phase: 'CRASHED',
@@ -128,22 +128,22 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
 
   it('sets multiplierAnimating to false', () => {
     multiplierAnimating.set(true);
-    handleMessage({ type: 'state', ...makeCrashedState() });
+    dispatchMessage({ type: 'state', ...makeCrashedState() });
     expect(get(multiplierAnimating)).toBe(false);
   });
 
   it('updates gameState phase to CRASHED', () => {
-    handleMessage({ type: 'state', ...makeCrashedState() });
+    dispatchMessage({ type: 'state', ...makeCrashedState() });
     expect(get(gameState)?.phase).toBe('CRASHED');
   });
 
   it('sets gameState crashPoint to the crash value', () => {
-    handleMessage({ type: 'state', ...makeCrashedState({ crashPoint: 3.14 }) });
+    dispatchMessage({ type: 'state', ...makeCrashedState({ crashPoint: 3.14 }) });
     expect(get(gameState)?.crashPoint).toBe(3.14);
   });
 
   it('sets displayMultiplier to crashPoint', () => {
-    handleMessage({ type: 'state', ...makeCrashedState({ crashPoint: 4.55 }) });
+    dispatchMessage({ type: 'state', ...makeCrashedState({ crashPoint: 4.55 }) });
     expect(get(displayMultiplier)).toBe(4.55);
   });
 
@@ -154,7 +154,7 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
       cashoutMultiplier: 2.0,
       payout: 200,
     });
-    handleMessage({ type: 'state', ...makeCrashedState({ players: [p] }) });
+    dispatchMessage({ type: 'state', ...makeCrashedState({ players: [p] }) });
     expect(get(players)['p1']).toEqual(p);
   });
 
@@ -167,7 +167,7 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
       drandRandomness: 'rand-abc',
       chainCommitment: 'chain-77',
     };
-    handleMessage({ type: 'state', ...makeCrashedState({ roundId: 77, history: [histEntry] }) });
+    dispatchMessage({ type: 'state', ...makeCrashedState({ roundId: 77, history: [histEntry] }) });
     const h = get(history);
     expect(h).toHaveLength(1);
     expect(h[0]!.roundId).toBe(77);
@@ -180,7 +180,7 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
 
   it('sets lastCrashResult store to the snapshot when phase is CRASHED and crashPoint is non-null', () => {
     const state = makeCrashedState({ crashPoint: 3.14 });
-    handleMessage({ type: 'state', ...state });
+    dispatchMessage({ type: 'state', ...state });
     const result = get(lastCrashResult);
     expect(result).not.toBeNull();
     expect(result?.phase).toBe('CRASHED');
@@ -190,15 +190,15 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
   it('does not set displayMultiplier or set lastCrashResult when crashPoint is null', () => {
     displayMultiplier.set(1.0);
     // Simulate a CRASHED state with null crashPoint (shouldn't happen in practice but guards against it)
-    handleMessage({ type: 'state', ...makeCrashedState({ crashPoint: null }) });
+    dispatchMessage({ type: 'state', ...makeCrashedState({ crashPoint: null }) });
     expect(get(displayMultiplier)).toBe(1.0);
     expect(get(lastCrashResult)).toBeNull();
   });
 });
 
-describe("handleMessage — 'playerJoined'", () => {
+describe("dispatchMessage — 'playerJoined'", () => {
   it('adds the new player to the players Record', () => {
-    handleMessage({
+    dispatchMessage({
       type: 'playerJoined',
       id: 'conn-99',
       playerId: 'p99',
@@ -218,7 +218,7 @@ describe("handleMessage — 'playerJoined'", () => {
 
   it('does not remove existing players', () => {
     players.set({ existing: makePlayerSnapshot({ playerId: 'existing' }) });
-    handleMessage({
+    dispatchMessage({
       type: 'playerJoined',
       id: 'conn-100',
       playerId: 'new-p',
@@ -235,7 +235,7 @@ describe("handleMessage — 'playerJoined'", () => {
     myPlayerId.set('local-player');
     localStorage.setItem('crashBalance', '100');
     balance.set(100);
-    handleMessage({
+    dispatchMessage({
       type: 'playerJoined',
       id: 'conn-local',
       playerId: 'local-player',
@@ -249,7 +249,7 @@ describe("handleMessage — 'playerJoined'", () => {
   it('does not deduct balance for other players joining', () => {
     myPlayerId.set('local-player');
     balance.set(100);
-    handleMessage({
+    dispatchMessage({
       type: 'playerJoined',
       id: 'conn-other',
       playerId: 'other-player',
@@ -261,13 +261,13 @@ describe("handleMessage — 'playerJoined'", () => {
   });
 });
 
-describe("handleMessage — 'playerCashedOut'", () => {
+describe("dispatchMessage — 'playerCashedOut'", () => {
   it('updates the correct player by playerId', () => {
     players.set({
       p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1', cashedOut: false }),
       p2: makePlayerSnapshot({ playerId: 'p2', id: 'conn-2', cashedOut: false }),
     });
-    handleMessage({
+    dispatchMessage({
       type: 'playerCashedOut',
       id: 'conn-1',
       playerId: 'p1',
@@ -285,7 +285,7 @@ describe("handleMessage — 'playerCashedOut'", () => {
   it('does nothing if playerId is not in players', () => {
     const original = { p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1' }) };
     players.set(original);
-    handleMessage({
+    dispatchMessage({
       type: 'playerCashedOut',
       id: 'conn-1',
       playerId: 'p-unknown',
@@ -296,9 +296,9 @@ describe("handleMessage — 'playerCashedOut'", () => {
   });
 });
 
-describe("handleMessage — 'pendingPayout'", () => {
+describe("dispatchMessage — 'pendingPayout'", () => {
   it('sets lastPendingPayout store to the message', () => {
-    handleMessage({
+    dispatchMessage({
       type: 'pendingPayout',
       roundId: 1,
       wager: 100,
@@ -316,7 +316,7 @@ describe("handleMessage — 'pendingPayout'", () => {
       eventFired = true;
     };
     document.addEventListener('crash:pendingPayout', handler);
-    handleMessage({
+    dispatchMessage({
       type: 'pendingPayout',
       roundId: 1,
       wager: 100,
@@ -329,9 +329,9 @@ describe("handleMessage — 'pendingPayout'", () => {
   });
 });
 
-describe("handleMessage — 'error'", () => {
+describe("dispatchMessage — 'error'", () => {
   it('sets lastError store to the error message string', () => {
-    handleMessage({ type: 'error', message: 'Something went wrong' });
+    dispatchMessage({ type: 'error', message: 'Something went wrong' });
     expect(get(lastError)).toBe('Something went wrong');
   });
 
@@ -341,17 +341,17 @@ describe("handleMessage — 'error'", () => {
       eventFired = true;
     };
     document.addEventListener('crash:error', handler);
-    handleMessage({ type: 'error', message: 'Something went wrong' });
+    dispatchMessage({ type: 'error', message: 'Something went wrong' });
     document.removeEventListener('crash:error', handler);
     expect(eventFired).toBe(false);
   });
 });
 
-describe('handleMessage — unknown type', () => {
+describe('dispatchMessage — unknown type', () => {
   it('does not throw for unknown message type', () => {
     expect(() => {
       // biome-ignore lint/suspicious/noExplicitAny: testing unknown message handling
-      handleMessage({ type: 'unknown-type-xyz' } as any);
+      dispatchMessage({ type: 'unknown-type-xyz' } as any);
     }).not.toThrow();
   });
 });

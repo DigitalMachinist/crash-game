@@ -29,6 +29,6 @@ export function multiplierAtTime(elapsedMs: number): number {
  *
  * @see docs/game-state-machine.md §3.6
  */
-export function crashTimeMs(crashPoint: number): number {
+export function computeCrashTimeMs(crashPoint: number): number {
   return Math.log(crashPoint) / GROWTH_RATE;
 }

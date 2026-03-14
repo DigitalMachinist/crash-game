@@ -57,7 +57,11 @@ export function getBalance(): number {
 export function applyBet(wager: number): number {
   const current = getBalance();
   const next = Math.round((current - wager) * 100) / 100;
-  localStorage.setItem(BALANCE_KEY, String(next));
+  try {
+    localStorage.setItem(BALANCE_KEY, String(next));
+  } catch {
+    // localStorage unavailable — balance update is session-only
+  }
   return next;
 }
 
@@ -71,7 +75,11 @@ export function applyBet(wager: number): number {
 export function applyCashout(payout: number): number {
   const current = getBalance();
   const next = Math.round((current + payout) * 100) / 100;
-  localStorage.setItem(BALANCE_KEY, String(next));
+  try {
+    localStorage.setItem(BALANCE_KEY, String(next));
+  } catch {
+    // localStorage unavailable — balance update is session-only
+  }
   return next;
 }
 
@@ -79,7 +87,11 @@ export function addHistoryEntry(entry: RoundResult): void {
   const history = getHistory();
   history.unshift(entry);
   const trimmed = history.slice(0, CLIENT_HISTORY_LIMIT);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch {
+    // localStorage unavailable — history entry is session-only
+  }
 }
 
 export function getHistory(): RoundResult[] {

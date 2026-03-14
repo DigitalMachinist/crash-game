@@ -7,7 +7,7 @@ const mockSend = vi.fn();
 let mockSocketInstance: { send: typeof mockSend } | null = { send: mockSend };
 
 vi.mock('../socket', () => ({
-  getRawSocket: () => mockSocketInstance,
+  getSocket: () => mockSocketInstance,
 }));
 
 // ─── Import after mock ────────────────────────────────────────────────────────

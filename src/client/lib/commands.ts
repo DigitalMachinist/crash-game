@@ -9,11 +9,11 @@
  */
 import { get } from 'svelte/store';
 import type { ClientMessage } from '../../types';
-import { getRawSocket } from './socket';
+import { getSocket } from './socket';
 import { myPlayerId } from './stores';
 
 function send(msg: ClientMessage): void {
-  const socket = getRawSocket();
+  const socket = getSocket();
   if (!socket) return;
   socket.send(JSON.stringify(msg));
 }

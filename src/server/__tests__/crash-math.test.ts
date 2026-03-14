@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
-import { crashTimeMs, deriveCrashPoint, hashToFloat, multiplierAtTime } from '../crash-math';
+import { computeCrashTimeMs, deriveCrashPoint, hashToFloat, multiplierAtTime } from '../crash-math';
 
 vi.setConfig({ testTimeout: 30000 });
 
@@ -193,20 +193,20 @@ describe('multiplierAtTime', () => {
   });
 });
 
-// ─── crashTimeMs ─────────────────────────────────────────────────────────────
+// ─── computeCrashTimeMs ─────────────────────────────────────────────────────────────
 
-describe('crashTimeMs', () => {
-  it('is the inverse of multiplierAtTime: multiplierAtTime(crashTimeMs(2.5)) ≈ 2.5', () => {
-    const t = crashTimeMs(2.5);
+describe('computeCrashTimeMs', () => {
+  it('is the inverse of multiplierAtTime: multiplierAtTime(computeCrashTimeMs(2.5)) ≈ 2.5', () => {
+    const t = computeCrashTimeMs(2.5);
     expect(Math.abs(multiplierAtTime(t) - 2.5)).toBeLessThan(0.0001);
   });
 
   it('returns 0 for crashPoint=1.00 (ln(1)/GROWTH_RATE = 0)', () => {
-    expect(crashTimeMs(1.0)).toBe(0);
+    expect(computeCrashTimeMs(1.0)).toBe(0);
   });
 
   it('returns a positive number for crashPoint > 1.00', () => {
-    expect(crashTimeMs(2.0)).toBeGreaterThan(0);
-    expect(crashTimeMs(10.0)).toBeGreaterThan(0);
+    expect(computeCrashTimeMs(2.0)).toBeGreaterThan(0);
+    expect(computeCrashTimeMs(10.0)).toBeGreaterThan(0);
   });
 });

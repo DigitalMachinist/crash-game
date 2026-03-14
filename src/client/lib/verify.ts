@@ -4,7 +4,7 @@
  *
  * @see docs/provably-fair.md §2.7
  */
-import { bytesToHex, hexToBytes, sha256Hex } from '../../crypto-hex';
+import { hmacSha256Hex, sha256Hex } from '../../crypto-hex';
 import { deriveCrashPoint } from '../../provably-fair';
 import type { VerificationResult } from '../../types';
 
@@ -19,19 +19,7 @@ export async function computeEffectiveSeedFromRandomness(
   drandRandomness: string,
 ): Promise<string> {
   // drandRandomness is the KEY, chainSeed is the DATA (critical security property)
-  const keyBytes = hexToBytes(drandRandomness);
-  const dataBytes = hexToBytes(chainSeed);
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyBytes,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, dataBytes);
-  return bytesToHex(new Uint8Array(signature));
+  return hmacSha256Hex(drandRandomness, chainSeed);
 }
 
 /**

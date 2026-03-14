@@ -267,7 +267,7 @@ export class CrashGame extends Server<Env> {
    * - WAITING → `handleCountdownTick`; triggers `startRound` when countdown = 0.
    * - STARTING → safety reschedule (alarm fired while `blockConcurrencyWhile` in progress).
    * - RUNNING → `handleTick`; triggers `crashRound` when multiplier ≥ crashPoint.
-   * - CRASHED → `nextRound` after display timer.
+   * - CRASHED → `beginNextRound` after display timer.
    *
    * Wrapped in try/catch so that any unexpected error is logged and the game loop
    * is always rescheduled via the finally block. [Backend-4]
@@ -277,7 +277,7 @@ export class CrashGame extends Server<Env> {
   override async onAlarm(): Promise<void> {
     const now = Date.now();
     // Track whether we are in the CRASHED→WAITING transition so the finally
-    // block can skip rescheduling if nextRound() already scheduled the alarm.
+    // block can skip rescheduling if beginNextRound() already scheduled the alarm.
     let alarmScheduled = false;
 
     try {
@@ -318,8 +318,8 @@ export class CrashGame extends Server<Env> {
         }
       } else if (this.gameState.phase === 'CRASHED') {
         // Display timer expired — transition to WAITING
-        await this.nextRound();
-        alarmScheduled = true; // nextRound() schedules its own alarm
+        await this.beginNextRound();
+        alarmScheduled = true; // beginNextRound() schedules its own alarm
       } else if (this.gameState.phase === 'STARTING') {
         // Alarm fired while still in STARTING (drand fetch in progress or failed).
         // Reschedule and wait for blockConcurrencyWhile to complete or retry.
@@ -452,13 +452,7 @@ export class CrashGame extends Server<Env> {
       );
     }
 
-    const result = handleCrash(
-      this.gameState,
-      this.gameState.chainSeed,
-      this.gameState.drandRound,
-      this.gameState.drandRandomness,
-      now,
-    );
+    const result = handleCrash(this.gameState, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
@@ -497,7 +491,7 @@ export class CrashGame extends Server<Env> {
     await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
   }
 
-  private async nextRound(): Promise<void> {
+  private async beginNextRound(): Promise<void> {
     const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment);
     this.gameState = result.state;
     this.invalidateSnapshot();

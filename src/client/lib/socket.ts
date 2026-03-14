@@ -3,7 +3,7 @@
  *
  * Connects to room `crash-main`, party `crash-game`. Updates `connectionStatus`
  * store: `'connecting'` → `'connected'` on open, `'reconnecting'` on close.
- * All incoming messages are forwarded to `handleMessage()`.
+ * All incoming messages are forwarded to `dispatchMessage()`.
  *
  * `connect()` returns a cleanup function (identical to calling `disconnect()`)
  * for use in component `onDestroy()` hooks. Calling `connect()` while a socket
@@ -14,7 +14,7 @@
 import PartySocket from 'partysocket';
 import { ROOM_ID } from '../../config';
 import type { ServerMessage } from '../../types';
-import { handleMessage } from './message-handler';
+import { dispatchMessage } from './message-handler';
 import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
@@ -39,7 +39,7 @@ function onMessage(e: MessageEvent): void {
       console.warn('[socket] received structurally invalid message:', e.data);
       return;
     }
-    handleMessage(parsed as ServerMessage);
+    dispatchMessage(parsed as ServerMessage);
   } catch (err) {
     console.warn('[socket] failed to parse server message:', e.data, err);
   }
@@ -77,6 +77,6 @@ export function disconnect(): void {
   connectionStatus.set('disconnected');
 }
 
-export function getRawSocket(): PartySocket | null {
+export function getSocket(): PartySocket | null {
   return socket;
 }

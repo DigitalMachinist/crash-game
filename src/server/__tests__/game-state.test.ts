@@ -92,8 +92,13 @@ describe('handleJoin', () => {
   });
 
   it('returns error if phase is CRASHED', () => {
-    let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    let state = {
+      ...createInitialState('abc'),
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+    };
+    state = handleCrash(state, Date.now()).state;
     const { messages } = handleJoin(
       state,
       { playerId: 'player1', wager: 50, autoCashout: null },
@@ -909,7 +914,7 @@ describe('handleCrash', () => {
       nowMs,
     ).state;
 
-    const { state: crashed } = handleCrash(running, 'seed123', 42, 'randval', nowMs + 5000);
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
     expect(crashed.players.get('p1')?.payout).toBe(0);
     expect(crashed.players.get('p2')?.payout).toBe(0);
@@ -921,7 +926,7 @@ describe('handleCrash', () => {
     const { state: afterCashout } = handleCashout(state, 'p1', nowMs + 5000);
     const payoutBefore = afterCashout.players.get('p1')?.payout;
 
-    const { state: crashed } = handleCrash(afterCashout, 'seed123', 42, 'randval', nowMs + 10000);
+    const { state: crashed } = handleCrash(afterCashout, nowMs + 10000);
 
     expect(crashed.players.get('p1')?.payout).toBe(payoutBefore);
     expect(crashed.players.get('p1')?.cashedOut).toBe(true);
@@ -934,15 +939,15 @@ describe('handleCrash', () => {
       state,
       {
         crashPoint: 2.5,
-        chainSeed: 'seed',
-        drandRound: 1,
-        drandRandomness: 'rand',
+        chainSeed: 'revealedSeed',
+        drandRound: 99,
+        drandRandomness: 'drandRand',
         nextChainCommitment: 'next',
       },
       nowMs,
     ).state;
 
-    const { messages } = handleCrash(state, 'revealedSeed', 99, 'drandRand', nowMs + 3000);
+    const { messages } = handleCrash(state, nowMs + 3000);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -972,7 +977,7 @@ describe('handleCrash', () => {
       nowMs,
     ).state;
 
-    const { state: crashed } = handleCrash(state, 'seed', 1, 'rand', nowMs + 5000);
+    const { state: crashed } = handleCrash(state, nowMs + 5000);
     expect(crashed.phase).toBe('CRASHED');
   });
 
@@ -983,15 +988,15 @@ describe('handleCrash', () => {
       state,
       {
         crashPoint: 3.14,
-        chainSeed: 'seed',
-        drandRound: 1,
-        drandRandomness: 'rand',
+        chainSeed: 'theSeed',
+        drandRound: 7,
+        drandRandomness: 'theRand',
         nextChainCommitment: 'next',
       },
       nowMs,
     ).state;
 
-    const { state: crashed } = handleCrash(state, 'theSeed', 7, 'theRand', nowMs + 5000);
+    const { state: crashed } = handleCrash(state, nowMs + 5000);
 
     expect(crashed.history).toHaveLength(1);
     expect(crashed.history[0].roundId).toBe(5);
@@ -1017,15 +1022,15 @@ describe('handleCrash', () => {
       state,
       {
         crashPoint: 2.0,
-        chainSeed: 'seed',
-        drandRound: 1,
-        drandRandomness: 'rand',
+        chainSeed: 'newseed',
+        drandRound: 99,
+        drandRandomness: 'newrand',
         nextChainCommitment: 'next',
       },
       nowMs,
     ).state;
 
-    const { state: crashed } = handleCrash(state, 'newseed', 99, 'newrand', nowMs + 1000);
+    const { state: crashed } = handleCrash(state, nowMs + 1000);
 
     expect(crashed.history.length).toBe(HISTORY_LENGTH);
     expect(crashed.history[0].roundSeed).toBe('newseed');
@@ -1181,7 +1186,7 @@ describe('transitionToWaiting', () => {
     const nowMs = 1_000_000;
     // Join during WAITING, then transition to RUNNING, then crash
     const { state: running } = makeRunningStateWithPlayer('p1', 100, null, 'c1', 2.0, nowMs);
-    const { state: crashed } = handleCrash(running, 'seed', 1, 'rand', nowMs + 5000);
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
     const { state: waiting } = transitionToWaiting(crashed, 'newcommit');
     expect(waiting.players.size).toBe(0);
@@ -1189,7 +1194,8 @@ describe('transitionToWaiting', () => {
 
   it('increments roundId', () => {
     let state = createInitialState('abc', 3);
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
+    state = handleCrash(state, Date.now()).state;
     const { state: waiting } = transitionToWaiting(state, 'newcommit');
     expect(waiting.roundId).toBe(4);
   });
@@ -1203,14 +1209,16 @@ describe('transitionToWaiting', () => {
 
   it('phase is WAITING', () => {
     let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
+    state = handleCrash(state, Date.now()).state;
     const { state: waiting } = transitionToWaiting(state, 'newcommit');
     expect(waiting.phase).toBe('WAITING');
   });
 
   it('broadcasts state message with empty players array', () => {
     let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
+    state = handleCrash(state, Date.now()).state;
     const { messages } = transitionToWaiting(state, 'newcommit');
 
     expect(messages).toHaveLength(1);
@@ -1375,7 +1383,7 @@ describe('handleCrash — behavioral parity (High-7)', () => {
       },
       nowMs,
     ).state;
-    const { state: crashed } = handleCrash(running, 'seed123', 42, 'randval', nowMs + 5000);
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
     for (let i = 1; i <= 20; i++) {
       expect(crashed.players.get(`player${i}`)?.payout).toBe(0);
@@ -1414,13 +1422,7 @@ describe('handleCrash — behavioral parity (High-7)', () => {
     const { state: afterTick } = handleTick(running, nowMs + elapsed);
 
     // Then crash
-    const { state: crashed } = handleCrash(
-      afterTick,
-      'seed123',
-      42,
-      'randval',
-      nowMs + elapsed + 1000,
-    );
+    const { state: crashed } = handleCrash(afterTick, nowMs + elapsed + 1000);
 
     // Players 1-5 should retain their cashout payout (floor(100 * 2.0 * 100)/100 = 200)
     for (let i = 1; i <= 5; i++) {
@@ -1501,14 +1503,14 @@ describe('buildStateSnapshot', () => {
       state,
       {
         crashPoint: 2.5,
-        chainSeed: 'seed',
-        drandRound: 1,
-        drandRandomness: 'rand',
+        chainSeed: 'theSeed',
+        drandRound: 42,
+        drandRandomness: 'theRand',
         nextChainCommitment: 'next',
       },
       nowMs,
     ).state;
-    state = handleCrash(state, 'theSeed', 42, 'theRand', nowMs + 5000).state;
+    state = handleCrash(state, nowMs + 5000).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1557,7 +1559,8 @@ describe('buildStateSnapshot', () => {
   it('snapshot reflects updated state after transitionToWaiting (empty players)', () => {
     let state = createInitialState('commit1');
     state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
+    state = handleCrash(state, Date.now()).state;
     state = transitionToWaiting(state, 'newcomm').state;
 
     const snapshot = buildStateSnapshot(state);
@@ -1624,7 +1627,7 @@ describe('round lifecycle', () => {
     expect(state.players.get('p1')?.payout).toBe(200); // floor(100 * 2.0 * 100) / 100 = 200
 
     // 6. Crash
-    const r5 = handleCrash(state, 'seed123', 100, 'rand456', tickTime + 1000);
+    const r5 = handleCrash(state, tickTime + 1000);
     state = r5.state;
     expect(state.phase).toBe('CRASHED');
     expect(state.players.get('p2')?.payout).toBe(0); // Bob didn't cash out

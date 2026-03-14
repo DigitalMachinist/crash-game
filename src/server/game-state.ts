@@ -18,7 +18,7 @@ import {
   WAITING_DURATION_MS,
 } from '../config';
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
-import { crashTimeMs as computeCrashTimeMs, multiplierAtTime } from './crash-math';
+import { computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
 const SERVER_VERSION = '1.0.0';
 
@@ -429,13 +429,14 @@ export function handleTick(
  */
 export function handleCrash(
   state: GameState,
-  chainSeed: string,
-  drandRound: number,
-  drandRandomness: string,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
   const elapsed = state.roundStartTime !== null ? nowMs - state.roundStartTime : 0;
   const crashPoint = state.crashPoint ?? 1.0;
+  // Callers guard that these are non-null before calling handleCrash
+  const chainSeed = state.chainSeed!;
+  const drandRound = state.drandRound!;
+  const drandRandomness = state.drandRandomness!;
 
   // Mark all non-cashed-out players as lost
   const newPlayers = new Map(state.players);
@@ -462,9 +463,6 @@ export function handleCrash(
     ...state,
     phase: 'CRASHED',
     players: newPlayers,
-    chainSeed,
-    drandRound,
-    drandRandomness,
     history: newHistory,
   };
 

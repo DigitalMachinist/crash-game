@@ -1,5 +1,5 @@
 /**
- * Shared hex↔Uint8Array and SHA-256 utilities for WebCrypto operations.
+ * Shared hex↔Uint8Array, SHA-256, and HMAC-SHA-256 utilities for WebCrypto operations.
  * Used by both server (drand.ts, hash-chain.ts) and client (verify.ts) code.
  */
 
@@ -23,4 +23,20 @@ export async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   return bytesToHex(new Uint8Array(hashBuffer));
+}
+
+/**
+ * Computes `HMAC-SHA256(key = keyHex, data = dataHex)` and returns a 64-char lowercase hex string.
+ * SECURITY: the key must be the uncontrollable external input (drand randomness) — see provably-fair.md §2.5.
+ */
+export async function hmacSha256Hex(keyHex: string, dataHex: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    hexToBytes(keyHex),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, hexToBytes(dataHex));
+  return bytesToHex(new Uint8Array(signature));
 }
