@@ -151,6 +151,13 @@ export class CrashGame extends Server<Env> {
 
     // Runtime validation — reject malformed messages before processing [High-1][High-4]
     if (!isValidClientMessage(parsed)) {
+      console.warn('[onMessage] rejected invalid message', {
+        connId: conn.id,
+        type:
+          typeof parsed === 'object' && parsed !== null
+            ? (parsed as Record<string, unknown>).type
+            : undefined,
+      });
       conn.send(
         JSON.stringify({
           type: 'error',
