@@ -4,7 +4,13 @@ import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
 import App from '../../App.svelte';
-import { balance, gameState, myPlayerId } from '../../lib/stores';
+import {
+  balance,
+  gameState,
+  lastCrashResult,
+  lastPendingPayout,
+  myPlayerId,
+} from '../../lib/stores';
 
 vi.mock('../../lib/socket', () => ({
   connect: vi.fn(),
@@ -54,6 +60,8 @@ beforeEach(() => {
   gameState.set(null);
   myPlayerId.set('');
   balance.set(0);
+  lastCrashResult.set(null);
+  lastPendingPayout.set(null);
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
   vi.mocked(hasPendingResult).mockReturnValue(false);
@@ -108,54 +116,45 @@ describe('App component', () => {
     });
   });
 
-  describe('crash:pendingPayout event', () => {
-    it('shows toast with Auto-cashout message after event', async () => {
+  describe('lastPendingPayout store', () => {
+    it('shows toast with Auto-cashout message when lastPendingPayout store is set', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       expect(screen.getByText(/Auto-cashout:/)).toBeTruthy();
     });
 
     it('toast contains payout and multiplier values', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       expect(screen.getByText('Auto-cashout: +120.00 (2.40x)')).toBeTruthy();
     });
 
-    it('calls applyCashout and addHistoryEntry on pendingPayout event', async () => {
+    it('calls applyCashout and addHistoryEntry when lastPendingPayout store is set', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       expect(applyCashout).toHaveBeenCalledWith(120);
       expect(addHistoryEntry).toHaveBeenCalledWith(
@@ -172,26 +171,23 @@ describe('App component', () => {
     it('hasPendingResult guard prevents double-apply of pendingPayout', async () => {
       vi.mocked(hasPendingResult).mockReturnValue(true);
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       expect(applyCashout).not.toHaveBeenCalled();
       expect(addHistoryEntry).not.toHaveBeenCalled();
     });
   });
 
-  describe('crash:crashed event', () => {
-    // The crash:crashed event detail is now a GameStateSnapshot (phase='CRASHED').
-    // roundId and crashPoint come from the snapshot, not from get(gameState).
+  describe('lastCrashResult store', () => {
+    // The lastCrashResult store value is a GameStateSnapshot (phase='CRASHED').
+    // roundId and crashPoint come from the snapshot.
     function makeCrashedSnapshot(
       roundId: number,
       players: GameStateSnapshot['players'],
@@ -201,21 +197,19 @@ describe('App component', () => {
 
     it('calls applyCashout for player who cashed out', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn1',
-              playerId: 'test-player-id',
-              name: 'Player 1',
-              wager: 100,
-              cashedOut: true,
-              cashoutMultiplier: 2.0,
-              payout: 200,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn1',
+            playerId: 'test-player-id',
+            name: 'Player 1',
+            wager: 100,
+            cashedOut: true,
+            cashoutMultiplier: 2.0,
+            payout: 200,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(applyCashout).toHaveBeenCalledWith(200);
@@ -223,21 +217,19 @@ describe('App component', () => {
 
     it('calls addHistoryEntry with payout:200 for player who cashed out', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn1',
-              playerId: 'test-player-id',
-              name: 'Player 1',
-              wager: 100,
-              cashedOut: true,
-              cashoutMultiplier: 2.0,
-              payout: 200,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn1',
+            playerId: 'test-player-id',
+            name: 'Player 1',
+            wager: 100,
+            cashedOut: true,
+            cashoutMultiplier: 2.0,
+            payout: 200,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(addHistoryEntry).toHaveBeenCalledWith(
@@ -253,21 +245,19 @@ describe('App component', () => {
 
     it('does NOT call applyCashout for player who did not cash out', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn1',
-              playerId: 'test-player-id',
-              name: 'Player 1',
-              wager: 100,
-              cashedOut: false,
-              cashoutMultiplier: null,
-              payout: null,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn1',
+            playerId: 'test-player-id',
+            name: 'Player 1',
+            wager: 100,
+            cashedOut: false,
+            cashoutMultiplier: null,
+            payout: null,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(applyCashout).not.toHaveBeenCalled();
@@ -275,21 +265,19 @@ describe('App component', () => {
 
     it('calls addHistoryEntry with payout:0 for player who did not cash out', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn1',
-              playerId: 'test-player-id',
-              name: 'Player 1',
-              wager: 100,
-              cashedOut: false,
-              cashoutMultiplier: null,
-              payout: null,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn1',
+            playerId: 'test-player-id',
+            name: 'Player 1',
+            wager: 100,
+            cashedOut: false,
+            cashoutMultiplier: null,
+            payout: null,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(addHistoryEntry).toHaveBeenCalledWith(
@@ -305,45 +293,41 @@ describe('App component', () => {
 
     it('does nothing when myPlayerId is not in crashed players list', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn2',
-              playerId: 'other-player',
-              name: 'Other',
-              wager: 100,
-              cashedOut: true,
-              cashoutMultiplier: 2.0,
-              payout: 200,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn2',
+            playerId: 'other-player',
+            name: 'Other',
+            wager: 100,
+            cashedOut: true,
+            cashoutMultiplier: 2.0,
+            payout: 200,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(applyCashout).not.toHaveBeenCalled();
       expect(addHistoryEntry).not.toHaveBeenCalled();
     });
 
-    it('hasPendingResult guard prevents double-apply on crashed event', async () => {
+    it('hasPendingResult guard prevents double-apply when lastCrashResult is set', async () => {
       vi.mocked(hasPendingResult).mockReturnValue(true);
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:crashed', {
-          detail: makeCrashedSnapshot(5, [
-            {
-              id: 'conn1',
-              playerId: 'test-player-id',
-              name: 'Player 1',
-              wager: 100,
-              cashedOut: true,
-              cashoutMultiplier: 2.0,
-              payout: 200,
-              autoCashout: null,
-            },
-          ]),
-        }),
+      lastCrashResult.set(
+        makeCrashedSnapshot(5, [
+          {
+            id: 'conn1',
+            playerId: 'test-player-id',
+            name: 'Player 1',
+            wager: 100,
+            cashedOut: true,
+            cashoutMultiplier: 2.0,
+            payout: 200,
+            autoCashout: null,
+          },
+        ]),
       );
       await tick();
       expect(applyCashout).not.toHaveBeenCalled();
@@ -371,17 +355,14 @@ describe('App component', () => {
   describe('toast accessibility (Issue 8.2)', () => {
     it('toast container has role="status"', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       const toast = document.querySelector('.toast');
       expect(toast).toBeTruthy();
@@ -390,17 +371,14 @@ describe('App component', () => {
 
     it('toast container has aria-live="polite"', async () => {
       render(App);
-      document.dispatchEvent(
-        new CustomEvent('crash:pendingPayout', {
-          detail: {
-            roundId: 1,
-            wager: 50,
-            payout: 120,
-            cashoutMultiplier: 2.4,
-            crashPoint: 3.0,
-          },
-        }),
-      );
+      lastPendingPayout.set({
+        type: 'pendingPayout',
+        roundId: 1,
+        wager: 50,
+        payout: 120,
+        cashoutMultiplier: 2.4,
+        crashPoint: 3.0,
+      });
       await tick();
       const toast = document.querySelector('.toast');
       expect(toast).toBeTruthy();

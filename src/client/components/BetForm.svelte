@@ -1,40 +1,32 @@
 <script lang="ts">
 /**
  * Bet placement form. Visible only during WAITING phase.
- * Listens for the `crash:error` DOM CustomEvent (dispatched by `messageHandler.ts`)
- * to surface server-side validation errors (e.g., invalid wager, already joined).
+ * Watches the `lastError` store (set by `messageHandler.ts`) to surface
+ * server-side validation errors (e.g., invalid wager, already joined).
  */
 
 import { HOUSE_EDGE, MAX_WAGER, MIN_WAGER } from '../../config';
 import { sendJoin } from '../lib/commands';
-import { balance, phase } from '../lib/stores';
+import { balance, lastError, phase } from '../lib/stores';
 
 const houseEdgePct = Math.round(HOUSE_EDGE * 100);
 const rtpPct = 100 - houseEdgePct;
 
-let wager = '';
-let playerName = '';
-let autoCashoutStr = '';
-let errorMessage = '';
+let wager = $state('');
+let playerName = $state('');
+let autoCashoutStr = $state('');
+let errorMessage = $state('');
 
-// Listen for server-side error events
-function handleErrorEvent(e: Event) {
-  errorMessage = (e as CustomEvent<{ message: string }>).detail.message;
-}
-
-import { onDestroy, onMount } from 'svelte';
-
-onMount(() => {
-  document.addEventListener('crash:error', handleErrorEvent);
+$effect(() => {
+  if ($lastError) {
+    errorMessage = $lastError;
+    lastError.set(null);
+  }
 });
 
-onDestroy(() => {
-  document.removeEventListener('crash:error', handleErrorEvent);
-});
-
-$: wagerNum = parseFloat(wager);
-$: autoCashoutNum = autoCashoutStr ? parseFloat(autoCashoutStr) : null;
-$: isValid = !isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER;
+const wagerNum = $derived(parseFloat(wager));
+const autoCashoutNum = $derived(autoCashoutStr ? parseFloat(autoCashoutStr) : null);
+const isValid = $derived(!isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER);
 
 function handleJoin() {
   if (!isValid) return;
@@ -93,7 +85,7 @@ function handleJoin() {
 
     <button
       class="join-btn"
-      on:click={handleJoin}
+      onclick={handleJoin}
       disabled={!isValid}
     >
       Join Round

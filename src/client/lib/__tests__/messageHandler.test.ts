@@ -7,6 +7,9 @@ import {
   displayMultiplier,
   gameState,
   history,
+  lastCrashResult,
+  lastError,
+  lastPendingPayout,
   multiplierAnimating,
   myPlayerId,
   players,
@@ -51,6 +54,9 @@ beforeEach(() => {
   history.set([]);
   myPlayerId.set('');
   balance.set(0);
+  lastCrashResult.set(null);
+  lastPendingPayout.set(null);
+  lastError.set(null);
   localStorage.clear();
 });
 
@@ -172,20 +178,21 @@ describe("handleMessage — 'state' with phase CRASHED", () => {
     expect(h[0]!.chainCommitment).toBe('chain-77');
   });
 
-  it('does not set displayMultiplier or fire crash:crashed when crashPoint is null', () => {
+  it('sets lastCrashResult store to the snapshot when phase is CRASHED and crashPoint is non-null', () => {
+    const state = makeCrashedState({ crashPoint: 3.14 });
+    handleMessage({ type: 'state', ...state });
+    const result = get(lastCrashResult);
+    expect(result).not.toBeNull();
+    expect(result?.phase).toBe('CRASHED');
+    expect(result?.crashPoint).toBe(3.14);
+  });
+
+  it('does not set displayMultiplier or set lastCrashResult when crashPoint is null', () => {
     displayMultiplier.set(1.0);
-    let eventFired = false;
-    document.addEventListener(
-      'crash:crashed',
-      () => {
-        eventFired = true;
-      },
-      { once: true },
-    );
     // Simulate a CRASHED state with null crashPoint (shouldn't happen in practice but guards against it)
     handleMessage({ type: 'state', ...makeCrashedState({ crashPoint: null }) });
     expect(get(displayMultiplier)).toBe(1.0);
-    expect(eventFired).toBe(false);
+    expect(get(lastCrashResult)).toBeNull();
   });
 });
 
@@ -278,10 +285,23 @@ describe("handleMessage — 'playerCashedOut'", () => {
 });
 
 describe("handleMessage — 'pendingPayout'", () => {
-  it("dispatches 'crash:pendingPayout' CustomEvent on document with message detail", () => {
-    let capturedDetail: unknown = null;
-    const handler = (e: Event) => {
-      capturedDetail = (e as CustomEvent).detail;
+  it('sets lastPendingPayout store to the message', () => {
+    handleMessage({
+      type: 'pendingPayout',
+      roundId: 1,
+      wager: 100,
+      payout: 200,
+      cashoutMultiplier: 2.0,
+      crashPoint: 3.0,
+    });
+    const result = get(lastPendingPayout);
+    expect(result).toMatchObject({ roundId: 1, payout: 200 });
+  });
+
+  it('does not dispatch a crash:pendingPayout CustomEvent', () => {
+    let eventFired = false;
+    const handler = () => {
+      eventFired = true;
     };
     document.addEventListener('crash:pendingPayout', handler);
     handleMessage({
@@ -293,20 +313,25 @@ describe("handleMessage — 'pendingPayout'", () => {
       crashPoint: 3.0,
     });
     document.removeEventListener('crash:pendingPayout', handler);
-    expect(capturedDetail).toMatchObject({ roundId: 1, payout: 200 });
+    expect(eventFired).toBe(false);
   });
 });
 
 describe("handleMessage — 'error'", () => {
-  it("dispatches 'crash:error' CustomEvent on document with message detail", () => {
-    let capturedDetail: unknown = null;
-    const handler = (e: Event) => {
-      capturedDetail = (e as CustomEvent).detail;
+  it('sets lastError store to the error message string', () => {
+    handleMessage({ type: 'error', message: 'Something went wrong' });
+    expect(get(lastError)).toBe('Something went wrong');
+  });
+
+  it('does not dispatch a crash:error CustomEvent', () => {
+    let eventFired = false;
+    const handler = () => {
+      eventFired = true;
     };
     document.addEventListener('crash:error', handler);
     handleMessage({ type: 'error', message: 'Something went wrong' });
     document.removeEventListener('crash:error', handler);
-    expect(capturedDetail).toMatchObject({ message: 'Something went wrong' });
+    expect(eventFired).toBe(false);
   });
 });
 

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
-import { balance, gameState } from '../../lib/stores';
+import { balance, gameState, lastError } from '../../lib/stores';
 import BetForm from '../BetForm.svelte';
 
 vi.mock('../../lib/commands', () => ({
@@ -31,6 +31,7 @@ function makeGameState(phase: GameStateSnapshot['phase']): GameStateSnapshot {
 beforeEach(() => {
   gameState.set(null);
   balance.set(0);
+  lastError.set(null);
   vi.clearAllMocks();
 });
 
@@ -221,16 +222,16 @@ describe('BetForm component', () => {
   });
 
   describe('error message handling', () => {
-    it('shows error message when crash:error custom event fires on document', async () => {
+    it('shows error message when lastError store is set', async () => {
       render(BetForm);
-      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Test error' } }));
+      lastError.set('Test error');
       await tick();
       expect(screen.getByText('Test error')).toBeTruthy();
     });
 
     it('wager input gets aria-describedby="wager-error" when error is present', async () => {
       render(BetForm);
-      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Bad wager' } }));
+      lastError.set('Bad wager');
       await tick();
       const wagerInput = screen.getByLabelText('Wager');
       expect(wagerInput.getAttribute('aria-describedby')).toBe('wager-error');
@@ -238,7 +239,7 @@ describe('BetForm component', () => {
 
     it('wager input gets aria-invalid="true" when error is present', async () => {
       render(BetForm);
-      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Bad wager' } }));
+      lastError.set('Bad wager');
       await tick();
       const wagerInput = screen.getByLabelText('Wager');
       expect(wagerInput.getAttribute('aria-invalid')).toBe('true');
@@ -258,7 +259,7 @@ describe('BetForm component', () => {
 
     it('error message div has id="wager-error" when error is shown', async () => {
       render(BetForm);
-      document.dispatchEvent(new CustomEvent('crash:error', { detail: { message: 'Some error' } }));
+      lastError.set('Some error');
       await tick();
       const errorDiv = screen.getByText('Some error');
       expect(errorDiv.getAttribute('id')).toBe('wager-error');
@@ -267,10 +268,8 @@ describe('BetForm component', () => {
     it('error message is cleared on next join attempt', async () => {
       render(BetForm);
 
-      // Trigger an error
-      document.dispatchEvent(
-        new CustomEvent('crash:error', { detail: { message: 'Previous error' } }),
-      );
+      // Trigger an error via store
+      lastError.set('Previous error');
       await tick();
       expect(screen.getByText('Previous error')).toBeTruthy();
 
