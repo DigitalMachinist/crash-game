@@ -82,10 +82,17 @@ export function getHistory(): RoundResult[] {
     const stored = localStorage.getItem(HISTORY_KEY);
     if (!stored) return [];
     const parsed: unknown = JSON.parse(stored);
-    // Validate the parsed value is an array before trusting it — guards against
-    // schema drift between app versions that could otherwise silently corrupt accounting.
+    // Validate the parsed value is an array of objects with required RoundResult fields.
+    // Guards against schema drift between app versions that could silently corrupt accounting.
     if (!Array.isArray(parsed)) return [];
-    return parsed as RoundResult[];
+    return parsed.filter(
+      (item): item is RoundResult =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as Record<string, unknown>).roundId === 'number' &&
+        typeof (item as Record<string, unknown>).wager === 'number' &&
+        typeof (item as Record<string, unknown>).payout === 'number',
+    );
   } catch {
     return [];
   }

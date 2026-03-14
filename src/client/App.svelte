@@ -63,6 +63,7 @@ function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayo
 }
 
 function handleCrashedResult(snapshot: GameStateSnapshot) {
+  if (snapshot.crashPoint === null) return;
   const id = get(myPlayerId);
   if (!id) return;
   const myPlayer = snapshot.players.find((p) => p.playerId === id);
@@ -75,7 +76,7 @@ function handleCrashedResult(snapshot: GameStateSnapshot) {
       wager: myPlayer.wager,
       payout: myPlayer.payout,
       cashoutMultiplier: myPlayer.cashoutMultiplier,
-      crashPoint: snapshot.crashPoint!,
+      crashPoint: snapshot.crashPoint,
       timestamp: Date.now(),
     });
     balance.set(getBalance());
@@ -86,7 +87,7 @@ function handleCrashedResult(snapshot: GameStateSnapshot) {
       wager: myPlayer.wager,
       payout: 0,
       cashoutMultiplier: null,
-      crashPoint: snapshot.crashPoint!,
+      crashPoint: snapshot.crashPoint,
       timestamp: Date.now(),
     });
   }
