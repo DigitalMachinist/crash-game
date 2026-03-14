@@ -12,6 +12,7 @@
  * @see docs/websocket-protocol.md §4.1
  */
 import PartySocket from 'partysocket';
+import { ROOM_ID } from '../../config';
 import type { ServerMessage } from '../../types';
 import { handleMessage } from './message-handler';
 import { connectionStatus, multiplierAnimating } from './stores';
@@ -53,7 +54,7 @@ export function connect(playerId?: string): () => void {
   connectionStatus.set('connecting');
   socket = new PartySocket({
     host: typeof window !== 'undefined' ? window.location.host : 'localhost:8787',
-    room: 'crash-main',
+    room: ROOM_ID,
     party: 'crash-game',
     ...(playerId ? { query: { playerId } } : {}),
   });

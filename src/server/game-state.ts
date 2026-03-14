@@ -644,8 +644,9 @@ export function transitionToWaiting(
  */
 export function buildStateSnapshot(
   state: GameState,
+  nowMs: number = Date.now(),
 ): Omit<ServerMessage & { type: 'state' }, 'type'> {
-  const elapsed = state.roundStartTime !== null ? Date.now() - state.roundStartTime : 0;
+  const elapsed = state.roundStartTime !== null ? nowMs - state.roundStartTime : 0;
   const multiplier =
     state.phase === 'RUNNING' && state.roundStartTime !== null ? multiplierAtTime(elapsed) : 1.0;
 

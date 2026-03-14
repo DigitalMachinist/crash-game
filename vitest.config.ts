@@ -22,7 +22,7 @@ export default defineConfig({
         'src/server/game-state.ts',
         'src/client/lib/balance.ts',
         'src/client/lib/verify.ts',
-        'src/client/lib/messageHandler.ts',
+        'src/client/lib/message-handler.ts',
       ],
       thresholds: {
         lines: 90,

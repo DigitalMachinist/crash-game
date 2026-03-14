@@ -74,7 +74,7 @@ export class CrashGame extends Server<Env> {
   /** Returns cached snapshot if valid; otherwise rebuilds and caches it. */
   private getSnapshot(): GameStateSnapshot {
     if (this.cachedSnapshot === null) {
-      this.cachedSnapshot = buildStateSnapshot(this.gameState);
+      this.cachedSnapshot = buildStateSnapshot(this.gameState, Date.now());
     }
     return this.cachedSnapshot;
   }
