@@ -13,8 +13,7 @@ import { onMount } from 'svelte';
 import type { HistoryEntry, VerificationResult } from '../../../types';
 import { verifyRound } from '../lib/verify';
 
-export let entry: HistoryEntry;
-export let onClose: () => void;
+let { entry, onClose }: { entry: HistoryEntry; onClose: () => void } = $props();
 
 let result: VerificationResult | null = null;
 let loading = true;
