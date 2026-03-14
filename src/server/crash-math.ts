@@ -7,35 +7,10 @@
  * @see docs/provably-fair.md §2.6
  * @see docs/game-state-machine.md §3.6
  */
-import { GROWTH_RATE, HOUSE_EDGE } from '../config';
+import { GROWTH_RATE } from '../config';
+import { deriveCrashPoint, hashToFloat } from '../provably-fair';
 
-/**
- * Converts the first 13 hex characters of a hash to a float in [0, 1).
- * 13 hex chars = 52 bits, matching the JS float64 mantissa precision.
- *
- * @see docs/provably-fair.md §2.6
- */
-export function hashToFloat(hex: string): number {
-  // Take first 13 hex chars (52 bits) — matches JS float64 precision
-  return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
-}
-
-/**
- * Derives the crash point from the effective seed using the house-edge formula.
- * Formula: `max(1.00, floor((1 − HOUSE_EDGE) × 100 / (1 − h)) / 100)`
- * where `h = hashToFloat(effectiveSeed)`.
- *
- * Parameterized via `HOUSE_EDGE` in `src/config.ts`; `verify.ts` imports
- * the same constant, so changing `HOUSE_EDGE` once propagates to both paths.
- *
- * @see docs/provably-fair.md §2.6
- * @see docs/project-architecture.md §1.5
- */
-export function deriveCrashPoint(effectiveSeed: string): number {
-  const h = hashToFloat(effectiveSeed);
-  // 1% house edge: floor(99 / (1 - h)) / 100, minimum 1.00
-  return Math.max(1.0, Math.floor(((1 - HOUSE_EDGE) * 100) / (1 - h)) / 100);
-}
+export { deriveCrashPoint, hashToFloat };
 
 /**
  * Returns the current multiplier at `elapsedMs` milliseconds since round start.

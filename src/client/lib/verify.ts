@@ -4,8 +4,8 @@
  *
  * @see docs/provably-fair.md §2.7
  */
-import { HOUSE_EDGE } from '../../config';
 import { bytesToHex, hexToBytes, sha256Hex } from '../../crypto-hex';
+import { deriveCrashPoint } from '../../provably-fair';
 import type { VerificationResult } from '../../types';
 
 /**
@@ -32,18 +32,6 @@ export async function computeEffectiveSeedFromRandomness(
 
   const signature = await crypto.subtle.sign('HMAC', key, dataBytes);
   return bytesToHex(new Uint8Array(signature));
-}
-
-function hashToFloat(hex: string): number {
-  return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
-}
-
-/** Numerator for crash point formula: `(1 - HOUSE_EDGE) * 100`. Matches server `crash-math.ts`. */
-const CRASH_NUMERATOR = Math.round((1 - HOUSE_EDGE) * 100);
-
-function deriveCrashPoint(effectiveSeed: string): number {
-  const h = hashToFloat(effectiveSeed);
-  return Math.max(1.0, Math.floor(CRASH_NUMERATOR / (1 - h)) / 100);
 }
 
 /**
