@@ -11,9 +11,9 @@ type EventHandler = (event?: unknown) => void;
 // Shared state between mock factory and tests — captured via module-level object
 const mockState = {
   handlers: {} as Record<string, EventHandler>,
+  removeListenerCalls: [] as Array<[string, EventHandler]>,
   close: vi.fn(),
   send: vi.fn(),
-  addEventListener: vi.fn(),
   lastInstance: null as null | { close: () => void },
   lastOptions: null as null | Record<string, unknown>,
 };
@@ -25,6 +25,9 @@ vi.mock('partysocket', () => {
     this['send'] = mockState.send;
     this['addEventListener'] = (event: string, handler: EventHandler) => {
       mockState.handlers[event] = handler;
+    };
+    this['removeEventListener'] = (event: string, handler: EventHandler) => {
+      mockState.removeListenerCalls.push([event, handler]);
     };
     mockState.lastInstance = this as unknown as { close: () => void };
     mockState.lastOptions = opts;
@@ -39,6 +42,7 @@ const { connect, disconnect } = await import('../socket');
 beforeEach(() => {
   // Reset mock state
   mockState.handlers = {};
+  mockState.removeListenerCalls = [];
   mockState.close.mockClear();
   mockState.send.mockClear();
   mockState.lastInstance = null;
@@ -119,5 +123,40 @@ describe('disconnect()', () => {
 
   it('can be called when no socket is connected without throwing', () => {
     expect(() => disconnect()).not.toThrow();
+  });
+
+  it('[High-23] removes all registered event listeners', () => {
+    connect();
+    disconnect();
+    expect(mockState.removeListenerCalls).toHaveLength(3);
+    const events = mockState.removeListenerCalls.map(([e]) => e).sort();
+    expect(events).toEqual(['close', 'message', 'open']);
+  });
+
+  it('[High-23] getRawSocket() returns null after disconnect', async () => {
+    const { getRawSocket } = await import('../socket');
+    connect();
+    expect(getRawSocket()).not.toBeNull();
+    disconnect();
+    expect(getRawSocket()).toBeNull();
+  });
+});
+
+describe('[High-23] singleton guard', () => {
+  it('calling connect() twice closes the first socket before creating a new one', () => {
+    connect();
+    connect();
+    expect(mockState.close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('[High-23] cleanup return value', () => {
+  it('connect() returns a function that disconnects', async () => {
+    const { getRawSocket } = await import('../socket');
+    const cleanup = connect();
+    expect(typeof cleanup).toBe('function');
+    cleanup();
+    expect(getRawSocket()).toBeNull();
+    expect(get(connectionStatus)).toBe('disconnected');
   });
 });
