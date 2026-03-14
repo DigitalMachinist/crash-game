@@ -32,7 +32,7 @@ import {
   hasPendingResult,
 } from './lib/balance';
 import { connect, disconnect } from './lib/socket';
-import { balance, gameState, myPlayerId } from './lib/stores';
+import { balance, gameState, myPlayerId, sessionToken } from './lib/stores';
 
 let pendingPayoutToast: string | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -98,6 +98,8 @@ onMount(() => {
   const id = getOrCreatePlayerId();
   myPlayerId.set(id);
   balance.set(getBalance());
+  const savedToken = localStorage.getItem('crashSessionToken');
+  if (savedToken) sessionToken.set(savedToken);
   connect(id);
   document.addEventListener('crash:pendingPayout', handlePendingPayout);
   document.addEventListener('crash:crashed', handleCrashedResult);

@@ -102,6 +102,7 @@ export function handleMessage(msg: ServerMessage): void {
     }
     case 'sessionGranted': {
       sessionToken.set(msg.sessionToken);
+      localStorage.setItem('crashSessionToken', msg.sessionToken);
       break;
     }
     case 'error': {
