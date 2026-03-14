@@ -13,7 +13,7 @@
  */
 import PartySocket from 'partysocket';
 import type { ServerMessage } from '../../types';
-import { handleMessage } from './messageHandler';
+import { handleMessage } from './message-handler';
 import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
@@ -46,10 +46,18 @@ export function connect(playerId?: string): () => void {
 
   messageHandler = (e: MessageEvent) => {
     try {
-      const msg = JSON.parse(e.data as string) as ServerMessage;
-      handleMessage(msg);
-    } catch {
-      // Ignore malformed messages
+      const parsed: unknown = JSON.parse(e.data as string);
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        typeof (parsed as Record<string, unknown>).type !== 'string'
+      ) {
+        console.warn('[socket] received structurally invalid message:', e.data);
+        return;
+      }
+      handleMessage(parsed as ServerMessage);
+    } catch (err) {
+      console.warn('[socket] failed to parse server message:', e.data, err);
     }
   };
 

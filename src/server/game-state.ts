@@ -9,6 +9,7 @@
  */
 
 import {
+  COUNTDOWN_TICK_MS,
   HISTORY_LENGTH,
   MAX_PLAYER_ID_LENGTH,
   MAX_PLAYERS_PER_ROUND,
@@ -68,7 +69,7 @@ function playerToSnapshot(p: Player): PlayerSnapshot {
   };
 }
 
-function getPlayers(state: GameState): PlayerSnapshot[] {
+function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
   return Array.from(state.players.values()).map(playerToSnapshot);
 }
 
@@ -417,8 +418,9 @@ export function handleTick(
 
 /**
  * Transitions the game to CRASHED phase. Marks all non-cashed-out players as
- * lost (payout = 0) and builds the `crashed` broadcast message that reveals
- * the provably-fair ingredients (`roundSeed`, `drandRound`, `drandRandomness`).
+ * lost (payout = 0) and broadcasts a `state{phase:'CRASHED'}` message that reveals
+ * the provably-fair ingredients (`chainSeed` stored as `roundSeed` in history,
+ * `drandRound`, `drandRandomness`).
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED transition)
  */
@@ -538,7 +540,7 @@ export function handleCountdownTick(
     return { state, messages: [], shouldStartRound: false };
   }
 
-  const newCountdown = Math.max(0, state.countdown - 1000);
+  const newCountdown = Math.max(0, state.countdown - COUNTDOWN_TICK_MS);
   const shouldStartRound = newCountdown <= 0;
 
   const newState: GameState = {
@@ -560,7 +562,7 @@ export function handleCountdownTick(
           multiplier: 1.0,
           elapsed: 0,
           crashPoint: null,
-          players: getPlayers(newState),
+          players: getPlayerSnapshots(newState),
           chainCommitment: newState.chainCommitment,
           drandRound: null,
           drandRandomness: null,
@@ -643,7 +645,7 @@ export function buildStateSnapshot(
     multiplier,
     elapsed,
     crashPoint: state.phase === 'CRASHED' ? state.crashPoint : null,
-    players: getPlayers(state),
+    players: getPlayerSnapshots(state),
     chainCommitment: state.chainCommitment,
     drandRound: state.phase === 'CRASHED' ? state.drandRound : null,
     drandRandomness: state.phase === 'CRASHED' ? state.drandRandomness : null,

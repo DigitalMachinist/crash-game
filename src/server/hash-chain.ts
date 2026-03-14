@@ -18,7 +18,7 @@ import { CHAIN_LENGTH } from '../config';
  *
  * @see docs/provably-fair.md §2.2
  */
-export async function generateRootSeed(): Promise<string> {
+export function generateRootSeed(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))

@@ -48,8 +48,8 @@ function handleCancel(e: Event) {
 <dialog
   bind:this={dialogEl}
   class="modal"
-  on:click={handleDialogClick}
-  on:cancel={handleCancel}
+  onclick={handleDialogClick}
+  oncancel={handleCancel}
 >
   <h3>Verify Round #{entry.roundId}</h3>
   <p><strong>Crash Point:</strong> {entry.crashPoint.toFixed(2)}x</p>
@@ -77,7 +77,7 @@ function handleCancel(e: Event) {
     {/if}
   </div>
 
-  <button on:click={onClose}>Close</button>
+  <button onclick={onClose}>Close</button>
 </dialog>
 
 <style>

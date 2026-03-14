@@ -28,7 +28,7 @@ function bytesToHex(bytes: Uint8Array): string {
  *
  * @see docs/provably-fair.md §2.5
  */
-export async function computeEffectiveSeed(
+export async function computeEffectiveSeedFromRandomness(
   chainSeed: string,
   drandRandomness: string,
 ): Promise<string> {
@@ -91,7 +91,7 @@ export async function verifyRound(params: {
   const chainValid = computedHash === chainCommitment;
 
   // Step 2: derive crash point
-  const effectiveSeed = await computeEffectiveSeed(roundSeed, drandRandomness);
+  const effectiveSeed = await computeEffectiveSeedFromRandomness(roundSeed, drandRandomness);
   const computedCrashPoint = deriveCrashPoint(effectiveSeed);
 
   if (!chainValid) {

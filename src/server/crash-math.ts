@@ -25,12 +25,11 @@ export function hashToFloat(hex: string): number {
  * Formula: `max(1.00, floor((1 − HOUSE_EDGE) × 100 / (1 − h)) / 100)`
  * where `h = hashToFloat(effectiveSeed)`.
  *
- * Parameterized via `HOUSE_EDGE` in `src/config.ts`.
- * Note: the client verification in `src/client/lib/verify.ts` hardcodes the
- * equivalent literal `99` and must be updated in sync if `HOUSE_EDGE` changes.
+ * Parameterized via `HOUSE_EDGE` in `src/config.ts`; `verify.ts` imports
+ * the same constant, so changing `HOUSE_EDGE` once propagates to both paths.
  *
  * @see docs/provably-fair.md §2.6
- * @see docs/project-architecture.md §1.5 (house-edge sync dependency)
+ * @see docs/project-architecture.md §1.5
  */
 export function deriveCrashPoint(effectiveSeed: string): number {
   const h = hashToFloat(effectiveSeed);

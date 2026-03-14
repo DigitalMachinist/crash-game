@@ -6,8 +6,7 @@
  *
  * @see [High-1] [High-4] [High-2]
  */
-import type { ClientMessage } from '../types';
-import type { DrandBeacon } from './drand';
+import type { ClientMessage, DrandBeacon } from '../types';
 
 // ─── Client message validation ──────────────────────────────────────────────
 

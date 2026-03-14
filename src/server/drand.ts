@@ -15,13 +15,10 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
+import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
-export interface DrandBeacon {
-  round: number;
-  randomness: string; // 64-char hex
-  signature: string;
-}
+export type { DrandBeacon };
 
 export class DrandFetchError extends Error {
   constructor(message: string) {
@@ -75,7 +72,8 @@ export async function fetchDrandBeacon(
 
   try {
     return await attemptFetch(primaryUrl);
-  } catch {
+  } catch (primaryErr) {
+    console.warn('[drand] primary fetch failed, trying fallback:', primaryErr);
     try {
       return await attemptFetch(fallbackUrl);
     } catch (e) {

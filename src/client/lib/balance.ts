@@ -57,8 +57,8 @@ export function applyBet(wager: number): number {
 }
 
 /**
- * Credits `payout` to the stored balance. Called from `App.svelte` on
- * `crash:crashed` or `crash:pendingPayout` events. Guarded externally by
+ * Credits `payout` to the stored balance. Called from `App.svelte` when
+ * `lastCrashResult` or `lastPendingPayout` stores are updated. Guarded externally by
  * `hasPendingResult()` to prevent double-application.
  *
  * @see docs/game-state-machine.md §3.8
@@ -81,7 +81,11 @@ export function getHistory(): RoundResult[] {
   try {
     const stored = localStorage.getItem(HISTORY_KEY);
     if (!stored) return [];
-    return JSON.parse(stored) as RoundResult[];
+    const parsed: unknown = JSON.parse(stored);
+    // Validate the parsed value is an array before trusting it — guards against
+    // schema drift between app versions that could otherwise silently corrupt accounting.
+    if (!Array.isArray(parsed)) return [];
+    return parsed as RoundResult[];
   } catch {
     return [];
   }

@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
-import { handleMessage } from '../messageHandler';
+import { handleMessage } from '../message-handler';
 import {
   balance,
   displayMultiplier,

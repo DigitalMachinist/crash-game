@@ -10,14 +10,14 @@ import {
 } from '../hash-chain';
 
 describe('generateRootSeed', () => {
-  it('returns a 64-character hex string', async () => {
-    const seed = await generateRootSeed();
+  it('returns a 64-character hex string', () => {
+    const seed = generateRootSeed();
     expect(seed).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('returns different values on successive calls', async () => {
-    const seed1 = await generateRootSeed();
-    const seed2 = await generateRootSeed();
+  it('returns different values on successive calls', () => {
+    const seed1 = generateRootSeed();
+    const seed2 = generateRootSeed();
     expect(seed1).not.toBe(seed2);
   });
 });

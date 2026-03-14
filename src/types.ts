@@ -11,6 +11,13 @@
 // ─── Game phases ─────────────────────────────────────────────────────────────
 export type Phase = 'WAITING' | 'STARTING' | 'RUNNING' | 'CRASHED';
 
+// ─── drand beacon ────────────────────────────────────────────────────────────
+export interface DrandBeacon {
+  round: number;
+  randomness: string; // 64-char hex
+  signature: string;
+}
+
 // ─── Server-side player (full, internal to server) ───────────────────────────
 export interface Player {
   id: string; // connection ID (changes on reconnect)

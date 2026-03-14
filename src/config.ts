@@ -1,9 +1,8 @@
 /**
  * Central configuration for the Crash Game. All tunable constants live here.
  *
- * Note: `HOUSE_EDGE` is used in `src/server/crash-math.ts` but the equivalent
- * value is hardcoded as `99` in `src/client/lib/verify.ts`. Both files must
- * be updated in sync when changing the house edge.
+ * `HOUSE_EDGE` is imported by both `crash-math.ts` (server) and `verify.ts` (client) —
+ * a single change here propagates to both computation paths.
  *
  * @see docs/project-architecture.md §1.5
  */

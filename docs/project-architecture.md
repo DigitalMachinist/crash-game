@@ -52,9 +52,9 @@ flowchart TD
 
     socket["socket.ts<br/>(partysocket)"] -->|"messages"| msgHandler["messageHandler.ts"]
     msgHandler -->|"store updates"| stores["stores.ts<br/>(writable + derived)"]
-    msgHandler -->|"crash:crashed"| App
-    msgHandler -->|"crash:pendingPayout"| App
-    msgHandler -->|"crash:error"| BetForm
+    msgHandler -->|"lastCrashResult"| App
+    msgHandler -->|"lastPendingPayout"| App
+    msgHandler -->|"lastError"| BetForm
 
     stores -->|"$phase, $balance, etc."| App
     stores -->|"$isInRound"| CashoutButton
@@ -65,13 +65,13 @@ flowchart TD
     commands["commands.ts<br/>(sendJoin, sendCashout)"] --> socket
 ```
 
-**DOM CustomEvent bus**: `messageHandler.ts` dispatches three events on `document` as a decoupled event bus between the message handler and UI components:
+**Store-based handoff**: `messageHandler.ts` writes three signal stores to communicate round events to UI components:
 
-| Event | Dispatcher | Consumer | Purpose |
+| Store | Dispatcher | Consumer | Purpose |
 |---|---|---|---|
-| `crash:crashed` | `messageHandler.ts` | `App.svelte` | Round result accounting (cashout/loss) |
-| `crash:pendingPayout` | `messageHandler.ts` | `App.svelte` | Reconnect payout delivery |
-| `crash:error` | `messageHandler.ts` | `BetForm.svelte` | Server validation errors |
+| `lastCrashResult` | `messageHandler.ts` | `App.svelte` | Round result accounting (cashout/loss) |
+| `lastPendingPayout` | `messageHandler.ts` | `App.svelte` | Reconnect payout delivery |
+| `lastError` | `messageHandler.ts` | `BetForm.svelte` | Server validation errors |
 
 **Derived stores** (computed from `gameState`):
 - `phase` — current `Phase` value

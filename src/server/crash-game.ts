@@ -32,6 +32,7 @@ import {
   handleJoin,
   handleStartingComplete,
   handleTick,
+  type OutboundMessage,
   transitionToWaiting,
 } from './game-state';
 import {
@@ -94,7 +95,7 @@ export class CrashGame extends Server<Env> {
           console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
         }
         // First run or corrupted state — generate hash chain
-        this.rootSeed = await generateRootSeed();
+        this.rootSeed = generateRootSeed();
         this.gameNumber = 0;
         const terminalHash = await computeTerminalHash(this.rootSeed);
         this.gameState = createInitialState(terminalHash);
@@ -111,7 +112,7 @@ export class CrashGame extends Server<Env> {
       console.error('CrashGame initialization failed:', error);
       // Attempt to initialize fresh state so the game loop can continue [Backend-3]
       try {
-        this.rootSeed = await generateRootSeed();
+        this.rootSeed = generateRootSeed();
         this.gameNumber = 0;
         const terminalHash = await computeTerminalHash(this.rootSeed);
         this.gameState = createInitialState(terminalHash);
@@ -194,8 +195,11 @@ export class CrashGame extends Server<Env> {
         conn.id,
       );
       this.gameState = result.state;
+      const joinSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerJoined',
+      );
       // Invalidate cache if state changed (player was added successfully)
-      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerJoined')) {
+      if (joinSucceeded) {
         this.invalidateSnapshot();
       }
 
@@ -206,20 +210,11 @@ export class CrashGame extends Server<Env> {
       }
 
       // Persist player join so DO eviction does not lose the wager [Backend-1]
-      const joinSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerJoined',
-      );
       if (joinSucceeded) {
         await this.persistState();
       }
 
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
-        } else {
-          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
-        }
-      }
+      this.dispatchMessages(result.messages, conn);
     } else if (msg.type === 'cashout') {
       // Resolve playerId via connection mapping to support reconnected players. [Phase 4.6]
       const playerId = this.connectionToPlayer.get(conn.id);
@@ -235,26 +230,20 @@ export class CrashGame extends Server<Env> {
 
       const result = handleCashout(this.gameState, playerId, Date.now());
       this.gameState = result.state;
+      const cashoutSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerCashedOut',
+      );
       // Invalidate cache if state changed (cashout was accepted)
-      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
+      if (cashoutSucceeded) {
         this.invalidateSnapshot();
       }
 
       // Persist cashout so DO eviction does not lose the payout record [Backend-2]
-      const cashoutSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerCashedOut',
-      );
       if (cashoutSucceeded) {
         await this.persistState();
       }
 
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
-        } else {
-          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
-        }
-      }
+      this.dispatchMessages(result.messages, conn);
     }
   }
 
@@ -297,11 +286,7 @@ export class CrashGame extends Server<Env> {
         // Countdown changed (or phase transitioned to STARTING); invalidate cache
         this.invalidateSnapshot();
 
-        for (const outbound of result.messages) {
-          if (outbound.broadcast) {
-            this.broadcast(JSON.stringify(outbound.message));
-          }
-        }
+        this.dispatchMessages(result.messages);
 
         if (result.shouldStartRound) {
           // Transition to STARTING — use blockConcurrencyWhile for isolation
@@ -321,11 +306,7 @@ export class CrashGame extends Server<Env> {
           this.invalidateSnapshot();
         }
 
-        for (const outbound of result.messages) {
-          if (outbound.broadcast) {
-            this.broadcast(JSON.stringify(outbound.message));
-          }
-        }
+        this.dispatchMessages(result.messages);
 
         if (result.shouldCrash) {
           await this.crashRound(now);
@@ -394,7 +375,7 @@ export class CrashGame extends Server<Env> {
 
     // Rotate chain if we are within CHAIN_ROTATION_THRESHOLD games of exhausting it
     if (this.gameNumber > CHAIN_LENGTH - CHAIN_ROTATION_THRESHOLD) {
-      this.rootSeed = await generateRootSeed();
+      this.rootSeed = generateRootSeed();
       this.gameNumber = 1;
     }
 
@@ -509,11 +490,7 @@ export class CrashGame extends Server<Env> {
       }
     }
 
-    for (const outbound of result.messages) {
-      if (outbound.broadcast) {
-        this.broadcast(JSON.stringify(outbound.message));
-      }
-    }
+    this.dispatchMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
@@ -524,23 +501,27 @@ export class CrashGame extends Server<Env> {
     this.gameState = result.state;
     this.invalidateSnapshot();
 
-    for (const outbound of result.messages) {
-      if (outbound.broadcast) {
-        this.broadcast(JSON.stringify(outbound.message));
-      }
-    }
+    this.dispatchMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
   }
 
   /**
-   * Persists all durable game state under the single key `'gameData'`.
-   * Called after every crash, void round, and pending payout consumption.
-   * Not called on every tick to avoid unnecessary storage writes.
-   *
-   * @see docs/game-state-machine.md §3.9
+   * Dispatches all outbound messages: broadcasts are sent to every connection;
+   * targeted messages are routed to the specific player via `sendToTarget`.
+   * Pass `conn` (the sender) when targeted messages may be present (join/cashout).
    */
+  private dispatchMessages(messages: OutboundMessage[], conn?: Connection): void {
+    for (const outbound of messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      } else if (conn) {
+        this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
+      }
+    }
+  }
+
   /**
    * Resolves a targeted outbound message to the correct connection. [High-15]
    * Looks up the target player's current connection by playerId; falls back to
@@ -555,6 +536,13 @@ export class CrashGame extends Server<Env> {
     return fallback;
   }
 
+  /**
+   * Persists all durable game state under the single key `'gameData'`.
+   * Called after every crash, void round, and pending payout consumption.
+   * Not called on every tick to avoid unnecessary storage writes.
+   *
+   * @see docs/game-state-machine.md §3.9
+   */
   private async persistState(): Promise<void> {
     await this.ctx.storage.put('gameData', {
       rootSeed: this.rootSeed,

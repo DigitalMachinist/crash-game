@@ -7,7 +7,7 @@
  * @see docs/provably-fair.md §2.0
  */
 
-export let onClose: () => void;
+let { onClose }: { onClose: () => void } = $props();
 
 function handleBackdropKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') onClose();
@@ -16,15 +16,15 @@ function handleBackdropKeydown(e: KeyboardEvent) {
 
 <div
   class="modal-backdrop"
-  on:click={onClose}
+  onclick={onClose}
   role="button"
   tabindex="0"
-  on:keydown={handleBackdropKeydown}
+  onkeydown={handleBackdropKeydown}
 >
   <div
     class="modal"
-    on:click|stopPropagation
-    on:keydown={() => {}}
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={() => {}}
     role="dialog"
     aria-modal="true"
     aria-labelledby="fairness-title"
@@ -113,7 +113,7 @@ function handleBackdropKeydown(e: KeyboardEvent) {
       </p>
     </section>
 
-    <button on:click={onClose}>Close</button>
+    <button onclick={onClose}>Close</button>
   </div>
 </div>
 
