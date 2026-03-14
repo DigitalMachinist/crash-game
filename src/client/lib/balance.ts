@@ -44,7 +44,7 @@ export function getBalance(): number {
 }
 
 /**
- * Deducts `wager` from the stored balance. Called in `messageHandler.ts`
+ * Deducts `wager` from the stored balance. Called in `message-handler.ts`
  * on `playerJoined` (server confirmation), NOT optimistically on bet submit.
  *
  * @see docs/game-state-machine.md §3.8

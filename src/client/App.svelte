@@ -4,7 +4,7 @@
  *
  * Responsibilities beyond layout:
  * - Initializes `myPlayerId` and `balance` from localStorage on mount.
- * - Watches `lastCrashResult` store (set by `messageHandler.ts`) and applies
+ * - Watches `lastCrashResult` store (set by `message-handler.ts`) and applies
  *   cashout or records loss via `applyCashout` / `addHistoryEntry`, guarded
  *   by `hasPendingResult()` to prevent double-application.
  * - Watches `lastPendingPayout` store and credits disconnected auto-cashout

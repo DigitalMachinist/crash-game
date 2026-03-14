@@ -81,12 +81,11 @@ export function handleMessage(msg: ServerMessage): void {
     }
     case 'playerCashedOut': {
       players.update((p) => {
-        const entry = Object.entries(p).find(([, player]) => player.id === msg.id);
-        if (!entry) return p;
-        const [playerId, player] = entry;
+        const player = p[msg.playerId];
+        if (!player) return p;
         return {
           ...p,
-          [playerId]: {
+          [msg.playerId]: {
             ...player,
             cashedOut: true,
             cashoutMultiplier: msg.multiplier,

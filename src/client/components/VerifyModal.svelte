@@ -15,19 +15,23 @@ import { verifyRound } from '../lib/verify';
 
 let { entry, onClose }: { entry: HistoryEntry; onClose: () => void } = $props();
 
-let result: VerificationResult | null = null;
-let loading = true;
+let result: VerificationResult | null = $state(null);
+let loading = $state(true);
 let dialogEl: HTMLDialogElement;
 
 onMount(async () => {
   dialogEl.showModal();
-  result = await verifyRound({
-    roundSeed: entry.roundSeed,
-    chainCommitment: entry.chainCommitment,
-    drandRound: entry.drandRound,
-    drandRandomness: entry.drandRandomness,
-    displayedCrashPoint: entry.crashPoint,
-  });
+  try {
+    result = await verifyRound({
+      roundSeed: entry.roundSeed,
+      chainCommitment: entry.chainCommitment,
+      drandRound: entry.drandRound,
+      drandRandomness: entry.drandRandomness,
+      displayedCrashPoint: entry.crashPoint,
+    });
+  } catch {
+    result = { valid: false, reason: 'Verification error (WebCrypto unavailable)' };
+  }
   loading = false;
 });
 

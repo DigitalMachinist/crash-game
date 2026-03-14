@@ -19,7 +19,7 @@ import {
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
-import type { GameStateSnapshot, ServerMessage } from '../types';
+import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
 import { deriveCrashPoint } from './crash-math';
 import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
 import {
@@ -33,6 +33,7 @@ import {
   handleStartingComplete,
   handleTick,
   type OutboundMessage,
+  type RoundIngredients,
   transitionToWaiting,
 } from './game-state';
 import {
@@ -281,7 +282,7 @@ export class CrashGame extends Server<Env> {
 
     try {
       if (this.gameState.phase === 'WAITING') {
-        const result = handleCountdownTick(this.gameState, now);
+        const result = handleCountdownTick(this.gameState);
         this.gameState = result.state;
         // Countdown changed (or phase transitioned to STARTING); invalidate cache
         this.invalidateSnapshot();
@@ -382,7 +383,7 @@ export class CrashGame extends Server<Env> {
     const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
     const nextChainCommitment = await sha256Hex(chainSeed);
 
-    let beacon: import('./drand').DrandBeacon;
+    let beacon: DrandBeacon;
     let drandRound: number;
     let drandRandomness: string;
 
@@ -391,8 +392,9 @@ export class CrashGame extends Server<Env> {
       beacon = await fetchDrandBeacon(round);
       drandRound = beacon.round;
       drandRandomness = beacon.randomness;
-    } catch {
+    } catch (drandErr) {
       // Void round — drand fetch failed; rewind game number and return to WAITING
+      console.warn('[startRound] drand fetch failed, voiding round:', drandErr);
       this.gameNumber -= 1;
       this.gameState = { ...this.gameState, phase: 'WAITING', countdown: WAITING_DURATION_MS };
       this.invalidateSnapshot();
@@ -405,15 +407,14 @@ export class CrashGame extends Server<Env> {
     const crashPoint = deriveCrashPoint(effectiveSeed);
     const now = Date.now();
 
-    const result = handleStartingComplete(
-      this.gameState,
+    const ingredients: RoundIngredients = {
       crashPoint,
       chainSeed,
       drandRound,
       drandRandomness,
       nextChainCommitment,
-      now,
-    );
+    };
+    const result = handleStartingComplete(this.gameState, ingredients, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
@@ -427,7 +428,7 @@ export class CrashGame extends Server<Env> {
   }
 
   /**
-   * Transitions from RUNNING to CRASHED. Broadcasts the `crashed` message with
+   * Transitions from RUNNING to CRASHED. Broadcasts a `state{phase:'CRASHED'}` message with
    * provably-fair ingredients, then stores pending payouts for any auto-cashed-out
    * players who are no longer connected. A `Map<connectionId, Connection>` is
    * built once from `this.getConnections()` so disconnection checks are O(1) per

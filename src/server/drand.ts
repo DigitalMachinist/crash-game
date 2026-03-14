@@ -18,8 +18,6 @@ import {
 import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
-export type { DrandBeacon };
-
 export class DrandFetchError extends Error {
   constructor(message: string) {
     super(message);

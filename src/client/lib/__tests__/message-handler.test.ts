@@ -262,12 +262,18 @@ describe("handleMessage — 'playerJoined'", () => {
 });
 
 describe("handleMessage — 'playerCashedOut'", () => {
-  it('updates the correct player by connection id', () => {
+  it('updates the correct player by playerId', () => {
     players.set({
       p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1', cashedOut: false }),
       p2: makePlayerSnapshot({ playerId: 'p2', id: 'conn-2', cashedOut: false }),
     });
-    handleMessage({ type: 'playerCashedOut', id: 'conn-1', multiplier: 2.5, payout: 250 });
+    handleMessage({
+      type: 'playerCashedOut',
+      id: 'conn-1',
+      playerId: 'p1',
+      multiplier: 2.5,
+      payout: 250,
+    });
     const ps = get(players);
     expect(ps['p1']!.cashedOut).toBe(true);
     expect(ps['p1']!.cashoutMultiplier).toBe(2.5);
@@ -276,10 +282,16 @@ describe("handleMessage — 'playerCashedOut'", () => {
     expect(ps['p2']!.cashedOut).toBe(false);
   });
 
-  it('does nothing if no player matches the connection id', () => {
+  it('does nothing if playerId is not in players', () => {
     const original = { p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1' }) };
     players.set(original);
-    handleMessage({ type: 'playerCashedOut', id: 'conn-unknown', multiplier: 2.0, payout: 200 });
+    handleMessage({
+      type: 'playerCashedOut',
+      id: 'conn-1',
+      playerId: 'p-unknown',
+      multiplier: 2.0,
+      payout: 200,
+    });
     expect(get(players)).toEqual(original);
   });
 });

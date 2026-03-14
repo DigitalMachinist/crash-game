@@ -112,7 +112,7 @@ export type ServerMessage =
       wager: number;
       autoCashout: number | null;
     }
-  | { type: 'playerCashedOut'; id: string; multiplier: number; payout: number }
+  | { type: 'playerCashedOut'; id: string; playerId: string; multiplier: number; payout: number }
   | {
       type: 'pendingPayout';
       roundId: number;

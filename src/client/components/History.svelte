@@ -29,7 +29,7 @@ function closeVerify() {
           <span class="crash-point" class:low={entry.crashPoint < 2}>
             {entry.crashPoint.toFixed(2)}x
           </span>
-          <button class="verify-btn" on:click={() => openVerify(entry)}>Verify</button>
+          <button class="verify-btn" onclick={() => openVerify(entry)}>Verify</button>
         </li>
       {/each}
     </ul>

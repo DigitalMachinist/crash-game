@@ -17,9 +17,32 @@ import { handleMessage } from './message-handler';
 import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
-let openHandler: (() => void) | null = null;
-let closeHandler: (() => void) | null = null;
-let messageHandler: ((e: MessageEvent) => void) | null = null;
+
+function onOpen(): void {
+  connectionStatus.set('connected');
+}
+
+function onClose(): void {
+  connectionStatus.set('reconnecting');
+  multiplierAnimating.set(false);
+}
+
+function onMessage(e: MessageEvent): void {
+  try {
+    const parsed: unknown = JSON.parse(e.data as string);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).type !== 'string'
+    ) {
+      console.warn('[socket] received structurally invalid message:', e.data);
+      return;
+    }
+    handleMessage(parsed as ServerMessage);
+  } catch (err) {
+    console.warn('[socket] failed to parse server message:', e.data, err);
+  }
+}
 
 export function connect(playerId?: string): () => void {
   // Singleton guard: close any existing socket before opening a new one [High-23]
@@ -35,47 +58,18 @@ export function connect(playerId?: string): () => void {
     ...(playerId ? { query: { playerId } } : {}),
   });
 
-  openHandler = () => {
-    connectionStatus.set('connected');
-  };
-
-  closeHandler = () => {
-    connectionStatus.set('reconnecting');
-    multiplierAnimating.set(false);
-  };
-
-  messageHandler = (e: MessageEvent) => {
-    try {
-      const parsed: unknown = JSON.parse(e.data as string);
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        typeof (parsed as Record<string, unknown>).type !== 'string'
-      ) {
-        console.warn('[socket] received structurally invalid message:', e.data);
-        return;
-      }
-      handleMessage(parsed as ServerMessage);
-    } catch (err) {
-      console.warn('[socket] failed to parse server message:', e.data, err);
-    }
-  };
-
-  socket.addEventListener('open', openHandler);
-  socket.addEventListener('close', closeHandler);
-  socket.addEventListener('message', messageHandler);
+  socket.addEventListener('open', onOpen);
+  socket.addEventListener('close', onClose);
+  socket.addEventListener('message', onMessage);
 
   return disconnect;
 }
 
 export function disconnect(): void {
   if (socket) {
-    if (openHandler) socket.removeEventListener('open', openHandler);
-    if (closeHandler) socket.removeEventListener('close', closeHandler);
-    if (messageHandler) socket.removeEventListener('message', messageHandler);
-    openHandler = null;
-    closeHandler = null;
-    messageHandler = null;
+    socket.removeEventListener('open', onOpen);
+    socket.removeEventListener('close', onClose);
+    socket.removeEventListener('message', onMessage);
     socket.close();
     socket = null;
   }

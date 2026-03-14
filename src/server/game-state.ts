@@ -347,6 +347,7 @@ export function handleCashout(
         message: {
           type: 'playerCashedOut',
           id: player.id,
+          playerId,
           multiplier,
           payout,
         },
@@ -395,6 +396,7 @@ export function handleTick(
         message: {
           type: 'playerCashedOut',
           id: player.id,
+          playerId: pid,
           multiplier: autoCashoutMultiplier,
           payout,
         },
@@ -484,6 +486,7 @@ export function handleCrash(
           drandRound,
           drandRandomness,
           history: newHistory,
+          serverVersion: '1.0.0',
         },
       },
     ],
@@ -498,15 +501,20 @@ export function handleCrash(
  *
  * @see docs/provably-fair.md §2.4
  */
+export interface RoundIngredients {
+  crashPoint: number;
+  chainSeed: string;
+  drandRound: number;
+  drandRandomness: string;
+  nextChainCommitment: string;
+}
+
 export function handleStartingComplete(
   state: GameState,
-  crashPoint: number,
-  chainSeed: string,
-  drandRound: number,
-  drandRandomness: string,
-  nextChainCommitment: string,
+  ingredients: RoundIngredients,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
+  const { crashPoint, chainSeed, drandRound, drandRandomness, nextChainCommitment } = ingredients;
   const crashTime = computeCrashTimeMs(crashPoint);
 
   return {
@@ -532,10 +540,11 @@ export function handleStartingComplete(
  *
  * @see docs/game-state-machine.md §3.1 (WAITING phase)
  */
-export function handleCountdownTick(
-  state: GameState,
-  nowMs: number,
-): { state: GameState; messages: OutboundMessage[]; shouldStartRound: boolean } {
+export function handleCountdownTick(state: GameState): {
+  state: GameState;
+  messages: OutboundMessage[];
+  shouldStartRound: boolean;
+} {
   if (state.phase !== 'WAITING') {
     return { state, messages: [], shouldStartRound: false };
   }
@@ -567,6 +576,7 @@ export function handleCountdownTick(
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
+          serverVersion: '1.0.0',
         },
       },
     ],
@@ -618,6 +628,7 @@ export function transitionToWaiting(
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
+          serverVersion: '1.0.0',
         },
       },
     ],
