@@ -1,8 +1,8 @@
 <script lang="ts">
 import { countdown, phase, players } from '../lib/stores';
 
-$: countdownSec = Math.ceil($countdown / 1000);
-$: playerCount = Object.keys($players).length;
+const countdownSec = $derived(Math.ceil($countdown / 1000));
+const playerCount = $derived(Object.keys($players).length);
 </script>
 
 <div class="game-status" role="status" aria-live="assertive">
