@@ -44,7 +44,7 @@ export async function computeSeedAtIndex(rootSeed: string, index: number): Promi
  *
  * @see docs/provably-fair.md §2.2
  */
-export function computeTerminalHash(rootSeed: string): Promise<string> {
+export async function computeTerminalHash(rootSeed: string): Promise<string> {
   return computeSeedAtIndex(rootSeed, CHAIN_LENGTH);
 }
 
@@ -69,11 +69,12 @@ export async function verifySeedAgainstHash(seed: string, expectedHash: string):
  *
  * @see docs/provably-fair.md §2.2 (two numbering systems)
  */
-export function computeChainSeedForGame(rootSeed: string, gameNumber: number): Promise<string> {
+export async function computeChainSeedForGame(
+  rootSeed: string,
+  gameNumber: number,
+): Promise<string> {
   if (gameNumber < 1 || gameNumber > CHAIN_LENGTH) {
-    return Promise.reject(
-      new Error(`gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${gameNumber}`),
-    );
+    throw new Error(`gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${gameNumber}`);
   }
   // Game 1 uses index CHAIN_LENGTH-1, game 2 uses CHAIN_LENGTH-2, etc.
   return computeSeedAtIndex(rootSeed, CHAIN_LENGTH - gameNumber);

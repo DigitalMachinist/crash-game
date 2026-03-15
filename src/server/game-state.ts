@@ -111,12 +111,13 @@ export function handleJoin(
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
 ): { state: GameState; messages: OutboundMessage[] } {
+  const reject = (message: string) => playerError(state, message);
   // Handle existing player first (any phase) — must precede phase check so reconnects during
   // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
   if (state.players.has(msg.playerId)) {
     const existing = state.players.get(msg.playerId)!;
     if (existing.wager !== msg.wager) {
-      return playerError(state, 'Already joined with different wager');
+      return reject('Already joined with different wager');
     }
     if (existing.id === connectionId) {
       return { state, messages: [] }; // Same connection — no-op
@@ -150,31 +151,31 @@ export function handleJoin(
   }
 
   if (state.phase !== 'WAITING') {
-    return playerError(state, `Cannot join during ${state.phase} phase`);
+    return reject(`Cannot join during ${state.phase} phase`);
   }
 
   if (!msg.playerId || msg.playerId.length > MAX_PLAYER_ID_LENGTH) {
-    return playerError(state, 'Invalid playerId');
+    return reject('Invalid playerId');
   }
 
   if (state.players.size >= MAX_PLAYERS_PER_ROUND) {
-    return playerError(state, 'Room full');
+    return reject('Room full');
   }
 
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
-    return playerError(state, 'Wager must be a positive number');
+    return reject('Wager must be a positive number');
   }
 
   if (msg.wager < MIN_WAGER) {
-    return playerError(state, `Minimum wager is $${MIN_WAGER.toFixed(2)}`);
+    return reject(`Minimum wager is $${MIN_WAGER.toFixed(2)}`);
   }
 
   if (msg.wager > MAX_WAGER) {
-    return playerError(state, `Maximum wager is $${MAX_WAGER.toFixed(2)}`);
+    return reject(`Maximum wager is $${MAX_WAGER.toFixed(2)}`);
   }
 
   if (msg.autoCashout != null && (!Number.isFinite(msg.autoCashout) || msg.autoCashout <= 1.0)) {
-    return playerError(state, 'autoCashout must be greater than 1.0');
+    return reject('autoCashout must be greater than 1.0');
   }
 
   const name = msg.name?.trim() || msg.playerId.slice(0, 8);
@@ -221,17 +222,18 @@ export function handleCashout(
   playerId: string,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
+  const reject = (message: string) => playerError(state, message);
   if (state.phase !== 'RUNNING') {
-    return playerError(state, `Cannot cashout during ${state.phase} phase`);
+    return reject(`Cannot cashout during ${state.phase} phase`);
   }
 
   const player = state.players.get(playerId);
   if (!player) {
-    return playerError(state, 'Not in current round');
+    return reject('Not in current round');
   }
 
   if (player.cashedOut) {
-    return playerError(state, 'Already cashed out');
+    return reject('Already cashed out');
   }
 
   // roundStartTime is always set when phase is RUNNING (set in handleStartingComplete)
@@ -240,7 +242,7 @@ export function handleCashout(
 
   // Must be strictly less than crash point
   if (state.crashPoint !== null && multiplier >= state.crashPoint) {
-    return playerError(state, 'Round has already crashed');
+    return reject('Round has already crashed');
   }
 
   const payout = Math.floor(player.wager * multiplier * 100) / 100;

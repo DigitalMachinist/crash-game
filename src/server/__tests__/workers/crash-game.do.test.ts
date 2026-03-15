@@ -167,8 +167,6 @@ describe('CrashGame DO (integration)', () => {
     // it may return an error message instead.
     const joinedMsgs = parsed.filter((m) => m.type === 'playerJoined');
     const errorMsgs = parsed.filter((m) => m.type === 'error');
-    // Either: no extra join, or an error — both are acceptable server behaviours.
-    expect(joinedMsgs.length + errorMsgs.length).toBeGreaterThanOrEqual(0); // always passes; real check below
     // The server must not broadcast a second playerJoined for the same playerId+round
     expect(joinedMsgs.length).toBe(0);
 

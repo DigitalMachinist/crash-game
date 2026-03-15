@@ -75,7 +75,7 @@ interface StoredGameData {
     drandRandomness: string;
     chainCommitment: string;
   }>;
-  pendingPayouts: Array<
+  pendingPayouts?: Array<
     [
       string,
       {
