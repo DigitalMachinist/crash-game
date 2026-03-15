@@ -22,7 +22,7 @@ import {
 } from '../config';
 import { computeEffectiveSeed, deriveCrashPoint } from '../provably-fair';
 import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
-import { fetchDrandBeacon, getCurrentDrandRound } from './drand';
+import { computeCurrentDrandRound, fetchDrandBeacon } from './drand';
 import {
   buildStateSnapshot,
   createInitialState,
@@ -33,10 +33,10 @@ import {
   handleJoin,
   handleStartingComplete,
   handleTick,
+  handleTransitionToWaiting,
   type OutboundMessage,
   type RoundIngredients,
   type RunningGameState,
-  transitionToWaiting,
 } from './game-state';
 import {
   computeNextChainCommitment,
@@ -401,7 +401,7 @@ export class CrashGame extends Server<Env> {
     let drandRandomness: string;
 
     try {
-      const round = getCurrentDrandRound();
+      const round = computeCurrentDrandRound();
       beacon = await fetchDrandBeacon(round);
       drandRound = beacon.round;
       drandRandomness = beacon.randomness;
@@ -451,14 +451,15 @@ export class CrashGame extends Server<Env> {
     if (
       !this.gameState.chainSeed ||
       this.gameState.drandRound === null ||
-      !this.gameState.drandRandomness
+      !this.gameState.drandRandomness ||
+      this.gameState.crashPoint === null
     ) {
       // Throw instead of returning silently: the caller (onAlarm) sets
       // alarmScheduled = true AFTER this method returns, so a silent return
       // without scheduling an alarm would kill the alarm loop. Throwing
       // ensures the catch/finally recovery path fires instead.
       throw new Error(
-        'crashRound: missing provably-fair ingredients (chainSeed, drandRound, or drandRandomness)',
+        'crashRound: missing provably-fair ingredients (chainSeed, drandRound, drandRandomness, or crashPoint)',
       );
     }
 
@@ -504,7 +505,7 @@ export class CrashGame extends Server<Env> {
   }
 
   private async beginNextRound(): Promise<void> {
-    const result = transitionToWaiting(this.gameState);
+    const result = handleTransitionToWaiting(this.gameState);
     this.gameState = result.state;
     this.invalidateSnapshot();
 

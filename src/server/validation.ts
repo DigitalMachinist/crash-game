@@ -112,8 +112,17 @@ export function isValidStoredGameData(data: unknown): data is StoredGameData {
   if (typeof data.chainCommitment !== 'string' || data.chainCommitment.length !== 64) return false;
   if (!HEX_PATTERN.test(data.chainCommitment)) return false;
 
-  // history: array (content validated loosely — individual entries not deeply checked)
+  // history: array of HistoryEntry objects
   if (!Array.isArray(data.history)) return false;
+  for (const entry of data.history) {
+    if (!isObject(entry)) return false;
+    if (typeof entry.roundId !== 'number') return false;
+    if (typeof entry.crashPoint !== 'number') return false;
+    if (typeof entry.roundSeed !== 'string') return false;
+    if (typeof entry.drandRound !== 'number') return false;
+    if (typeof entry.drandRandomness !== 'string') return false;
+    if (typeof entry.chainCommitment !== 'string') return false;
+  }
 
   // pendingPayouts: array of tuples (or absent)
   if (data.pendingPayouts !== undefined && !Array.isArray(data.pendingPayouts)) return false;

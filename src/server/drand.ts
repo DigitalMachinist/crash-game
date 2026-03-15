@@ -31,7 +31,7 @@ export class DrandFetchError extends Error {
  *
  * @see docs/provably-fair.md §2.3
  */
-export function getCurrentDrandRound(nowMs?: number): number {
+export function computeCurrentDrandRound(nowMs?: number): number {
   const nowSec = (nowMs ?? Date.now()) / 1000;
   return Math.floor((nowSec - DRAND_GENESIS_TIME) / DRAND_PERIOD_SECS) + 1;
 }

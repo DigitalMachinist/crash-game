@@ -93,13 +93,13 @@ flowchart TD
     CrashGame -->|"pure stateless handlers"| gameState["game-state.ts<br/>(GameStateMachine)"]
     CrashGame -->|"seed gen + verify"| hashChain["hash-chain.ts"]
     CrashGame -->|"beacon fetch + HMAC"| drand["drand.ts"]
-    CrashGame -->|"multiplier + crash point"| crashMath["crash-math.ts"]
+    CrashGame -->|"effective seed + crash point"| provablyFair["provably-fair.ts"]
     CrashGame -->|"single 'gameData' key"| DOStorage["DO Storage"]
     CrashGame -->|"ctx.storage.setAlarm"| AlarmAPI["Alarm API<br/>(game loop driver)"]
     CrashGame -->|"debug endpoint (CRASH_DEBUG=true)"| onRequest["onRequest HTTP<br/>(gated by CRASH_DEBUG env var)"]
 ```
 
-**`game-state.ts`** contains all pure (no I/O) state transition functions: `handleJoin`, `handleCashout`, `handleTick`, `handleCrash`, `handleStartingComplete`, `handleCountdownTick`, `transitionToWaiting`, `buildStateSnapshot`. Each returns `{ state, messages }` (plus optional flags); `CrashGame` then broadcasts/sends the returned messages.
+**`game-state.ts`** contains all pure (no I/O) state transition functions: `handleJoin`, `handleCashout`, `handleTick`, `handleCrash`, `handleStartingComplete`, `handleCountdownTick`, `handleTransitionToWaiting`, `buildStateSnapshot`. Each returns `{ state, messages }` (plus optional flags); `CrashGame` then broadcasts/sends the returned messages.
 
 **`PendingPayout` interface** is defined locally in `crash-game.ts` (not exported via `types.ts`), keyed by stable `playerId` UUID.
 
@@ -138,9 +138,9 @@ Increasing `GROWTH_RATE` makes the multiplier climb faster (shorter average roun
 
 | Constant | Value | Description |
 |---|---|---|
-| `HOUSE_EDGE` | `0.01` | Fraction of wagers retained (1%). Encoded as `(1 - HOUSE_EDGE) * 100` in `crash-math.ts`. |
+| `HOUSE_EDGE` | `0.01` | Fraction of wagers retained (1%). Encoded as `(1 - HOUSE_EDGE) * 100` in `provably-fair.ts`. |
 
-> `HOUSE_EDGE` is imported directly from `src/config.ts` by both `src/server/crash-math.ts` and `src/client/lib/verify.ts` — a single config change propagates automatically to both the server crash formula and the client verification formula.
+> `HOUSE_EDGE` is imported from `src/config.ts` by `src/provably-fair.ts` — a single config change propagates automatically to both the server crash formula (via `crash-game.ts`) and the client verification formula (via `client/lib/verify.ts`).
 
 ### Hash Chain
 

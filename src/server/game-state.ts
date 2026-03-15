@@ -20,8 +20,6 @@ import {
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
 import { computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
-const SERVER_VERSION = '1.0.0';
-
 export interface GameState {
   phase: Phase;
   roundId: number;
@@ -491,7 +489,6 @@ export function handleCrash(
           drandRound,
           drandRandomness,
           history: newHistory,
-          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -587,7 +584,6 @@ export function handleCountdownTick(state: GameState): {
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
-          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -602,7 +598,7 @@ export function handleCountdownTick(state: GameState): {
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED → WAITING transition)
  */
-export function transitionToWaiting(state: GameState): {
+export function handleTransitionToWaiting(state: GameState): {
   state: GameState;
   messages: OutboundMessage[];
 } {
@@ -640,7 +636,6 @@ export function transitionToWaiting(state: GameState): {
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
-          serverVersion: SERVER_VERSION,
         },
       },
     ],
@@ -674,6 +669,5 @@ export function buildStateSnapshot(
     drandRound: state.phase === 'CRASHED' ? state.drandRound : null,
     drandRandomness: state.phase === 'CRASHED' ? state.drandRandomness : null,
     history: state.history,
-    serverVersion: SERVER_VERSION,
   };
 }

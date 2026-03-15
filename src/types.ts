@@ -56,7 +56,6 @@ export interface GameStateSnapshot {
   drandRound: number | null; // null except when phase === 'CRASHED'
   drandRandomness: string | null; // null except when phase === 'CRASHED'
   history: HistoryEntry[];
-  serverVersion?: string; // semver; absent in older servers
 }
 
 // ─── Round history entry ─────────────────────────────────────────────────────

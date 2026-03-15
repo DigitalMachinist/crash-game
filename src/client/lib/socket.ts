@@ -34,16 +34,21 @@ const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
   playerJoined: [
     ['id', 'string'],
     ['playerId', 'string'],
+    ['name', 'string'],
     ['wager', 'number'],
   ],
   playerCashedOut: [
     ['id', 'string'],
     ['playerId', 'string'],
     ['multiplier', 'number'],
+    ['payout', 'number'],
   ],
   pendingPayout: [
     ['roundId', 'number'],
+    ['wager', 'number'],
     ['payout', 'number'],
+    ['cashoutMultiplier', 'number'],
+    ['crashPoint', 'number'],
   ],
   error: [['message', 'string']],
 };

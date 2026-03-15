@@ -16,7 +16,7 @@ import {
   handleJoin,
   handleStartingComplete,
   handleTick,
-  transitionToWaiting,
+  handleTransitionToWaiting,
 } from '../game-state';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1179,16 +1179,16 @@ describe('handleCountdownTick', () => {
   });
 });
 
-// ─── transitionToWaiting ─────────────────────────────────────────────────────
+// ─── handleTransitionToWaiting ─────────────────────────────────────────────────────
 
-describe('transitionToWaiting', () => {
+describe('handleTransitionToWaiting', () => {
   it('clears all players (players map is empty)', () => {
     const nowMs = 1_000_000;
     // Join during WAITING, then transition to RUNNING, then crash
     const { state: running } = makeRunningStateWithPlayer('p1', 100, null, 'c1', 2.0, nowMs);
     const { state: crashed } = handleCrash(running, nowMs + 5000);
 
-    const { state: waiting } = transitionToWaiting(crashed);
+    const { state: waiting } = handleTransitionToWaiting(crashed);
     expect(waiting.players.size).toBe(0);
   });
 
@@ -1205,14 +1205,14 @@ describe('transitionToWaiting', () => {
       crashTimeMs: 10000,
     };
     state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
-    const { state: waiting } = transitionToWaiting(state);
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.roundId).toBe(4);
   });
 
   it('resets countdown to WAITING_DURATION_MS', () => {
     let state = createInitialState('abc');
     state = { ...state, countdown: 0 };
-    const { state: waiting } = transitionToWaiting(state);
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.countdown).toBe(WAITING_DURATION_MS);
   });
 
@@ -1229,7 +1229,7 @@ describe('transitionToWaiting', () => {
       crashTimeMs: 10000,
     };
     state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
-    const { state: waiting } = transitionToWaiting(state);
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.phase).toBe('WAITING');
   });
 
@@ -1246,7 +1246,7 @@ describe('transitionToWaiting', () => {
       crashTimeMs: 10000,
     };
     state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
-    const { messages } = transitionToWaiting(state);
+    const { messages } = handleTransitionToWaiting(state);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -1258,7 +1258,7 @@ describe('transitionToWaiting', () => {
 
   it('carries chain commitment from current state', () => {
     const state = createInitialState('freshcommit');
-    const { state: waiting } = transitionToWaiting(state);
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.chainCommitment).toBe('freshcommit');
   });
 });
@@ -1583,10 +1583,10 @@ describe('buildStateSnapshot', () => {
     expect(p1?.cashoutMultiplier).not.toBeNull();
   });
 
-  it('snapshot reflects updated state after transitionToWaiting (empty players)', () => {
+  it('snapshot reflects updated state after handleTransitionToWaiting (empty players)', () => {
     const { state: running, nowMs } = makeRunningStateWithPlayer('p1', 100, null, 'conn1', 2.0);
     let state = handleCrash(running, nowMs + 5000).state;
-    state = transitionToWaiting(state).state;
+    state = handleTransitionToWaiting(state).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1658,7 +1658,7 @@ describe('round lifecycle', () => {
     expect(state.players.get('p2')?.payout).toBe(0); // Bob didn't cash out
 
     // 7. Transition to WAITING
-    const r6 = transitionToWaiting(state);
+    const r6 = handleTransitionToWaiting(state);
     state = r6.state;
     expect(state.phase).toBe('WAITING');
     expect(state.roundId).toBe(2);

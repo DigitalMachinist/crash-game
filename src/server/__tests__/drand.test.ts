@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../config';
 import { bytesToHex, hexToBytes } from '../../crypto-hex';
 import { computeEffectiveSeed } from '../../provably-fair';
-import { DrandFetchError, fetchDrandBeacon, getCurrentDrandRound } from '../drand';
+import { computeCurrentDrandRound, DrandFetchError, fetchDrandBeacon } from '../drand';
 
-/** Local inverse of getCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
+/** Local inverse of computeCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
 function drandRoundTime(round: number): number {
   return DRAND_GENESIS_TIME + (round - 1) * DRAND_PERIOD_SECS;
 }
@@ -13,22 +13,22 @@ const mockBeacon = { round: 100, randomness: 'a'.repeat(64), signature: 'b'.repe
 
 afterEach(() => vi.unstubAllGlobals());
 
-// ─── getCurrentDrandRound ────────────────────────────────────────────────────
+// ─── computeCurrentDrandRound ────────────────────────────────────────────────────
 
-describe('getCurrentDrandRound', () => {
+describe('computeCurrentDrandRound', () => {
   it('returns 1 at exactly genesis time', () => {
-    expect(getCurrentDrandRound(DRAND_GENESIS_TIME * 1000)).toBe(1);
+    expect(computeCurrentDrandRound(DRAND_GENESIS_TIME * 1000)).toBe(1);
   });
 
   it('returns 2 at genesis + 1 period', () => {
-    expect(getCurrentDrandRound((DRAND_GENESIS_TIME + DRAND_PERIOD_SECS) * 1000)).toBe(2);
+    expect(computeCurrentDrandRound((DRAND_GENESIS_TIME + DRAND_PERIOD_SECS) * 1000)).toBe(2);
   });
 
   it('floor behavior: returns 3 at genesis + 2.5 periods', () => {
-    expect(getCurrentDrandRound((DRAND_GENESIS_TIME + 2.5 * DRAND_PERIOD_SECS) * 1000)).toBe(3);
+    expect(computeCurrentDrandRound((DRAND_GENESIS_TIME + 2.5 * DRAND_PERIOD_SECS) * 1000)).toBe(3);
   });
 
-  it('consistency: drandRoundTime(getCurrentDrandRound(t)) * 1000 <= t < drandRoundTime(getCurrentDrandRound(t) + 1) * 1000', () => {
+  it('consistency: drandRoundTime(computeCurrentDrandRound(t)) * 1000 <= t < drandRoundTime(computeCurrentDrandRound(t) + 1) * 1000', () => {
     const testTimes = [
       DRAND_GENESIS_TIME * 1000,
       (DRAND_GENESIS_TIME + 1) * 1000,
@@ -37,7 +37,7 @@ describe('getCurrentDrandRound', () => {
       (DRAND_GENESIS_TIME + 999.9 * DRAND_PERIOD_SECS) * 1000,
     ];
     for (const t of testTimes) {
-      const round = getCurrentDrandRound(t);
+      const round = computeCurrentDrandRound(t);
       const roundStartMs = drandRoundTime(round) * 1000;
       const nextRoundStartMs = drandRoundTime(round + 1) * 1000;
       expect(roundStartMs).toBeLessThanOrEqual(t);
@@ -57,10 +57,10 @@ describe('drandRoundTime', () => {
     expect(drandRoundTime(2)).toBe(DRAND_GENESIS_TIME + DRAND_PERIOD_SECS);
   });
 
-  it('is the inverse of getCurrentDrandRound at round boundaries', () => {
+  it('is the inverse of computeCurrentDrandRound at round boundaries', () => {
     for (const round of [1, 2, 10, 100, 500]) {
       const t = drandRoundTime(round) * 1000;
-      expect(getCurrentDrandRound(t)).toBe(round);
+      expect(computeCurrentDrandRound(t)).toBe(round);
     }
   });
 });

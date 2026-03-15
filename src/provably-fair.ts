@@ -1,6 +1,6 @@
 /**
- * Shared provably-fair math used by both the server (crash-math.ts, drand.ts)
- * and the client verifier (verify.ts). Pure functions with no I/O (except
+ * Shared provably-fair math used by both the server (`crash-game.ts`)
+ * and the client verifier (`verify.ts`). Pure functions with no I/O (except
  * `computeEffectiveSeed` which performs a WebCrypto HMAC call).
  *
  * Extracting these here ensures a formula or algorithm change propagates to
