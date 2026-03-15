@@ -1,8 +1,8 @@
 /**
  * Central configuration for the Crash Game. All tunable constants live here.
  *
- * `HOUSE_EDGE` is imported by both `crash-math.ts` (server) and `verify.ts` (client) —
- * a single change here propagates to both computation paths.
+ * `HOUSE_EDGE` is imported by `provably-fair.ts` — a single change here propagates to
+ * both the server (`crash-game.ts`) and client (`verify.ts`) computation paths.
  *
  * @see docs/project-architecture.md §1.5
  */

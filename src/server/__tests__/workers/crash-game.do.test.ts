@@ -155,7 +155,7 @@ describe('CrashGame DO (integration)', () => {
     await waitForMessage(ws);
 
     ws.send(JSON.stringify({ type: 'join', playerId: 'player-dup', wager: 50, name: 'Bob' }));
-    await new Promise<void>((resolve) => setTimeout(resolve, 150));
+    await waitForMessage(ws); // wait for join ACK before sending second join
 
     // Collect messages after first join
     const pending = collectMessages(ws, 300);
@@ -550,7 +550,7 @@ describe('CrashGame DO (integration)', () => {
     wsB.send(
       JSON.stringify({ type: 'join', playerId: 'player-b-observer', wager: 25, name: 'Bob' }),
     );
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    await waitForMessage(wsB); // wait for Player B's join ACK before Player A sends bad join
 
     // Player A expects 1 error; Player B expects silence
     const pendingA = waitForMessages(wsA, 1);

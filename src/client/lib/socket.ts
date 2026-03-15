@@ -19,22 +19,37 @@ import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
 
-const VALID_SERVER_MESSAGE_TYPES = new Set([
-  'state',
-  'tick',
-  'playerJoined',
-  'playerCashedOut',
-  'pendingPayout',
-  'error',
-]);
-
 function isValidServerMessage(data: unknown): data is ServerMessage {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    typeof (data as Record<string, unknown>).type === 'string' &&
-    VALID_SERVER_MESSAGE_TYPES.has((data as Record<string, unknown>).type as string)
-  );
+  if (typeof data !== 'object' || data === null) return false;
+  const msg = data as Record<string, unknown>;
+  switch (msg.type) {
+    case 'state':
+      return (
+        typeof msg.phase === 'string' &&
+        typeof msg.roundId === 'number' &&
+        Array.isArray(msg.players)
+      );
+    case 'tick':
+      return typeof msg.multiplier === 'number' && typeof msg.elapsed === 'number';
+    case 'playerJoined':
+      return (
+        typeof msg.id === 'string' &&
+        typeof msg.playerId === 'string' &&
+        typeof msg.wager === 'number'
+      );
+    case 'playerCashedOut':
+      return (
+        typeof msg.id === 'string' &&
+        typeof msg.playerId === 'string' &&
+        typeof msg.multiplier === 'number'
+      );
+    case 'pendingPayout':
+      return typeof msg.roundId === 'number' && typeof msg.payout === 'number';
+    case 'error':
+      return typeof msg.message === 'string';
+    default:
+      return false;
+  }
 }
 
 function onOpen(): void {

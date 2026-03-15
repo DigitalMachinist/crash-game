@@ -92,13 +92,8 @@ describe('handleJoin', () => {
   });
 
   it('returns error if phase is CRASHED', () => {
-    let state = {
-      ...createInitialState('abc'),
-      chainSeed: 'seed',
-      drandRound: 1,
-      drandRandomness: 'rand',
-    };
-    state = handleCrash(state, Date.now()).state;
+    const { state: running } = makeRunningState(2.0);
+    const state = handleCrash(running, Date.now()).state;
     const { messages } = handleJoin(
       state,
       { playerId: 'player1', wager: 50, autoCashout: null },
@@ -1193,38 +1188,65 @@ describe('transitionToWaiting', () => {
     const { state: running } = makeRunningStateWithPlayer('p1', 100, null, 'c1', 2.0, nowMs);
     const { state: crashed } = handleCrash(running, nowMs + 5000);
 
-    const { state: waiting } = transitionToWaiting(crashed, 'newcommit');
+    const { state: waiting } = transitionToWaiting(crashed);
     expect(waiting.players.size).toBe(0);
   });
 
   it('increments roundId', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc', 3);
-    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
-    state = handleCrash(state, Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit');
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { state: waiting } = transitionToWaiting(state);
     expect(waiting.roundId).toBe(4);
   });
 
   it('resets countdown to WAITING_DURATION_MS', () => {
     let state = createInitialState('abc');
     state = { ...state, countdown: 0 };
-    const { state: waiting } = transitionToWaiting(state, 'newcommit');
+    const { state: waiting } = transitionToWaiting(state);
     expect(waiting.countdown).toBe(WAITING_DURATION_MS);
   });
 
   it('phase is WAITING', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc');
-    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
-    state = handleCrash(state, Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit');
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { state: waiting } = transitionToWaiting(state);
     expect(waiting.phase).toBe('WAITING');
   });
 
   it('broadcasts state message with empty players array', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc');
-    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
-    state = handleCrash(state, Date.now()).state;
-    const { messages } = transitionToWaiting(state, 'newcommit');
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { messages } = transitionToWaiting(state);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -1234,9 +1256,9 @@ describe('transitionToWaiting', () => {
     }
   });
 
-  it('uses the new chain commitment', () => {
-    const state = createInitialState('oldcommit');
-    const { state: waiting } = transitionToWaiting(state, 'freshcommit');
+  it('carries chain commitment from current state', () => {
+    const state = createInitialState('freshcommit');
+    const { state: waiting } = transitionToWaiting(state);
     expect(waiting.chainCommitment).toBe('freshcommit');
   });
 });
@@ -1562,11 +1584,9 @@ describe('buildStateSnapshot', () => {
   });
 
   it('snapshot reflects updated state after transitionToWaiting (empty players)', () => {
-    let state = createInitialState('commit1');
-    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
-    state = { ...state, chainSeed: 'seed', drandRound: 1, drandRandomness: 'rand' };
-    state = handleCrash(state, Date.now()).state;
-    state = transitionToWaiting(state, 'newcomm').state;
+    const { state: running, nowMs } = makeRunningStateWithPlayer('p1', 100, null, 'conn1', 2.0);
+    let state = handleCrash(running, nowMs + 5000).state;
+    state = transitionToWaiting(state).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1638,7 +1658,7 @@ describe('round lifecycle', () => {
     expect(state.players.get('p2')?.payout).toBe(0); // Bob didn't cash out
 
     // 7. Transition to WAITING
-    const r6 = transitionToWaiting(state, 'newcommit');
+    const r6 = transitionToWaiting(state);
     state = r6.state;
     expect(state.phase).toBe('WAITING');
     expect(state.roundId).toBe(2);

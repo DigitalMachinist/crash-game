@@ -3,8 +3,8 @@
  *
  * Extends `partyserver.Server` to handle WebSocket connections, the game alarm
  * loop, and HTTP debug requests. Delegates all pure state transitions to
- * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, `crash-math.ts`, and
- * `provably-fair.ts` for provably fair seed and crash point computation.
+ * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, and `provably-fair.ts`
+ * for provably fair seed and crash point computation.
  *
  * @see docs/project-architecture.md §1.4
  * @see docs/game-state-machine.md
@@ -35,6 +35,7 @@ import {
   handleTick,
   type OutboundMessage,
   type RoundIngredients,
+  type RunningGameState,
   transitionToWaiting,
 } from './game-state';
 import {
@@ -461,7 +462,7 @@ export class CrashGame extends Server<Env> {
       );
     }
 
-    const result = handleCrash(this.gameState, now);
+    const result = handleCrash(this.gameState as RunningGameState, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
@@ -503,7 +504,7 @@ export class CrashGame extends Server<Env> {
   }
 
   private async beginNextRound(): Promise<void> {
-    const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment);
+    const result = transitionToWaiting(this.gameState);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
@@ -515,33 +516,19 @@ export class CrashGame extends Server<Env> {
 
   /**
    * Dispatches all outbound messages: broadcasts are sent to every connection;
-   * targeted messages are routed to the specific player via `sendToTarget`.
-   * Pass `conn` (the sender) when targeted messages may be present (join/cashout).
+   * targeted messages are sent directly to `conn` (always the requesting connection
+   * for join/cashout ACKs). Pass `conn` when targeted messages may be present.
    */
   private dispatchMessages(messages: OutboundMessage[], conn?: Connection): void {
     for (const outbound of messages) {
       if (outbound.broadcast) {
         this.broadcast(JSON.stringify(outbound.message));
       } else if (conn) {
-        this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
+        conn.send(JSON.stringify(outbound.message));
+      } else {
+        console.warn('[dispatchMessages] targeted message dropped — no conn provided');
       }
     }
-  }
-
-  /**
-   * Resolves a targeted outbound message to the correct connection. [High-15]
-   * Looks up the target player's current connection by playerId; falls back to
-   * `fallback` (the sender) if the player is not found or disconnected.
-   */
-  private sendToTarget(targetPlayerId: string, fallback: Connection): Connection {
-    const player = this.gameState.players.get(targetPlayerId);
-    if (player) {
-      // O(n) scan is acceptable here: called only for individual targeted ACKs
-      // (join/cashout), never inside the tick loop. n ≤ MAX_PLAYERS_PER_ROUND.
-      const target = Array.from(this.getConnections()).find((c) => c.id === player.id);
-      if (target) return target;
-    }
-    return fallback;
   }
 
   /**

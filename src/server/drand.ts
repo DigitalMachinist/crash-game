@@ -1,10 +1,10 @@
 /**
- * drand quicknet beacon fetching and effective seed computation.
+ * drand quicknet beacon fetching.
  *
  * drand provides independent, verifiable randomness that prevents the server
- * from choosing seeds to manipulate crash points. The drand randomness value
- * is used as the HMAC key (not data) — see §2.5 for why this ordering is
- * security-critical.
+ * from choosing seeds to manipulate crash points. The drand beacon's randomness
+ * is consumed by `computeEffectiveSeed` in `provably-fair.ts` as the HMAC key
+ * (not data) — see §2.5 for why this ordering is security-critical.
  *
  * @see docs/provably-fair.md §2.3
  * @see docs/provably-fair.md §2.5
@@ -15,7 +15,6 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
-import { computeEffectiveSeed } from '../provably-fair';
 import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
@@ -75,8 +74,13 @@ export async function fetchDrandBeacon(
     console.warn('[drand] primary fetch failed, trying fallback:', primaryErr);
     try {
       return await attemptFetch(fallbackUrl);
-    } catch (e) {
-      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}`, { cause: e });
+    } catch (fallbackErr) {
+      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}`, {
+        cause: new AggregateError(
+          [primaryErr, fallbackErr],
+          'Both primary and fallback drand fetches failed',
+        ),
+      });
     }
   }
 }

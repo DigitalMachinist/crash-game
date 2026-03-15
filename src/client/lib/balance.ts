@@ -102,14 +102,18 @@ export function getHistory(): RoundResult[] {
     // Validate the parsed value is an array of objects with required RoundResult fields.
     // Guards against schema drift between app versions that could silently corrupt accounting.
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is RoundResult =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof (item as Record<string, unknown>).roundId === 'number' &&
-        typeof (item as Record<string, unknown>).wager === 'number' &&
-        typeof (item as Record<string, unknown>).payout === 'number',
-    );
+    return parsed.filter((item): item is RoundResult => {
+      if (typeof item !== 'object' || item === null) return false;
+      const r = item as Record<string, unknown>;
+      return (
+        typeof r.roundId === 'number' &&
+        typeof r.wager === 'number' &&
+        typeof r.payout === 'number' &&
+        typeof r.crashPoint === 'number' &&
+        typeof r.timestamp === 'number' &&
+        (typeof r.cashoutMultiplier === 'number' || r.cashoutMultiplier === null)
+      );
+    });
   } catch {
     return [];
   }

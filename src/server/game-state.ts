@@ -37,6 +37,16 @@ export interface GameState {
   history: HistoryEntry[];
 }
 
+/** Narrowed GameState valid during RUNNING/CRASHED — all provably-fair fields are non-null. */
+export type RunningGameState = GameState & {
+  roundStartTime: number;
+  crashPoint: number;
+  crashTimeMs: number;
+  chainSeed: string;
+  drandRound: number;
+  drandRandomness: string;
+};
+
 export type OutboundMessage =
   | { broadcast: true; message: ServerMessage }
   | { broadcast: false; targetPlayerId: string; message: ServerMessage };
@@ -429,15 +439,11 @@ export function handleTick(
  * @see docs/game-state-machine.md §3.1 (CRASHED transition)
  */
 export function handleCrash(
-  state: GameState,
+  state: RunningGameState,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
-  const elapsed = state.roundStartTime !== null ? nowMs - state.roundStartTime : 0;
-  const crashPoint = state.crashPoint ?? 1.0;
-  // Callers guard that these are non-null before calling handleCrash
-  const chainSeed = state.chainSeed!;
-  const drandRound = state.drandRound!;
-  const drandRandomness = state.drandRandomness!;
+  const elapsed = nowMs - state.roundStartTime;
+  const { crashPoint, chainSeed, drandRound, drandRandomness } = state;
 
   // Mark all non-cashed-out players as lost
   const newPlayers = new Map(state.players);
@@ -596,10 +602,11 @@ export function handleCountdownTick(state: GameState): {
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED → WAITING transition)
  */
-export function transitionToWaiting(
-  state: GameState,
-  nextChainCommitment: string,
-): { state: GameState; messages: OutboundMessage[] } {
+export function transitionToWaiting(state: GameState): {
+  state: GameState;
+  messages: OutboundMessage[];
+} {
+  const chainCommitment = state.chainCommitment;
   const newState: GameState = {
     ...state,
     phase: 'WAITING',
@@ -612,7 +619,7 @@ export function transitionToWaiting(
     chainSeed: null,
     drandRound: null,
     drandRandomness: null,
-    chainCommitment: nextChainCommitment,
+    chainCommitment,
   };
 
   return {
@@ -629,7 +636,7 @@ export function transitionToWaiting(
           elapsed: 0,
           crashPoint: null,
           players: [],
-          chainCommitment: nextChainCommitment,
+          chainCommitment,
           drandRound: null,
           drandRandomness: null,
           history: newState.history,
