@@ -29,7 +29,8 @@ onMount(async () => {
       drandRandomness: entry.drandRandomness,
       displayedCrashPoint: entry.crashPoint,
     });
-  } catch {
+  } catch (err) {
+    console.warn('[VerifyModal] verifyRound failed:', err);
     result = { valid: false, reason: 'Verification error (WebCrypto unavailable)' };
   }
   loading = false;
@@ -64,22 +65,24 @@ function handleCancel(e: Event) {
   <div class="verification-status">
     {#if loading}
       <p class="status-loading">Verifying...</p>
-    {:else if result !== null && result.valid}
-      <p class="status-valid">✓ Verified</p>
-      {#if result.computedCrashPoint !== undefined}
-        <p class="computed">Computed crash point: {result.computedCrashPoint.toFixed(2)}x</p>
+    {:else if result !== null}
+      {#if result.valid}
+        <p class="status-valid">✓ Verified</p>
+        {#if result.computedCrashPoint !== undefined}
+          <p class="computed">Computed crash point: {result.computedCrashPoint.toFixed(2)}x</p>
+        {/if}
+      {:else if result.reason === 'chain link invalid'}
+        <p class="status-invalid">✗ Chain link invalid</p>
+      {:else if result.reason === 'crash point mismatch'}
+        <p class="status-invalid">✗ Crash point mismatch</p>
+        {#if result.computedCrashPoint !== undefined}
+          <p class="mismatch-detail">
+            Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
+          </p>
+        {/if}
+      {:else}
+        <p class="status-invalid">✗ {result.reason ?? 'Verification failed'}</p>
       {/if}
-    {:else if result !== null && result.reason === 'chain link invalid'}
-      <p class="status-invalid">✗ Chain link invalid</p>
-    {:else if result !== null && result.reason === 'crash point mismatch'}
-      <p class="status-invalid">✗ Crash point mismatch</p>
-      {#if result.computedCrashPoint !== undefined}
-        <p class="mismatch-detail">
-          Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
-        </p>
-      {/if}
-    {:else if result !== null && !result.valid}
-      <p class="status-invalid">✗ {result.reason ?? 'Verification failed'}</p>
     {/if}
   </div>
 

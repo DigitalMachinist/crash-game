@@ -45,9 +45,10 @@ export type RunningGameState = GameState & {
   drandRandomness: string;
 };
 
-export type OutboundMessage =
-  | { broadcast: true; message: ServerMessage }
-  | { broadcast: false; message: ServerMessage };
+export interface OutboundMessage {
+  broadcast: boolean;
+  message: ServerMessage;
+}
 
 export function createInitialState(chainCommitment: string, roundId = 1): GameState {
   return {
@@ -99,10 +100,12 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
 function playerError(
   state: GameState,
   message: string,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: GameState; messages: OutboundMessage[]; joined: false; cashedOut: false } {
   return {
     state,
     messages: [{ broadcast: false, message: { type: 'error', message } }],
+    joined: false,
+    cashedOut: false,
   };
 }
 
@@ -110,7 +113,7 @@ export function handleJoin(
   state: GameState,
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: GameState; messages: OutboundMessage[]; joined: boolean } {
   const reject = (message: string) => playerError(state, message);
   // Handle existing player first (any phase) — must precede phase check so reconnects during
   // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
@@ -120,7 +123,7 @@ export function handleJoin(
       return reject('Already joined with different wager');
     }
     if (existing.id === connectionId) {
-      return { state, messages: [] }; // Same connection — no-op
+      return { state, messages: [], joined: false }; // Same connection — no-op
     }
     const updatedPlayer = { ...existing, id: connectionId };
     const updatedPlayers = new Map(state.players);
@@ -130,10 +133,11 @@ export function handleJoin(
       // Reconnect during RUNNING/STARTING: update connection ID silently.
       // All clients already know this player is in the round; re-broadcasting playerJoined
       // would cause the reconnecting client to double-deduct their balance.
-      return { state: updatedState, messages: [] };
+      return { state: updatedState, messages: [], joined: false };
     }
     return {
       state: updatedState,
+      joined: true,
       messages: [
         {
           broadcast: true,
@@ -195,6 +199,7 @@ export function handleJoin(
 
   return {
     state: { ...state, players: newPlayers },
+    joined: true,
     messages: [
       {
         broadcast: true,
@@ -221,7 +226,7 @@ export function handleCashout(
   state: GameState,
   playerId: string,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: GameState; messages: OutboundMessage[]; cashedOut: boolean } {
   const reject = (message: string) => playerError(state, message);
   if (state.phase !== 'RUNNING') {
     return reject(`Cannot cashout during ${state.phase} phase`);
@@ -257,6 +262,7 @@ export function handleCashout(
 
   return {
     state: { ...state, players: newPlayers },
+    cashedOut: true,
     messages: [
       {
         broadcast: true,
@@ -284,9 +290,14 @@ export function handleCashout(
 export function handleTick(
   state: GameState,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[]; shouldCrash: boolean } {
+): {
+  state: GameState;
+  messages: OutboundMessage[];
+  shouldCrash: boolean;
+  autoCashoutsOccurred: boolean;
+} {
   if (state.phase !== 'RUNNING' || state.roundStartTime === null || state.crashPoint === null) {
-    return { state, messages: [], shouldCrash: false };
+    return { state, messages: [], shouldCrash: false, autoCashoutsOccurred: false };
   }
 
   const elapsed = nowMs - state.roundStartTime;
@@ -320,6 +331,7 @@ export function handleTick(
   }
 
   const shouldCrash = currentMultiplier >= state.crashPoint;
+  const autoCashoutsOccurred = messages.length > 0;
 
   messages.push({
     broadcast: true,
@@ -330,6 +342,7 @@ export function handleTick(
     state: { ...state, players: newPlayers },
     messages,
     shouldCrash,
+    autoCashoutsOccurred,
   };
 }
 

@@ -40,18 +40,10 @@ import {
   type RunningGameState,
 } from './game-state';
 import { computeChainSeedForGame, computeTerminalHash, generateRootSeed } from './hash-chain';
-import { isValidClientMessage, isValidStoredGameData } from './validation';
+import { isValidClientMessage, isValidStoredGameData, type PendingPayout } from './validation';
 
 interface Env {
   CRASH_DEBUG?: string;
-}
-
-interface PendingPayout {
-  roundId: number;
-  wager: number;
-  payout: number;
-  cashoutMultiplier: number;
-  crashPoint: number;
 }
 
 export class CrashGame extends Server<Env> {
@@ -77,6 +69,15 @@ export class CrashGame extends Server<Env> {
     return this.cachedSnapshot;
   }
 
+  /** Generates a fresh hash chain and initial game state; shared between first-run and error-recovery paths. */
+  private async initFreshState(): Promise<void> {
+    this.rootSeed = generateRootSeed();
+    this.gameNumber = 0;
+    const terminalHash = await computeTerminalHash(this.rootSeed);
+    this.gameState = createInitialState(terminalHash);
+    await this.persistState();
+  }
+
   // partyserver calls this when the DO is initialized (replaces constructor)
   override async onStart(): Promise<void> {
     try {
@@ -94,11 +95,7 @@ export class CrashGame extends Server<Env> {
           console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
         }
         // First run or corrupted state — generate hash chain
-        this.rootSeed = generateRootSeed();
-        this.gameNumber = 0;
-        const terminalHash = await computeTerminalHash(this.rootSeed);
-        this.gameState = createInitialState(terminalHash);
-        await this.persistState();
+        await this.initFreshState();
       }
 
       // Start the alarm loop if not already running, or if the stored alarm is stale (past timestamp from a previous wrangler dev run)
@@ -111,13 +108,8 @@ export class CrashGame extends Server<Env> {
       console.error('CrashGame initialization failed:', error);
       // Attempt to initialize fresh state so the game loop can continue [Backend-3]
       try {
-        this.rootSeed = generateRootSeed();
-        this.gameNumber = 0;
-        const terminalHash = await computeTerminalHash(this.rootSeed);
-        this.gameState = createInitialState(terminalHash);
-        await this.persistState();
-        const now = Date.now();
-        await this.ctx.storage.setAlarm(now + COUNTDOWN_TICK_MS);
+        await this.initFreshState();
+        await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
       } catch (fallbackError) {
         // If even fresh initialization fails, log and let the DO restart naturally
         console.error('CrashGame fallback initialization also failed:', fallbackError);
@@ -197,11 +189,8 @@ export class CrashGame extends Server<Env> {
         conn.id,
       );
       this.gameState = result.state;
-      const joinSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerJoined',
-      );
       // Invalidate cache if state changed (player was added successfully)
-      if (joinSucceeded) {
+      if (result.joined) {
         this.invalidateSnapshot();
       }
 
@@ -212,7 +201,7 @@ export class CrashGame extends Server<Env> {
       }
 
       // Persist player join so DO eviction does not lose the wager [Backend-1]
-      if (joinSucceeded) {
+      if (result.joined) {
         try {
           await this.persistState();
         } catch (err) {
@@ -236,16 +225,13 @@ export class CrashGame extends Server<Env> {
 
       const result = handleCashout(this.gameState, playerId, Date.now());
       this.gameState = result.state;
-      const cashoutSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerCashedOut',
-      );
       // Invalidate cache if state changed (cashout was accepted)
-      if (cashoutSucceeded) {
+      if (result.cashedOut) {
         this.invalidateSnapshot();
       }
 
       // Persist cashout so DO eviction does not lose the payout record [Backend-2]
-      if (cashoutSucceeded) {
+      if (result.cashedOut) {
         try {
           await this.persistState();
         } catch (err) {
@@ -312,7 +298,7 @@ export class CrashGame extends Server<Env> {
         const result = handleTick(this.gameState, now);
         this.gameState = result.state;
         // Invalidate if any auto-cashouts fired (player state changed)
-        if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
+        if (result.autoCashoutsOccurred) {
           this.invalidateSnapshot();
         }
 
@@ -369,6 +355,15 @@ export class CrashGame extends Server<Env> {
     }
   }
 
+  /** Advances the game number and rotates the hash chain when near exhaustion. */
+  private maybeRotateChain(): void {
+    this.gameNumber += 1;
+    if (this.gameNumber > CHAIN_LENGTH - CHAIN_ROTATION_THRESHOLD) {
+      this.rootSeed = generateRootSeed();
+      this.gameNumber = 1;
+    }
+  }
+
   /**
    * Transitions from STARTING to RUNNING. Runs inside `blockConcurrencyWhile`
    * so no WebSocket messages can interleave during the drand fetch and crash
@@ -381,13 +376,7 @@ export class CrashGame extends Server<Env> {
   private async startRound(): Promise<void> {
     // STARTING phase: fetch drand beacon and compute crash point.
     // Runs inside blockConcurrencyWhile so no messages can interleave.
-    this.gameNumber += 1;
-
-    // Rotate chain if we are within CHAIN_ROTATION_THRESHOLD games of exhausting it
-    if (this.gameNumber > CHAIN_LENGTH - CHAIN_ROTATION_THRESHOLD) {
-      this.rootSeed = generateRootSeed();
-      this.gameNumber = 1;
-    }
+    this.maybeRotateChain();
 
     const chainSeed = await computeChainSeedForGame(this.rootSeed, this.gameNumber);
     const nextChainCommitment = await sha256Hex(chainSeed);

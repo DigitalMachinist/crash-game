@@ -63,6 +63,14 @@ export function isValidDrandBeacon(data: unknown): data is DrandBeacon {
 
 // ─── Storage validation ─────────────────────────────────────────────────────
 
+export interface PendingPayout {
+  roundId: number;
+  wager: number;
+  payout: number;
+  cashoutMultiplier: number;
+  crashPoint: number;
+}
+
 interface StoredGameData {
   rootSeed: string;
   gameNumber: number;
@@ -75,18 +83,7 @@ interface StoredGameData {
     drandRandomness: string;
     chainCommitment: string;
   }>;
-  pendingPayouts?: Array<
-    [
-      string,
-      {
-        roundId: number;
-        wager: number;
-        payout: number;
-        cashoutMultiplier: number;
-        crashPoint: number;
-      },
-    ]
-  >;
+  pendingPayouts?: Array<[string, PendingPayout]>;
 }
 
 /**

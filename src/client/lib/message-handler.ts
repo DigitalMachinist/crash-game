@@ -33,7 +33,7 @@ import {
 export function dispatchMessage(msg: ServerMessage): void {
   switch (msg.type) {
     case 'state': {
-      const { type: _type, ...snapshot } = msg as ServerMessage & { type: 'state' };
+      const { type: _type, ...snapshot } = msg;
       gameState.set(snapshot);
       const record: Record<string, PlayerSnapshot> = {};
       for (const p of snapshot.players) {
