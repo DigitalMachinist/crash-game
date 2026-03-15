@@ -14,17 +14,6 @@ import { CHAIN_LENGTH } from '../config';
 import { bytesToHex, sha256Hex } from '../crypto-hex';
 
 /**
- * Computes the next chain commitment from the current chain seed.
- * Wraps `sha256Hex` to make the chain-commitment operation explicit in the
- * module's public surface rather than exposing a raw cryptographic primitive.
- *
- * @see docs/provably-fair.md §2.2
- */
-export function computeNextChainCommitment(chainSeed: string): Promise<string> {
-  return sha256Hex(chainSeed);
-}
-
-/**
  * Generates a cryptographically random 256-bit root seed (32 bytes as hex).
  * Called on first DO initialization and on chain rotation.
  *

@@ -19,13 +19,21 @@ import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
 
-/** Required field checks per server message variant. Each entry is [field, 'string'|'number'|'array']. */
-type FieldType = 'string' | 'number' | 'array';
+/** Required field checks per server message variant. Each entry is [field, type]. */
+type FieldType = 'string' | 'number' | 'array' | 'nullable-number' | 'nullable-string';
 const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
   state: [
     ['phase', 'string'],
     ['roundId', 'number'],
+    ['countdown', 'number'],
+    ['multiplier', 'number'],
+    ['elapsed', 'number'],
+    ['crashPoint', 'nullable-number'],
     ['players', 'array'],
+    ['chainCommitment', 'string'],
+    ['drandRound', 'nullable-number'],
+    ['drandRandomness', 'nullable-string'],
+    ['history', 'array'],
   ],
   tick: [
     ['multiplier', 'number'],
@@ -36,6 +44,7 @@ const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
     ['playerId', 'string'],
     ['name', 'string'],
     ['wager', 'number'],
+    ['autoCashout', 'nullable-number'],
   ],
   playerCashedOut: [
     ['id', 'string'],
@@ -54,7 +63,10 @@ const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
 };
 
 function checkField(msg: Record<string, unknown>, field: string, type: FieldType): boolean {
-  return type === 'array' ? Array.isArray(msg[field]) : typeof msg[field] === type;
+  if (type === 'array') return Array.isArray(msg[field]);
+  if (type === 'nullable-number') return msg[field] === null || typeof msg[field] === 'number';
+  if (type === 'nullable-string') return msg[field] === null || typeof msg[field] === 'string';
+  return typeof msg[field] === type;
 }
 
 function isValidServerMessage(data: unknown): data is ServerMessage {

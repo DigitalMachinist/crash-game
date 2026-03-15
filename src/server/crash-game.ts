@@ -20,6 +20,7 @@ import {
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
+import { sha256Hex } from '../crypto-hex';
 import { computeEffectiveSeed, deriveCrashPoint } from '../provably-fair';
 import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
 import { computeCurrentDrandRound, fetchDrandBeacon } from './drand';
@@ -38,12 +39,7 @@ import {
   type RoundIngredients,
   type RunningGameState,
 } from './game-state';
-import {
-  computeNextChainCommitment,
-  computeTerminalHash,
-  generateRootSeed,
-  getChainSeedForGame,
-} from './hash-chain';
+import { computeTerminalHash, generateRootSeed, getChainSeedForGame } from './hash-chain';
 import { isValidClientMessage, isValidStoredGameData } from './validation';
 
 interface Env {
@@ -300,7 +296,7 @@ export class CrashGame extends Server<Env> {
         // Countdown changed (or phase transitioned to STARTING); invalidate cache
         this.invalidateSnapshot();
 
-        this.dispatchMessages(result.messages);
+        this.broadcastMessages(result.messages);
 
         if (result.shouldStartRound) {
           // Transition to STARTING — use blockConcurrencyWhile for isolation
@@ -320,7 +316,7 @@ export class CrashGame extends Server<Env> {
           this.invalidateSnapshot();
         }
 
-        this.dispatchMessages(result.messages);
+        this.broadcastMessages(result.messages);
 
         if (result.shouldCrash) {
           await this.crashRound(now);
@@ -394,7 +390,7 @@ export class CrashGame extends Server<Env> {
     }
 
     const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
-    const nextChainCommitment = await computeNextChainCommitment(chainSeed);
+    const nextChainCommitment = await sha256Hex(chainSeed);
 
     let beacon: DrandBeacon;
     let drandRound: number;
@@ -431,7 +427,7 @@ export class CrashGame extends Server<Env> {
     const result = handleStartingComplete(this.gameState, ingredients, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
-    this.dispatchMessages(result.messages);
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
@@ -498,7 +494,7 @@ export class CrashGame extends Server<Env> {
       }
     }
 
-    this.dispatchMessages(result.messages);
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
@@ -509,25 +505,38 @@ export class CrashGame extends Server<Env> {
     this.gameState = result.state;
     this.invalidateSnapshot();
 
-    this.dispatchMessages(result.messages);
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
   }
 
   /**
-   * Dispatches all outbound messages: broadcasts are sent to every connection;
-   * targeted messages are sent directly to `conn` (always the requesting connection
-   * for join/cashout ACKs). Pass `conn` when targeted messages may be present.
+   * Sends all outbound messages from alarm-path state transitions.
+   * All alarm-path handlers only produce broadcast messages; a targeted message
+   * here is a programming error, so it is logged and dropped.
    */
-  private dispatchMessages(messages: OutboundMessage[], conn?: Connection): void {
+  private broadcastMessages(messages: OutboundMessage[]): void {
     for (const outbound of messages) {
       if (outbound.broadcast) {
         this.broadcast(JSON.stringify(outbound.message));
-      } else if (conn) {
-        conn.send(JSON.stringify(outbound.message));
       } else {
-        console.warn('[dispatchMessages] targeted message dropped — no conn provided');
+        console.warn('[broadcastMessages] targeted message on alarm path — dropped');
+      }
+    }
+  }
+
+  /**
+   * Dispatches all outbound messages from message-path handlers (join/cashout).
+   * Broadcasts go to every connection; targeted messages go to `conn` (the
+   * requesting connection).
+   */
+  private dispatchMessages(messages: OutboundMessage[], conn: Connection): void {
+    for (const outbound of messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      } else {
+        conn.send(JSON.stringify(outbound.message));
       }
     }
   }
