@@ -96,6 +96,17 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
  *
  * @see docs/game-state-machine.md §3.4
  */
+function joinError(
+  state: GameState,
+  targetPlayerId: string,
+  message: string,
+): { state: GameState; messages: OutboundMessage[] } {
+  return {
+    state,
+    messages: [{ broadcast: false, targetPlayerId, message: { type: 'error', message } }],
+  };
+}
+
 export function handleJoin(
   state: GameState,
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
@@ -106,16 +117,7 @@ export function handleJoin(
   if (state.players.has(msg.playerId)) {
     const existing = state.players.get(msg.playerId)!;
     if (existing.wager !== msg.wager) {
-      return {
-        state,
-        messages: [
-          {
-            broadcast: false,
-            targetPlayerId: msg.playerId,
-            message: { type: 'error', message: 'Already joined with different wager' },
-          },
-        ],
-      };
+      return joinError(state, msg.playerId, 'Already joined with different wager');
     }
     if (existing.id === connectionId) {
       return { state, messages: [] }; // Same connection — no-op
@@ -149,94 +151,31 @@ export function handleJoin(
   }
 
   if (state.phase !== 'WAITING') {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Cannot join during ${state.phase} phase` },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, `Cannot join during ${state.phase} phase`);
   }
 
   if (!msg.playerId || msg.playerId.length > MAX_PLAYER_ID_LENGTH) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId || 'unknown',
-          message: { type: 'error', message: 'Invalid playerId' },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId || 'unknown', 'Invalid playerId');
   }
 
   if (state.players.size >= MAX_PLAYERS_PER_ROUND) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'Room full' },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, 'Room full');
   }
 
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'Wager must be a positive number' },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, 'Wager must be a positive number');
   }
 
   if (msg.wager < MIN_WAGER) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Minimum wager is $${MIN_WAGER.toFixed(2)}` },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, `Minimum wager is $${MIN_WAGER.toFixed(2)}`);
   }
 
   if (msg.wager > MAX_WAGER) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Maximum wager is $${MAX_WAGER.toFixed(2)}` },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, `Maximum wager is $${MAX_WAGER.toFixed(2)}`);
   }
 
   if (msg.autoCashout != null && (!Number.isFinite(msg.autoCashout) || msg.autoCashout <= 1.0)) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'autoCashout must be greater than 1.0' },
-        },
-      ],
-    };
+    return joinError(state, msg.playerId, 'autoCashout must be greater than 1.0');
   }
 
   const name = msg.name?.trim() || msg.playerId.slice(0, 8);
@@ -451,8 +390,6 @@ export function handleCrash(
     }
   }
 
-  const playerSnapshots = Array.from(newPlayers.values()).map(playerToSnapshot);
-
   const historyEntry: HistoryEntry = {
     roundId: state.roundId,
     crashPoint,
@@ -474,23 +411,7 @@ export function handleCrash(
   return {
     state: newState,
     messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: 'CRASHED',
-          roundId: state.roundId,
-          countdown: state.countdown,
-          multiplier: 1.0,
-          elapsed,
-          crashPoint,
-          players: playerSnapshots,
-          chainCommitment: state.chainCommitment,
-          drandRound,
-          drandRandomness,
-          history: newHistory,
-        },
-      },
+      { broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState, nowMs) } },
     ],
   };
 }
@@ -568,25 +489,7 @@ export function handleCountdownTick(state: GameState): {
 
   return {
     state: newState,
-    messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: newState.phase,
-          roundId: newState.roundId,
-          countdown: newCountdown,
-          multiplier: 1.0,
-          elapsed: 0,
-          crashPoint: null,
-          players: getPlayerSnapshots(newState),
-          chainCommitment: newState.chainCommitment,
-          drandRound: null,
-          drandRandomness: null,
-          history: newState.history,
-        },
-      },
-    ],
+    messages: [{ broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState) } }],
     shouldStartRound,
   };
 }
@@ -602,7 +505,6 @@ export function handleTransitionToWaiting(state: GameState): {
   state: GameState;
   messages: OutboundMessage[];
 } {
-  const chainCommitment = state.chainCommitment;
   const newState: GameState = {
     ...state,
     phase: 'WAITING',
@@ -615,30 +517,11 @@ export function handleTransitionToWaiting(state: GameState): {
     chainSeed: null,
     drandRound: null,
     drandRandomness: null,
-    chainCommitment,
   };
 
   return {
     state: newState,
-    messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: 'WAITING',
-          roundId: newState.roundId,
-          countdown: WAITING_DURATION_MS,
-          multiplier: 1.0,
-          elapsed: 0,
-          crashPoint: null,
-          players: [],
-          chainCommitment,
-          drandRound: null,
-          drandRandomness: null,
-          history: newState.history,
-        },
-      },
-    ],
+    messages: [{ broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState) } }],
   };
 }
 

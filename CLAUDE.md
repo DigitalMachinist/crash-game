@@ -28,6 +28,7 @@ When making tool calls to execute commands defined in package.json, prefer using
 - Run linting: `npm run lint`
 - Run formatting: `npm run format`
 - Run format check: `npm run check`
+- Run desloppify: `/desloppify`
 
 ## Local Hosting for Development
 
