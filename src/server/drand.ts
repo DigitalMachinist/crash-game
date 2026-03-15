@@ -15,7 +15,7 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
-import { hmacSha256Hex } from '../crypto-hex';
+import { computeEffectiveSeed } from '../provably-fair';
 import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
@@ -96,6 +96,5 @@ export async function computeEffectiveSeedFromBeacon(
   chainSeed: string,
   beacon: DrandBeacon,
 ): Promise<string> {
-  // drandRandomness is the KEY (critical: uncontrollable external input in privileged position)
-  return hmacSha256Hex(beacon.randomness, chainSeed);
+  return computeEffectiveSeed(chainSeed, beacon.randomness);
 }

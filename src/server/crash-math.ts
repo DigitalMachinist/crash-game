@@ -1,8 +1,9 @@
 /**
- * Crash point derivation and multiplier curve math.
+ * Multiplier curve math for the RUNNING phase.
  *
- * Implements the exponential multiplier curve `e^(GROWTH_RATE × t)` and the
- * house-edge-adjusted crash point formula derived from the effective seed.
+ * Owns `multiplierAtTime` and `computeCrashTimeMs`; re-exports
+ * `deriveCrashPoint` and `hashToFloat` from `provably-fair.ts` so server
+ * code has a single import point for all crash-point math.
  *
  * @see docs/provably-fair.md §2.6
  * @see docs/game-state-machine.md §3.6

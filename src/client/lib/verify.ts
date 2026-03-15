@@ -4,22 +4,21 @@
  *
  * @see docs/provably-fair.md §2.7
  */
-import { hmacSha256Hex, sha256Hex } from '../../crypto-hex';
-import { deriveCrashPoint } from '../../provably-fair';
+import { sha256Hex } from '../../crypto-hex';
+import { computeEffectiveSeed, deriveCrashPoint } from '../../provably-fair';
 import type { VerificationResult } from '../../types';
 
 /**
  * Computes `HMAC-SHA256(key = drandRandomness, data = chainSeed)`.
- * SECURITY: drand randomness MUST be the key — see `docs/provably-fair.md §2.5`.
+ * Delegates to the shared `computeEffectiveSeed` in provably-fair.ts.
  *
  * @see docs/provably-fair.md §2.5
  */
-export async function computeEffectiveSeedFromRandomness(
+export async function computeEffectiveSeedFromBeacon(
   chainSeed: string,
   drandRandomness: string,
 ): Promise<string> {
-  // drandRandomness is the KEY, chainSeed is the DATA (critical security property)
-  return hmacSha256Hex(drandRandomness, chainSeed);
+  return computeEffectiveSeed(chainSeed, drandRandomness);
 }
 
 /**
@@ -46,7 +45,7 @@ export async function verifyRound(params: {
   const chainValid = computedHash === chainCommitment;
 
   // Step 2: derive crash point
-  const effectiveSeed = await computeEffectiveSeedFromRandomness(roundSeed, drandRandomness);
+  const effectiveSeed = await computeEffectiveSeedFromBeacon(roundSeed, drandRandomness);
   const computedCrashPoint = deriveCrashPoint(effectiveSeed);
 
   if (!chainValid) {

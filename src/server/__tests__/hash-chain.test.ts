@@ -1,12 +1,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { CHAIN_LENGTH } from '../../config';
+import { sha256Hex } from '../../crypto-hex';
 import {
   computeSeedAtIndex,
   computeTerminalHash,
   generateRootSeed,
   getChainSeedForGame,
-  sha256Hex,
   verifySeedAgainstHash,
 } from '../hash-chain';
 

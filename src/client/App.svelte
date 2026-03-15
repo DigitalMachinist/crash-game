@@ -80,8 +80,8 @@ function applyRoundResult(snapshot: GameStateSnapshot) {
       timestamp: Date.now(),
     });
     balance.set(getBalance());
-  } else if (!myPlayer.cashedOut) {
-    // Wager already deducted at join — just record the loss
+  } else {
+    // cashedOut=false: wager already deducted at join — just record the loss
     addHistoryEntry({
       roundId: snapshot.roundId,
       wager: myPlayer.wager,

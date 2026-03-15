@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HOUSE_EDGE } from '../../../config';
 import { sha256Hex } from '../../../crypto-hex';
 import { deriveCrashPoint } from '../../../provably-fair';
-import { computeEffectiveSeedFromRandomness, verifyRound } from '../verify';
+import { computeEffectiveSeedFromBeacon, verifyRound } from '../verify';
 
 // ─── House edge constant parity ───────────────────────────────────────────────
 
@@ -17,23 +17,23 @@ describe('HOUSE_EDGE config parity', () => {
 const KEY_HEX = '0000000000000000000000000000000000000000000000000000000000000002';
 const DATA_HEX = '0000000000000000000000000000000000000000000000000000000000000001';
 
-// ─── computeEffectiveSeedFromRandomness ─────────────────────────────────────────────────────
+// ─── computeEffectiveSeedFromBeacon ─────────────────────────────────────────────────────
 
-describe('computeEffectiveSeedFromRandomness', () => {
+describe('computeEffectiveSeedFromBeacon', () => {
   it('returns a 64-char hex string', async () => {
-    const result = await computeEffectiveSeedFromRandomness(DATA_HEX, KEY_HEX);
+    const result = await computeEffectiveSeedFromBeacon(DATA_HEX, KEY_HEX);
     expect(result).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('is deterministic — same inputs produce the same output', async () => {
-    const first = await computeEffectiveSeedFromRandomness(DATA_HEX, KEY_HEX);
-    const second = await computeEffectiveSeedFromRandomness(DATA_HEX, KEY_HEX);
+    const first = await computeEffectiveSeedFromBeacon(DATA_HEX, KEY_HEX);
+    const second = await computeEffectiveSeedFromBeacon(DATA_HEX, KEY_HEX);
     expect(first).toBe(second);
   });
 
   it('key/data ordering matters — swapping args produces a different result', async () => {
-    const correct = await computeEffectiveSeedFromRandomness(DATA_HEX, KEY_HEX);
-    const reversed = await computeEffectiveSeedFromRandomness(KEY_HEX, DATA_HEX);
+    const correct = await computeEffectiveSeedFromBeacon(DATA_HEX, KEY_HEX);
+    const reversed = await computeEffectiveSeedFromBeacon(KEY_HEX, DATA_HEX);
     expect(correct).not.toBe(reversed);
   });
 });
@@ -47,7 +47,7 @@ describe('verifyRound', () => {
 
   it('returns valid: true for a consistent round', async () => {
     const chainCommitment = await sha256Hex(roundSeed);
-    const effectiveSeed = await computeEffectiveSeedFromRandomness(roundSeed, drandRandomness);
+    const effectiveSeed = await computeEffectiveSeedFromBeacon(roundSeed, drandRandomness);
     const displayedCrashPoint = deriveCrashPoint(effectiveSeed);
 
     const result = await verifyRound({
@@ -63,7 +63,7 @@ describe('verifyRound', () => {
 
   it('always includes computedCrashPoint, chainValid, drandRound, drandRandomness', async () => {
     const chainCommitment = await sha256Hex(roundSeed);
-    const effectiveSeed = await computeEffectiveSeedFromRandomness(roundSeed, drandRandomness);
+    const effectiveSeed = await computeEffectiveSeedFromBeacon(roundSeed, drandRandomness);
     const displayedCrashPoint = deriveCrashPoint(effectiveSeed);
 
     const result = await verifyRound({
@@ -82,7 +82,7 @@ describe('verifyRound', () => {
 
   it('returns valid: false with reason "chain link invalid" when chainCommitment is wrong', async () => {
     const wrongChainCommitment = 'b'.repeat(64);
-    const effectiveSeed = await computeEffectiveSeedFromRandomness(roundSeed, drandRandomness);
+    const effectiveSeed = await computeEffectiveSeedFromBeacon(roundSeed, drandRandomness);
     const displayedCrashPoint = deriveCrashPoint(effectiveSeed);
 
     const result = await verifyRound({

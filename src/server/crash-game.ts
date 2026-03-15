@@ -37,10 +37,10 @@ import {
   transitionToWaiting,
 } from './game-state';
 import {
+  computeNextChainCommitment,
   computeTerminalHash,
   generateRootSeed,
   getChainSeedForGame,
-  sha256Hex,
 } from './hash-chain';
 import { isValidClientMessage, isValidStoredGameData } from './validation';
 
@@ -138,8 +138,7 @@ export class CrashGame extends Server<Env> {
 
     // Send current game state snapshot to the newly connected client (use cache)
     const snapshot = this.getSnapshot();
-    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
-    conn.send(JSON.stringify(stateMsg));
+    conn.send(JSON.stringify({ type: 'state', ...snapshot } satisfies ServerMessage));
   }
 
   override async onMessage(conn: Connection, message: string): Promise<void> {
@@ -381,7 +380,7 @@ export class CrashGame extends Server<Env> {
     }
 
     const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
-    const nextChainCommitment = await sha256Hex(chainSeed);
+    const nextChainCommitment = await computeNextChainCommitment(chainSeed);
 
     let beacon: DrandBeacon;
     let drandRound: number;
@@ -419,9 +418,9 @@ export class CrashGame extends Server<Env> {
     this.invalidateSnapshot();
 
     // Broadcast full state update to all connections so clients know the round started
-    const snapshot = this.getSnapshot();
-    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
-    this.broadcast(JSON.stringify(stateMsg));
+    this.broadcast(
+      JSON.stringify({ type: 'state', ...this.getSnapshot() } satisfies ServerMessage),
+    );
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
@@ -525,6 +524,8 @@ export class CrashGame extends Server<Env> {
   private sendToTarget(targetPlayerId: string, fallback: Connection): Connection {
     const player = this.gameState.players.get(targetPlayerId);
     if (player) {
+      // O(n) scan is acceptable here: called only for individual targeted ACKs
+      // (join/cashout), never inside the tick loop. n ≤ MAX_PLAYERS_PER_ROUND.
       const target = Array.from(this.getConnections()).find((c) => c.id === player.id);
       if (target) return target;
     }
