@@ -1,17 +1,13 @@
 /**
  * Multiplier curve math for the RUNNING phase.
  *
- * Owns `multiplierAtTime` and `computeCrashTimeMs`; re-exports
- * `deriveCrashPoint` and `hashToFloat` from `provably-fair.ts` so server
- * code has a single import point for all crash-point math.
+ * Owns `multiplierAtTime` and `computeCrashTimeMs`. Crash-point derivation
+ * lives in `provably-fair.ts`; import from there directly.
  *
  * @see docs/provably-fair.md §2.6
  * @see docs/game-state-machine.md §3.6
  */
 import { GROWTH_RATE } from '../config';
-import { deriveCrashPoint, hashToFloat } from '../provably-fair';
-
-export { deriveCrashPoint, hashToFloat };
 
 /**
  * Returns the current multiplier at `elapsedMs` milliseconds since round start.

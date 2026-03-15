@@ -18,15 +18,20 @@ export default {
     env: { CrashGame: DurableObjectNamespace; ASSETS: Fetcher },
     _ctx: ExecutionContext,
   ): Promise<Response> {
-    // Route WebSocket and party requests to the Durable Object
-    const partyResponse = await routePartykitRequest(request, env);
-    if (partyResponse) return partyResponse;
+    try {
+      // Route WebSocket and party requests to the Durable Object
+      const partyResponse = await routePartykitRequest(request, env);
+      if (partyResponse) return partyResponse;
 
-    // Serve static assets for everything else
-    if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      // Serve static assets for everything else
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(request);
+      }
+
+      return new Response('Not found', { status: 404 });
+    } catch (err) {
+      console.error('Worker fetch error:', err);
+      return new Response('Internal server error', { status: 500 });
     }
-
-    return new Response('Not found', { status: 404 });
   },
 };

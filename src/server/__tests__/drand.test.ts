@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../config';
+import { bytesToHex, hexToBytes } from '../../crypto-hex';
 import {
   computeEffectiveSeedFromBeacon,
   DrandFetchError,
@@ -239,19 +240,6 @@ describe('computeEffectiveSeedFromBeacon', () => {
     const normal = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
 
     // Swapped: key=chainSeed (as raw bytes), data=randomness — raw crypto.subtle call
-    function hexToBytes(hex: string): Uint8Array {
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-      }
-      return bytes;
-    }
-    function bytesToHex(bytes: Uint8Array): string {
-      return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-    }
-
     const keyBytes = hexToBytes(chainSeed);
     const dataBytes = hexToBytes(randomness);
     const key = await crypto.subtle.importKey(

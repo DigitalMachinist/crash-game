@@ -46,7 +46,7 @@ function showToast(msg: string) {
   }, 4000);
 }
 
-function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
+function applyPendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
   // Guard against double-applying
   if (hasPendingResult(detail.roundId)) return;
   applyCashout(detail.payout);
@@ -104,7 +104,7 @@ $effect(() => {
 $effect(() => {
   const payout = $lastPendingPayout;
   if (payout) {
-    handlePendingPayout(payout);
+    applyPendingPayout(payout);
     lastPendingPayout.set(null);
   }
 });

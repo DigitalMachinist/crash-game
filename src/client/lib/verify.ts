@@ -9,19 +9,6 @@ import { computeEffectiveSeed, deriveCrashPoint } from '../../provably-fair';
 import type { VerificationResult } from '../../types';
 
 /**
- * Computes `HMAC-SHA256(key = drandRandomness, data = chainSeed)`.
- * Delegates to the shared `computeEffectiveSeed` in provably-fair.ts.
- *
- * @see docs/provably-fair.md §2.5
- */
-export async function computeEffectiveSeedFromBeacon(
-  chainSeed: string,
-  drandRandomness: string,
-): Promise<string> {
-  return computeEffectiveSeed(chainSeed, drandRandomness);
-}
-
-/**
  * Verifies a completed round against its public provably-fair ingredients.
  *
  * Steps:
@@ -45,7 +32,8 @@ export async function verifyRound(params: {
   const chainValid = computedHash === chainCommitment;
 
   // Step 2: derive crash point
-  const effectiveSeed = await computeEffectiveSeedFromBeacon(roundSeed, drandRandomness);
+  // HMAC-SHA256(key=drandRandomness, data=roundSeed) — drand is the key (§2.5)
+  const effectiveSeed = await computeEffectiveSeed(roundSeed, drandRandomness);
   const computedCrashPoint = deriveCrashPoint(effectiveSeed);
 
   if (!chainValid) {

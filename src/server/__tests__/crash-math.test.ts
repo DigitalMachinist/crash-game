@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
-import { computeCrashTimeMs, deriveCrashPoint, hashToFloat, multiplierAtTime } from '../crash-math';
+import { deriveCrashPoint, hashToFloat } from '../../provably-fair';
+import { computeCrashTimeMs, multiplierAtTime } from '../crash-math';
 
 vi.setConfig({ testTimeout: 30000 });
 

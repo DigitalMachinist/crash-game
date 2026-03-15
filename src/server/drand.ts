@@ -92,7 +92,7 @@ export async function fetchDrandBeacon(
  * @see docs/provably-fair.md §2.5
  * @see docs/provably-fair.md §2.4
  */
-export async function computeEffectiveSeedFromBeacon(
+export function computeEffectiveSeedFromBeacon(
   chainSeed: string,
   beacon: DrandBeacon,
 ): Promise<string> {

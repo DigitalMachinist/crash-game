@@ -16,11 +16,12 @@ import {
   COUNTDOWN_TICK_MS,
   CRASHED_DISPLAY_MS,
   MAX_PENDING_PAYOUTS,
+  MAX_PLAYER_ID_LENGTH,
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
+import { deriveCrashPoint } from '../provably-fair';
 import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
-import { deriveCrashPoint } from './crash-math';
 import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
 import {
   buildStateSnapshot,
@@ -132,7 +133,11 @@ export class CrashGame extends Server<Env> {
     // This lets reconnecting players cashout without re-sending a join. [Phase 4.6]
     const url = new URL(ctx.request.url);
     const playerId = url.searchParams.get('playerId');
-    if (playerId && this.gameState.players.has(playerId)) {
+    if (
+      playerId &&
+      playerId.length <= MAX_PLAYER_ID_LENGTH &&
+      this.gameState.players.has(playerId)
+    ) {
       this.connectionToPlayer.set(conn.id, playerId);
     }
 
@@ -211,7 +216,11 @@ export class CrashGame extends Server<Env> {
 
       // Persist player join so DO eviction does not lose the wager [Backend-1]
       if (joinSucceeded) {
-        await this.persistState();
+        try {
+          await this.persistState();
+        } catch (err) {
+          console.error('[onMessage/join] failed to persist state:', err);
+        }
       }
 
       this.dispatchMessages(result.messages, conn);
@@ -240,7 +249,11 @@ export class CrashGame extends Server<Env> {
 
       // Persist cashout so DO eviction does not lose the payout record [Backend-2]
       if (cashoutSucceeded) {
-        await this.persistState();
+        try {
+          await this.persistState();
+        } catch (err) {
+          console.error('[onMessage/cashout] failed to persist state:', err);
+        }
       }
 
       this.dispatchMessages(result.messages, conn);
