@@ -108,5 +108,3 @@ export const isInRound = derived(
   ([$phase, $players, $id]) =>
     ($phase === 'RUNNING' || $phase === 'STARTING') && $id in $players && !$players[$id]?.cashedOut,
 );
-
-export { get };

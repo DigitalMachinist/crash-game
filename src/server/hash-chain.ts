@@ -6,7 +6,7 @@
  *
  * Two numbering systems:
  * - **Chain index** (0 = rootSeed, CHAIN_LENGTH = terminalHash) — used in `computeSeedAtIndex`.
- * - **Game number** (1, 2, 3 …) — used in `getChainSeedForGame`.
+ * - **Game number** (1, 2, 3 …) — used in `computeChainSeedForGame`.
  *
  * @see docs/provably-fair.md §2.2
  */
@@ -69,7 +69,7 @@ export async function verifySeedAgainstHash(seed: string, expectedHash: string):
  *
  * @see docs/provably-fair.md §2.2 (two numbering systems)
  */
-export function getChainSeedForGame(rootSeed: string, gameNumber: number): Promise<string> {
+export function computeChainSeedForGame(rootSeed: string, gameNumber: number): Promise<string> {
   if (gameNumber < 1 || gameNumber > CHAIN_LENGTH) {
     return Promise.reject(
       new Error(`gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${gameNumber}`),

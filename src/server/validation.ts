@@ -63,7 +63,7 @@ export function isValidDrandBeacon(data: unknown): data is DrandBeacon {
 
 // ─── Storage validation ─────────────────────────────────────────────────────
 
-export interface StoredGameData {
+interface StoredGameData {
   rootSeed: string;
   gameNumber: number;
   chainCommitment: string;
@@ -124,8 +124,21 @@ export function isValidStoredGameData(data: unknown): data is StoredGameData {
     if (typeof entry.chainCommitment !== 'string') return false;
   }
 
-  // pendingPayouts: array of tuples (or absent)
-  if (data.pendingPayouts !== undefined && !Array.isArray(data.pendingPayouts)) return false;
+  // pendingPayouts: array of [playerId, payout] tuples (or absent)
+  if (data.pendingPayouts !== undefined) {
+    if (!Array.isArray(data.pendingPayouts)) return false;
+    for (const entry of data.pendingPayouts) {
+      if (!Array.isArray(entry) || entry.length !== 2) return false;
+      if (typeof entry[0] !== 'string') return false;
+      const p = entry[1];
+      if (!isObject(p)) return false;
+      if (typeof p.roundId !== 'number') return false;
+      if (typeof p.wager !== 'number') return false;
+      if (typeof p.payout !== 'number') return false;
+      if (typeof p.cashoutMultiplier !== 'number') return false;
+      if (typeof p.crashPoint !== 'number') return false;
+    }
+  }
 
   return true;
 }

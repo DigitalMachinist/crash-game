@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { CHAIN_LENGTH } from '../../config';
 import { sha256Hex } from '../../crypto-hex';
 import {
+  computeChainSeedForGame,
   computeSeedAtIndex,
   computeTerminalHash,
   generateRootSeed,
-  getChainSeedForGame,
   verifySeedAgainstHash,
 } from '../hash-chain';
 
@@ -153,52 +153,52 @@ describe('verifySeedAgainstHash', () => {
   });
 });
 
-describe('getChainSeedForGame', () => {
+describe('computeChainSeedForGame', () => {
   it('returns a 64-character hex string for game 1', async () => {
     const root = generateRootSeed();
-    const seed = await getChainSeedForGame(root, 1);
+    const seed = await computeChainSeedForGame(root, 1);
     expect(seed).toMatch(/^[0-9a-f]{64}$/);
     expect(seed).toHaveLength(64);
   });
 
   it('returns a 64-character hex string for game CHAIN_LENGTH', async () => {
     const root = generateRootSeed();
-    const seed = await getChainSeedForGame(root, CHAIN_LENGTH);
+    const seed = await computeChainSeedForGame(root, CHAIN_LENGTH);
     expect(seed).toMatch(/^[0-9a-f]{64}$/);
     expect(seed).toHaveLength(64);
   });
 
   it('game 1 maps to index CHAIN_LENGTH-1', async () => {
     const root = generateRootSeed();
-    const game1Seed = await getChainSeedForGame(root, 1);
+    const game1Seed = await computeChainSeedForGame(root, 1);
     const directSeed = await computeSeedAtIndex(root, CHAIN_LENGTH - 1);
     expect(game1Seed).toBe(directSeed);
   });
 
   it('game CHAIN_LENGTH maps to index 0 (the root seed)', async () => {
     const root = generateRootSeed();
-    const lastGameSeed = await getChainSeedForGame(root, CHAIN_LENGTH);
+    const lastGameSeed = await computeChainSeedForGame(root, CHAIN_LENGTH);
     expect(lastGameSeed).toBe(root);
   });
 
   it('is deterministic', async () => {
     const root = generateRootSeed();
-    const s1 = await getChainSeedForGame(root, 42);
-    const s2 = await getChainSeedForGame(root, 42);
+    const s1 = await computeChainSeedForGame(root, 42);
+    const s2 = await computeChainSeedForGame(root, 42);
     expect(s1).toBe(s2);
   });
 
   it('different game numbers produce different seeds', async () => {
     const root = generateRootSeed();
-    const s1 = await getChainSeedForGame(root, 1);
-    const s2 = await getChainSeedForGame(root, 2);
+    const s1 = await computeChainSeedForGame(root, 1);
+    const s2 = await computeChainSeedForGame(root, 2);
     expect(s1).not.toBe(s2);
   });
 
   it('chain integrity: SHA256(game N+1 seed) equals game N seed', async () => {
     const root = generateRootSeed();
-    const game1Seed = await getChainSeedForGame(root, 1);
-    const game2Seed = await getChainSeedForGame(root, 2);
+    const game1Seed = await computeChainSeedForGame(root, 1);
+    const game2Seed = await computeChainSeedForGame(root, 2);
     expect(await sha256Hex(game2Seed)).toBe(game1Seed);
   });
 
@@ -220,7 +220,7 @@ describe('getChainSeedForGame', () => {
 
   it('throws for gameNumber < 1', async () => {
     const root = await generateRootSeed();
-    await expect(getChainSeedForGame(root, 0)).rejects.toThrow(
+    await expect(computeChainSeedForGame(root, 0)).rejects.toThrow(
       `gameNumber must be between 1 and ${CHAIN_LENGTH}, got 0`,
     );
   });
@@ -228,7 +228,7 @@ describe('getChainSeedForGame', () => {
   it('throws for gameNumber > CHAIN_LENGTH', async () => {
     const root = await generateRootSeed();
     const over = CHAIN_LENGTH + 1;
-    await expect(getChainSeedForGame(root, over)).rejects.toThrow(
+    await expect(computeChainSeedForGame(root, over)).rejects.toThrow(
       `gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${over}`,
     );
   });
@@ -241,7 +241,7 @@ describe('getChainSeedForGame', () => {
       fc.asyncProperty(
         fc.integer({ min: CHAIN_LENGTH - 10, max: CHAIN_LENGTH }),
         async (gameNumber) => {
-          const seed = await getChainSeedForGame(root, gameNumber);
+          const seed = await computeChainSeedForGame(root, gameNumber);
           return seed.length === 64 && /^[0-9a-f]+$/.test(seed);
         },
       ),

@@ -39,7 +39,7 @@ import {
   type RoundIngredients,
   type RunningGameState,
 } from './game-state';
-import { computeTerminalHash, generateRootSeed, getChainSeedForGame } from './hash-chain';
+import { computeChainSeedForGame, computeTerminalHash, generateRootSeed } from './hash-chain';
 import { isValidClientMessage, isValidStoredGameData } from './validation';
 
 interface Env {
@@ -125,7 +125,7 @@ export class CrashGame extends Server<Env> {
     }
   }
 
-  override async onConnect(conn: Connection, ctx: ConnectionContext): Promise<void> {
+  override onConnect(conn: Connection, ctx: ConnectionContext): void {
     // Register connection→player mapping immediately if playerId is in the URL query string.
     // This lets reconnecting players cashout without re-sending a join. [Phase 4.6]
     const url = new URL(ctx.request.url);
@@ -389,7 +389,7 @@ export class CrashGame extends Server<Env> {
       this.gameNumber = 1;
     }
 
-    const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
+    const chainSeed = await computeChainSeedForGame(this.rootSeed, this.gameNumber);
     const nextChainCommitment = await sha256Hex(chainSeed);
 
     let beacon: DrandBeacon;
@@ -566,7 +566,7 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/project-architecture.md §1.7
    */
-  override async onRequest(req: Request): Promise<Response> {
+  override onRequest(req: Request): Response {
     const url = new URL(req.url);
 
     if (url.searchParams.get('debug') === 'true' && this.env.CRASH_DEBUG === 'true') {

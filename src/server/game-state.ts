@@ -47,7 +47,7 @@ export type RunningGameState = GameState & {
 
 export type OutboundMessage =
   | { broadcast: true; message: ServerMessage }
-  | { broadcast: false; targetPlayerId: string; message: ServerMessage };
+  | { broadcast: false; message: ServerMessage };
 
 export function createInitialState(chainCommitment: string, roundId = 1): GameState {
   return {
@@ -96,14 +96,13 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
  *
  * @see docs/game-state-machine.md §3.4
  */
-function joinError(
+function playerError(
   state: GameState,
-  targetPlayerId: string,
   message: string,
 ): { state: GameState; messages: OutboundMessage[] } {
   return {
     state,
-    messages: [{ broadcast: false, targetPlayerId, message: { type: 'error', message } }],
+    messages: [{ broadcast: false, message: { type: 'error', message } }],
   };
 }
 
@@ -117,7 +116,7 @@ export function handleJoin(
   if (state.players.has(msg.playerId)) {
     const existing = state.players.get(msg.playerId)!;
     if (existing.wager !== msg.wager) {
-      return joinError(state, msg.playerId, 'Already joined with different wager');
+      return playerError(state, 'Already joined with different wager');
     }
     if (existing.id === connectionId) {
       return { state, messages: [] }; // Same connection — no-op
@@ -151,31 +150,31 @@ export function handleJoin(
   }
 
   if (state.phase !== 'WAITING') {
-    return joinError(state, msg.playerId, `Cannot join during ${state.phase} phase`);
+    return playerError(state, `Cannot join during ${state.phase} phase`);
   }
 
   if (!msg.playerId || msg.playerId.length > MAX_PLAYER_ID_LENGTH) {
-    return joinError(state, msg.playerId || 'unknown', 'Invalid playerId');
+    return playerError(state, 'Invalid playerId');
   }
 
   if (state.players.size >= MAX_PLAYERS_PER_ROUND) {
-    return joinError(state, msg.playerId, 'Room full');
+    return playerError(state, 'Room full');
   }
 
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
-    return joinError(state, msg.playerId, 'Wager must be a positive number');
+    return playerError(state, 'Wager must be a positive number');
   }
 
   if (msg.wager < MIN_WAGER) {
-    return joinError(state, msg.playerId, `Minimum wager is $${MIN_WAGER.toFixed(2)}`);
+    return playerError(state, `Minimum wager is $${MIN_WAGER.toFixed(2)}`);
   }
 
   if (msg.wager > MAX_WAGER) {
-    return joinError(state, msg.playerId, `Maximum wager is $${MAX_WAGER.toFixed(2)}`);
+    return playerError(state, `Maximum wager is $${MAX_WAGER.toFixed(2)}`);
   }
 
   if (msg.autoCashout != null && (!Number.isFinite(msg.autoCashout) || msg.autoCashout <= 1.0)) {
-    return joinError(state, msg.playerId, 'autoCashout must be greater than 1.0');
+    return playerError(state, 'autoCashout must be greater than 1.0');
   }
 
   const name = msg.name?.trim() || msg.playerId.slice(0, 8);
@@ -223,60 +222,25 @@ export function handleCashout(
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
   if (state.phase !== 'RUNNING') {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: `Cannot cashout during ${state.phase} phase` },
-        },
-      ],
-    };
+    return playerError(state, `Cannot cashout during ${state.phase} phase`);
   }
 
   const player = state.players.get(playerId);
   if (!player) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Not in current round' },
-        },
-      ],
-    };
+    return playerError(state, 'Not in current round');
   }
 
   if (player.cashedOut) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Already cashed out' },
-        },
-      ],
-    };
+    return playerError(state, 'Already cashed out');
   }
 
-  const elapsed = nowMs - (state.roundStartTime ?? nowMs);
+  // roundStartTime is always set when phase is RUNNING (set in handleStartingComplete)
+  const elapsed = nowMs - state.roundStartTime!;
   const multiplier = multiplierAtTime(elapsed);
 
   // Must be strictly less than crash point
   if (state.crashPoint !== null && multiplier >= state.crashPoint) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Round has already crashed' },
-        },
-      ],
-    };
+    return playerError(state, 'Round has already crashed');
   }
 
   const payout = Math.floor(player.wager * multiplier * 100) / 100;

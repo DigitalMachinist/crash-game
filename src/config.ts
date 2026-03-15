@@ -26,7 +26,7 @@ export const CHAIN_LENGTH = 10_000;
 export const CHAIN_ROTATION_THRESHOLD = 100;
 
 // ─── drand quicknet ──────────────────────────────────────────────────────────
-export const DRAND_CHAIN_HASH = '52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971';
+const DRAND_CHAIN_HASH = '52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971';
 export const DRAND_GENESIS_TIME = 1_692_803_367; // Unix seconds
 export const DRAND_PERIOD_SECS = 3;
 export const DRAND_BASE_URL = `https://drand.cloudflare.com/${DRAND_CHAIN_HASH}`;
