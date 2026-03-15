@@ -19,6 +19,24 @@ import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
 
+const VALID_SERVER_MESSAGE_TYPES = new Set([
+  'state',
+  'tick',
+  'playerJoined',
+  'playerCashedOut',
+  'pendingPayout',
+  'error',
+]);
+
+function isValidServerMessage(data: unknown): data is ServerMessage {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof (data as Record<string, unknown>).type === 'string' &&
+    VALID_SERVER_MESSAGE_TYPES.has((data as Record<string, unknown>).type as string)
+  );
+}
+
 function onOpen(): void {
   connectionStatus.set('connected');
 }
@@ -31,15 +49,11 @@ function onClose(): void {
 function onMessage(e: MessageEvent): void {
   try {
     const parsed: unknown = JSON.parse(e.data as string);
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      typeof (parsed as Record<string, unknown>).type !== 'string'
-    ) {
+    if (!isValidServerMessage(parsed)) {
       console.warn('[socket] received structurally invalid message:', e.data);
       return;
     }
-    dispatchMessage(parsed as ServerMessage);
+    dispatchMessage(parsed);
   } catch (err) {
     console.warn('[socket] failed to parse server message:', e.data, err);
   }

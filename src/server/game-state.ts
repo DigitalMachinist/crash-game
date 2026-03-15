@@ -495,7 +495,8 @@ export function handleCrash(
  * Transitions the game from STARTING to RUNNING after a successful drand fetch.
  * Sets `crashPoint`, `chainSeed`, `drandRound`, `drandRandomness`, and updates
  * `chainCommitment` to `SHA-256(chainSeed)` for the next round's commitment.
- * Returns no messages — the state broadcast is sent by `CrashGame.startRound()`.
+ * Broadcasts a `state{phase:'RUNNING'}` message — `crashPoint` is deliberately
+ * omitted (null) from the broadcast to prevent client foreknowledge.
  *
  * @see docs/provably-fair.md §2.4
  */
@@ -515,19 +516,24 @@ export function handleStartingComplete(
   const { crashPoint, chainSeed, drandRound, drandRandomness, nextChainCommitment } = ingredients;
   const crashTime = computeCrashTimeMs(crashPoint);
 
+  const newState: GameState = {
+    ...state,
+    phase: 'RUNNING',
+    crashPoint,
+    crashTimeMs: crashTime,
+    roundStartTime: nowMs,
+    chainSeed,
+    drandRound,
+    drandRandomness,
+    chainCommitment: nextChainCommitment,
+  };
+
+  const snapshot = buildStateSnapshot(newState, nowMs);
+  const stateMsg: ServerMessage = { type: 'state', ...snapshot };
+
   return {
-    state: {
-      ...state,
-      phase: 'RUNNING',
-      crashPoint,
-      crashTimeMs: crashTime,
-      roundStartTime: nowMs,
-      chainSeed,
-      drandRound,
-      drandRandomness,
-      chainCommitment: nextChainCommitment,
-    },
-    messages: [],
+    state: newState,
+    messages: [{ broadcast: true, message: stateMsg }],
   };
 }
 

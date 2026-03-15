@@ -1089,7 +1089,7 @@ describe('handleStartingComplete', () => {
     expect(newState.roundStartTime).toBe(nowMs);
   });
 
-  it('does NOT broadcast the crashPoint in any message (messages are empty)', () => {
+  it('broadcasts a state message with phase RUNNING but does NOT reveal crashPoint', () => {
     const state = createInitialState('abc');
     const { messages } = handleStartingComplete(
       state,
@@ -1102,7 +1102,12 @@ describe('handleStartingComplete', () => {
       },
       1_000_000,
     );
-    expect(messages).toHaveLength(0);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].broadcast).toBe(true);
+    if (messages[0].broadcast && messages[0].message.type === 'state') {
+      expect(messages[0].message.phase).toBe('RUNNING');
+      expect(messages[0].message.crashPoint).toBeNull(); // never revealed until CRASHED
+    }
   });
 
   it('sets crashTimeMs based on crashPoint', () => {

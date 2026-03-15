@@ -416,11 +416,7 @@ export class CrashGame extends Server<Env> {
     const result = handleStartingComplete(this.gameState, ingredients, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
-
-    // Broadcast full state update to all connections so clients know the round started
-    this.broadcast(
-      JSON.stringify({ type: 'state', ...this.getSnapshot() } satisfies ServerMessage),
-    );
+    this.dispatchMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
@@ -469,9 +465,11 @@ export class CrashGame extends Server<Env> {
         if (!isConnected) {
           // Evict oldest entry if the map is at capacity [High-10]
           if (this.pendingPayouts.size >= MAX_PENDING_PAYOUTS) {
-            const oldestPlayerId = this.pendingPayouts.keys().next().value as string;
-            this.pendingPayouts.delete(oldestPlayerId);
-            console.warn(`Evicting stale pending payout for ${oldestPlayerId}`);
+            const entry = this.pendingPayouts.keys().next();
+            if (!entry.done) {
+              this.pendingPayouts.delete(entry.value);
+              console.warn(`Evicting stale pending payout for ${entry.value}`);
+            }
           }
           this.pendingPayouts.set(player.playerId, {
             roundId: this.gameState.roundId,
