@@ -47,6 +47,9 @@ export function deriveCrashPoint(effectiveSeed: string): number {
  *
  * @see docs/provably-fair.md §2.5
  */
-export function computeEffectiveSeed(chainSeed: string, drandRandomness: string): Promise<string> {
+export async function computeEffectiveSeed(
+  chainSeed: string,
+  drandRandomness: string,
+): Promise<string> {
   return hmacSha256Hex(drandRandomness, chainSeed);
 }

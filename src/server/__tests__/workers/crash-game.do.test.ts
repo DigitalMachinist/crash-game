@@ -163,11 +163,8 @@ describe('CrashGame DO (integration)', () => {
     const msgs = await pending;
     const parsed = msgs.map((m) => JSON.parse(m) as Record<string, unknown>);
 
-    // The second join attempt should not result in a second playerJoined broadcast;
-    // it may return an error message instead.
+    // The server must not broadcast a second playerJoined for the same playerId+round.
     const joinedMsgs = parsed.filter((m) => m.type === 'playerJoined');
-    const errorMsgs = parsed.filter((m) => m.type === 'error');
-    // The server must not broadcast a second playerJoined for the same playerId+round
     expect(joinedMsgs.length).toBe(0);
 
     ws.close();
