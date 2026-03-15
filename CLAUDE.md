@@ -58,3 +58,9 @@ When making tool calls to execute commands defined in package.json, prefer using
 
 - Store user-targeted and technical documentation in `docs/`
 - Use descriptive non-dated file names in kebab-case: `project-architecture.md`
+
+### Notes
+
+- Store documents that guide implementations or aid development but don't fit another category in `docs/notes/`
+- This includes things like session reviews, research notes, audit results, and other working documents that aren't permanent documentation, plans, or specs
+- Use date-prefixed filenames: `YYYY-MM-DD-short-description.md`
