@@ -4,7 +4,7 @@
  *
  * Responsibilities beyond layout:
  * - Initializes `myPlayerId` and `balance` from localStorage on mount.
- * - Watches `lastCrashResult` store (set by `messageHandler.ts`) and applies
+ * - Watches `lastCrashResult` store (set by `message-handler.ts`) and applies
  *   cashout or records loss via `applyCashout` / `addHistoryEntry`, guarded
  *   by `hasPendingResult()` to prevent double-application.
  * - Watches `lastPendingPayout` store and credits disconnected auto-cashout
@@ -46,7 +46,7 @@ function showToast(msg: string) {
   }, 4000);
 }
 
-function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
+function applyPendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
   // Guard against double-applying
   if (hasPendingResult(detail.roundId)) return;
   applyCashout(detail.payout);
@@ -62,7 +62,8 @@ function handlePendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayo
   showToast(`Auto-cashout: +${detail.payout.toFixed(2)} (${detail.cashoutMultiplier.toFixed(2)}x)`);
 }
 
-function handleCrashedResult(snapshot: GameStateSnapshot) {
+function applyRoundResult(snapshot: GameStateSnapshot) {
+  if (snapshot.crashPoint === null) return;
   const id = get(myPlayerId);
   if (!id) return;
   const myPlayer = snapshot.players.find((p) => p.playerId === id);
@@ -75,18 +76,18 @@ function handleCrashedResult(snapshot: GameStateSnapshot) {
       wager: myPlayer.wager,
       payout: myPlayer.payout,
       cashoutMultiplier: myPlayer.cashoutMultiplier,
-      crashPoint: snapshot.crashPoint!,
+      crashPoint: snapshot.crashPoint,
       timestamp: Date.now(),
     });
     balance.set(getBalance());
-  } else if (!myPlayer.cashedOut) {
-    // Wager already deducted at join — just record the loss
+  } else {
+    // cashedOut=false: wager already deducted at join — just record the loss
     addHistoryEntry({
       roundId: snapshot.roundId,
       wager: myPlayer.wager,
       payout: 0,
       cashoutMultiplier: null,
-      crashPoint: snapshot.crashPoint!,
+      crashPoint: snapshot.crashPoint,
       timestamp: Date.now(),
     });
   }
@@ -95,7 +96,7 @@ function handleCrashedResult(snapshot: GameStateSnapshot) {
 $effect(() => {
   const result = $lastCrashResult;
   if (result) {
-    handleCrashedResult(result);
+    applyRoundResult(result);
     lastCrashResult.set(null);
   }
 });
@@ -103,7 +104,7 @@ $effect(() => {
 $effect(() => {
   const payout = $lastPendingPayout;
   if (payout) {
-    handlePendingPayout(payout);
+    applyPendingPayout(payout);
     lastPendingPayout.set(null);
   }
 });

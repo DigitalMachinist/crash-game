@@ -3,7 +3,7 @@
  *
  * Connects to room `crash-main`, party `crash-game`. Updates `connectionStatus`
  * store: `'connecting'` → `'connected'` on open, `'reconnecting'` on close.
- * All incoming messages are forwarded to `handleMessage()`.
+ * All incoming messages are forwarded to `dispatchMessage()`.
  *
  * `connect()` returns a cleanup function (identical to calling `disconnect()`)
  * for use in component `onDestroy()` hooks. Calling `connect()` while a socket
@@ -12,14 +12,91 @@
  * @see docs/websocket-protocol.md §4.1
  */
 import PartySocket from 'partysocket';
+import { ROOM_ID } from '../../config';
 import type { ServerMessage } from '../../types';
-import { handleMessage } from './messageHandler';
+import { dispatchMessage } from './message-handler';
 import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
-let openHandler: (() => void) | null = null;
-let closeHandler: (() => void) | null = null;
-let messageHandler: ((e: MessageEvent) => void) | null = null;
+
+/** Required field checks per server message variant. Each entry is [field, type]. */
+type FieldType = 'string' | 'number' | 'array' | 'nullable-number' | 'nullable-string';
+const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
+  state: [
+    ['phase', 'string'],
+    ['roundId', 'number'],
+    ['countdown', 'number'],
+    ['multiplier', 'number'],
+    ['elapsed', 'number'],
+    ['crashPoint', 'nullable-number'],
+    ['players', 'array'],
+    ['chainCommitment', 'string'],
+    ['drandRound', 'nullable-number'],
+    ['drandRandomness', 'nullable-string'],
+    ['history', 'array'],
+  ],
+  tick: [
+    ['multiplier', 'number'],
+    ['elapsed', 'number'],
+  ],
+  playerJoined: [
+    ['id', 'string'],
+    ['playerId', 'string'],
+    ['name', 'string'],
+    ['wager', 'number'],
+    ['autoCashout', 'nullable-number'],
+  ],
+  playerCashedOut: [
+    ['id', 'string'],
+    ['playerId', 'string'],
+    ['multiplier', 'number'],
+    ['payout', 'number'],
+  ],
+  pendingPayout: [
+    ['roundId', 'number'],
+    ['wager', 'number'],
+    ['payout', 'number'],
+    ['cashoutMultiplier', 'number'],
+    ['crashPoint', 'number'],
+  ],
+  error: [['message', 'string']],
+};
+
+function checkField(msg: Record<string, unknown>, field: string, type: FieldType): boolean {
+  if (type === 'array') return Array.isArray(msg[field]);
+  if (type === 'nullable-number') return msg[field] === null || typeof msg[field] === 'number';
+  if (type === 'nullable-string') return msg[field] === null || typeof msg[field] === 'string';
+  return typeof msg[field] === type;
+}
+
+function isValidServerMessage(data: unknown): data is ServerMessage {
+  if (typeof data !== 'object' || data === null) return false;
+  const msg = data as Record<string, unknown>;
+  const checks = MESSAGE_FIELDS[msg.type as string];
+  return checks !== undefined && checks.every(([field, type]) => checkField(msg, field, type));
+}
+
+function onOpen(): void {
+  connectionStatus.set('connected');
+}
+
+function onClose(): void {
+  connectionStatus.set('reconnecting');
+  multiplierAnimating.set(false);
+}
+
+function onMessage(e: MessageEvent): void {
+  try {
+    const parsed: unknown = JSON.parse(e.data as string);
+    if (!isValidServerMessage(parsed)) {
+      console.warn('[socket] received structurally invalid message:', e.data);
+      return;
+    }
+    dispatchMessage(parsed);
+  } catch (err) {
+    console.warn('[socket] failed to parse server message:', e.data, err);
+  }
+}
 
 export function connect(playerId?: string): () => void {
   // Singleton guard: close any existing socket before opening a new one [High-23]
@@ -30,50 +107,29 @@ export function connect(playerId?: string): () => void {
   connectionStatus.set('connecting');
   socket = new PartySocket({
     host: typeof window !== 'undefined' ? window.location.host : 'localhost:8787',
-    room: 'crash-main',
+    room: ROOM_ID,
     party: 'crash-game',
     ...(playerId ? { query: { playerId } } : {}),
   });
 
-  openHandler = () => {
-    connectionStatus.set('connected');
-  };
-
-  closeHandler = () => {
-    connectionStatus.set('reconnecting');
-    multiplierAnimating.set(false);
-  };
-
-  messageHandler = (e: MessageEvent) => {
-    try {
-      const msg = JSON.parse(e.data as string) as ServerMessage;
-      handleMessage(msg);
-    } catch {
-      // Ignore malformed messages
-    }
-  };
-
-  socket.addEventListener('open', openHandler);
-  socket.addEventListener('close', closeHandler);
-  socket.addEventListener('message', messageHandler);
+  socket.addEventListener('open', onOpen);
+  socket.addEventListener('close', onClose);
+  socket.addEventListener('message', onMessage);
 
   return disconnect;
 }
 
 export function disconnect(): void {
   if (socket) {
-    if (openHandler) socket.removeEventListener('open', openHandler);
-    if (closeHandler) socket.removeEventListener('close', closeHandler);
-    if (messageHandler) socket.removeEventListener('message', messageHandler);
-    openHandler = null;
-    closeHandler = null;
-    messageHandler = null;
+    socket.removeEventListener('open', onOpen);
+    socket.removeEventListener('close', onClose);
+    socket.removeEventListener('message', onMessage);
     socket.close();
     socket = null;
   }
   connectionStatus.set('disconnected');
 }
 
-export function getRawSocket(): PartySocket | null {
+export function getSocket(): PartySocket | null {
   return socket;
 }

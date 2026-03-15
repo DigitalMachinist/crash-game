@@ -13,7 +13,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   connecting: { label: 'Connecting', color: 'gold' },
 };
 
-$: config = STATUS_CONFIG[$connectionStatus] ?? STATUS_CONFIG.disconnected;
+const config = $derived(STATUS_CONFIG[$connectionStatus] ?? STATUS_CONFIG.disconnected);
 </script>
 
 <div class="connection-status">

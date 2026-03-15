@@ -6,11 +6,12 @@
  *
  * Two numbering systems:
  * - **Chain index** (0 = rootSeed, CHAIN_LENGTH = terminalHash) — used in `computeSeedAtIndex`.
- * - **Game number** (1, 2, 3 …) — used in `getChainSeedForGame`.
+ * - **Game number** (1, 2, 3 …) — used in `computeChainSeedForGame`.
  *
  * @see docs/provably-fair.md §2.2
  */
 import { CHAIN_LENGTH } from '../config';
+import { bytesToHex, sha256Hex } from '../crypto-hex';
 
 /**
  * Generates a cryptographically random 256-bit root seed (32 bytes as hex).
@@ -18,21 +19,8 @@ import { CHAIN_LENGTH } from '../config';
  *
  * @see docs/provably-fair.md §2.2
  */
-export async function generateRootSeed(): Promise<string> {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-export async function sha256Hex(input: string): Promise<string> {
-  // input is a hex string — encode as UTF-8 bytes (the hex chars themselves)
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+export function generateRootSeed(): string {
+  return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 /**
@@ -81,7 +69,10 @@ export async function verifySeedAgainstHash(seed: string, expectedHash: string):
  *
  * @see docs/provably-fair.md §2.2 (two numbering systems)
  */
-export async function getChainSeedForGame(rootSeed: string, gameNumber: number): Promise<string> {
+export async function computeChainSeedForGame(
+  rootSeed: string,
+  gameNumber: number,
+): Promise<string> {
   if (gameNumber < 1 || gameNumber > CHAIN_LENGTH) {
     throw new Error(`gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${gameNumber}`);
   }

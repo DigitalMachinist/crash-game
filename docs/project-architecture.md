@@ -50,11 +50,11 @@ flowchart TD
     App --> History["History.svelte"]
     History --> VerifyModal["VerifyModal.svelte"]
 
-    socket["socket.ts<br/>(partysocket)"] -->|"messages"| msgHandler["messageHandler.ts"]
+    socket["socket.ts<br/>(partysocket)"] -->|"messages"| msgHandler["message-handler.ts"]
     msgHandler -->|"store updates"| stores["stores.ts<br/>(writable + derived)"]
-    msgHandler -->|"crash:crashed"| App
-    msgHandler -->|"crash:pendingPayout"| App
-    msgHandler -->|"crash:error"| BetForm
+    msgHandler -->|"lastCrashResult"| App
+    msgHandler -->|"lastPendingPayout"| App
+    msgHandler -->|"lastError"| BetForm
 
     stores -->|"$phase, $balance, etc."| App
     stores -->|"$isInRound"| CashoutButton
@@ -65,13 +65,13 @@ flowchart TD
     commands["commands.ts<br/>(sendJoin, sendCashout)"] --> socket
 ```
 
-**DOM CustomEvent bus**: `messageHandler.ts` dispatches three events on `document` as a decoupled event bus between the message handler and UI components:
+**Store-based handoff**: `message-handler.ts` writes three signal stores to communicate round events to UI components:
 
-| Event | Dispatcher | Consumer | Purpose |
+| Store | Dispatcher | Consumer | Purpose |
 |---|---|---|---|
-| `crash:crashed` | `messageHandler.ts` | `App.svelte` | Round result accounting (cashout/loss) |
-| `crash:pendingPayout` | `messageHandler.ts` | `App.svelte` | Reconnect payout delivery |
-| `crash:error` | `messageHandler.ts` | `BetForm.svelte` | Server validation errors |
+| `lastCrashResult` | `message-handler.ts` | `App.svelte` | Round result accounting (cashout/loss) |
+| `lastPendingPayout` | `message-handler.ts` | `App.svelte` | Reconnect payout delivery |
+| `lastError` | `message-handler.ts` | `BetForm.svelte` | Server validation errors |
 
 **Derived stores** (computed from `gameState`):
 - `phase` — current `Phase` value
@@ -93,13 +93,13 @@ flowchart TD
     CrashGame -->|"pure stateless handlers"| gameState["game-state.ts<br/>(GameStateMachine)"]
     CrashGame -->|"seed gen + verify"| hashChain["hash-chain.ts"]
     CrashGame -->|"beacon fetch + HMAC"| drand["drand.ts"]
-    CrashGame -->|"multiplier + crash point"| crashMath["crash-math.ts"]
+    CrashGame -->|"effective seed + crash point"| provablyFair["provably-fair.ts"]
     CrashGame -->|"single 'gameData' key"| DOStorage["DO Storage"]
     CrashGame -->|"ctx.storage.setAlarm"| AlarmAPI["Alarm API<br/>(game loop driver)"]
     CrashGame -->|"debug endpoint (CRASH_DEBUG=true)"| onRequest["onRequest HTTP<br/>(gated by CRASH_DEBUG env var)"]
 ```
 
-**`game-state.ts`** contains all pure (no I/O) state transition functions: `handleJoin`, `handleCashout`, `handleTick`, `handleCrash`, `handleStartingComplete`, `handleCountdownTick`, `transitionToWaiting`, `buildStateSnapshot`. Each returns `{ state, messages }` (plus optional flags); `CrashGame` then broadcasts/sends the returned messages.
+**`game-state.ts`** contains all pure (no I/O) state transition functions: `handleJoin`, `handleCashout`, `handleTick`, `handleCrash`, `handleStartingComplete`, `handleCountdownTick`, `handleTransitionToWaiting`, `buildStateSnapshot`. Each returns `{ state, messages }` (plus optional flags); `CrashGame` then broadcasts/sends the returned messages.
 
 **`PendingPayout` interface** is defined locally in `crash-game.ts` (not exported via `types.ts`), keyed by stable `playerId` UUID.
 
@@ -138,9 +138,9 @@ Increasing `GROWTH_RATE` makes the multiplier climb faster (shorter average roun
 
 | Constant | Value | Description |
 |---|---|---|
-| `HOUSE_EDGE` | `0.01` | Fraction of wagers retained (1%). Encoded as `(1 - HOUSE_EDGE) * 100` in `crash-math.ts`. |
+| `HOUSE_EDGE` | `0.01` | Fraction of wagers retained (1%). Encoded as `(1 - HOUSE_EDGE) * 100` in `provably-fair.ts`. |
 
-> **Known sync dependency**: `HOUSE_EDGE` is used via the config constant in `src/server/crash-math.ts`, but `src/client/lib/verify.ts` hardcodes the equivalent value as the literal `99` (`floor(99 / (1 - h)) / 100`). Both files **must be updated together** if the house edge changes. See §2.6 in `docs/provably-fair.md` for the formula detail.
+> `HOUSE_EDGE` is imported from `src/config.ts` by `src/provably-fair.ts` — a single config change propagates automatically to both the server crash formula (via `crash-game.ts`) and the client verification formula (via `client/lib/verify.ts`).
 
 ### Hash Chain
 

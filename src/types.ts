@@ -11,6 +11,13 @@
 // ─── Game phases ─────────────────────────────────────────────────────────────
 export type Phase = 'WAITING' | 'STARTING' | 'RUNNING' | 'CRASHED';
 
+// ─── drand beacon ────────────────────────────────────────────────────────────
+export interface DrandBeacon {
+  round: number;
+  randomness: string; // 64-char hex
+  signature: string;
+}
+
 // ─── Server-side player (full, internal to server) ───────────────────────────
 export interface Player {
   id: string; // connection ID (changes on reconnect)
@@ -49,7 +56,6 @@ export interface GameStateSnapshot {
   drandRound: number | null; // null except when phase === 'CRASHED'
   drandRandomness: string | null; // null except when phase === 'CRASHED'
   history: HistoryEntry[];
-  serverVersion?: string; // semver; absent in older servers
 }
 
 // ─── Round history entry ─────────────────────────────────────────────────────
@@ -105,7 +111,7 @@ export type ServerMessage =
       wager: number;
       autoCashout: number | null;
     }
-  | { type: 'playerCashedOut'; id: string; multiplier: number; payout: number }
+  | { type: 'playerCashedOut'; id: string; playerId: string; multiplier: number; payout: number }
   | {
       type: 'pendingPayout';
       roundId: number;

@@ -1,8 +1,10 @@
-node_modules/
-public/
+.claude/settings.*
+.claude/worktrees/
+.desloppify/
 .wrangler/
 dist/
-*.local
-.env
-.env.*
+node_modules/
+public/
+.env*
 !.env.example
+*.local

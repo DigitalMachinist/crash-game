@@ -15,19 +15,23 @@ import { verifyRound } from '../lib/verify';
 
 let { entry, onClose }: { entry: HistoryEntry; onClose: () => void } = $props();
 
-let result: VerificationResult | null = null;
-let loading = true;
+let result: VerificationResult | null = $state(null);
+let loading = $state(true);
 let dialogEl: HTMLDialogElement;
 
 onMount(async () => {
   dialogEl.showModal();
-  result = await verifyRound({
-    roundSeed: entry.roundSeed,
-    chainCommitment: entry.chainCommitment,
-    drandRound: entry.drandRound,
-    drandRandomness: entry.drandRandomness,
-    displayedCrashPoint: entry.crashPoint,
-  });
+  try {
+    result = await verifyRound({
+      roundSeed: entry.roundSeed,
+      chainCommitment: entry.chainCommitment,
+      drandRound: entry.drandRound,
+      drandRandomness: entry.drandRandomness,
+      displayedCrashPoint: entry.crashPoint,
+    });
+  } catch {
+    result = { valid: false, reason: 'Verification error (WebCrypto unavailable)' };
+  }
   loading = false;
 });
 
@@ -48,8 +52,8 @@ function handleCancel(e: Event) {
 <dialog
   bind:this={dialogEl}
   class="modal"
-  on:click={handleDialogClick}
-  on:cancel={handleCancel}
+  onclick={handleDialogClick}
+  oncancel={handleCancel}
 >
   <h3>Verify Round #{entry.roundId}</h3>
   <p><strong>Crash Point:</strong> {entry.crashPoint.toFixed(2)}x</p>
@@ -74,10 +78,12 @@ function handleCancel(e: Event) {
           Computed: {result.computedCrashPoint.toFixed(2)}x vs Displayed: {entry.crashPoint.toFixed(2)}x
         </p>
       {/if}
+    {:else if result !== null && !result.valid}
+      <p class="status-invalid">✗ {result.reason ?? 'Verification failed'}</p>
     {/if}
   </div>
 
-  <button on:click={onClose}>Close</button>
+  <button onclick={onClose}>Close</button>
 </dialog>
 
 <style>

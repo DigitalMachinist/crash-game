@@ -1,13 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../config';
-import {
-  computeEffectiveSeedFromBeacon,
-  DrandFetchError,
-  fetchDrandBeacon,
-  getCurrentDrandRound,
-} from '../drand';
+import { bytesToHex, hexToBytes } from '../../crypto-hex';
+import { computeEffectiveSeed } from '../../provably-fair';
+import { computeCurrentDrandRound, DrandFetchError, fetchDrandBeacon } from '../drand';
 
-/** Local inverse of getCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
+/** Local inverse of computeCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
 function drandRoundTime(round: number): number {
   return DRAND_GENESIS_TIME + (round - 1) * DRAND_PERIOD_SECS;
 }
@@ -16,22 +13,22 @@ const mockBeacon = { round: 100, randomness: 'a'.repeat(64), signature: 'b'.repe
 
 afterEach(() => vi.unstubAllGlobals());
 
-// ─── getCurrentDrandRound ────────────────────────────────────────────────────
+// ─── computeCurrentDrandRound ────────────────────────────────────────────────────
 
-describe('getCurrentDrandRound', () => {
+describe('computeCurrentDrandRound', () => {
   it('returns 1 at exactly genesis time', () => {
-    expect(getCurrentDrandRound(DRAND_GENESIS_TIME * 1000)).toBe(1);
+    expect(computeCurrentDrandRound(DRAND_GENESIS_TIME * 1000)).toBe(1);
   });
 
   it('returns 2 at genesis + 1 period', () => {
-    expect(getCurrentDrandRound((DRAND_GENESIS_TIME + DRAND_PERIOD_SECS) * 1000)).toBe(2);
+    expect(computeCurrentDrandRound((DRAND_GENESIS_TIME + DRAND_PERIOD_SECS) * 1000)).toBe(2);
   });
 
   it('floor behavior: returns 3 at genesis + 2.5 periods', () => {
-    expect(getCurrentDrandRound((DRAND_GENESIS_TIME + 2.5 * DRAND_PERIOD_SECS) * 1000)).toBe(3);
+    expect(computeCurrentDrandRound((DRAND_GENESIS_TIME + 2.5 * DRAND_PERIOD_SECS) * 1000)).toBe(3);
   });
 
-  it('consistency: drandRoundTime(getCurrentDrandRound(t)) * 1000 <= t < drandRoundTime(getCurrentDrandRound(t) + 1) * 1000', () => {
+  it('consistency: drandRoundTime(computeCurrentDrandRound(t)) * 1000 <= t < drandRoundTime(computeCurrentDrandRound(t) + 1) * 1000', () => {
     const testTimes = [
       DRAND_GENESIS_TIME * 1000,
       (DRAND_GENESIS_TIME + 1) * 1000,
@@ -40,7 +37,7 @@ describe('getCurrentDrandRound', () => {
       (DRAND_GENESIS_TIME + 999.9 * DRAND_PERIOD_SECS) * 1000,
     ];
     for (const t of testTimes) {
-      const round = getCurrentDrandRound(t);
+      const round = computeCurrentDrandRound(t);
       const roundStartMs = drandRoundTime(round) * 1000;
       const nextRoundStartMs = drandRoundTime(round + 1) * 1000;
       expect(roundStartMs).toBeLessThanOrEqual(t);
@@ -60,10 +57,10 @@ describe('drandRoundTime', () => {
     expect(drandRoundTime(2)).toBe(DRAND_GENESIS_TIME + DRAND_PERIOD_SECS);
   });
 
-  it('is the inverse of getCurrentDrandRound at round boundaries', () => {
+  it('is the inverse of computeCurrentDrandRound at round boundaries', () => {
     for (const round of [1, 2, 10, 100, 500]) {
       const t = drandRoundTime(round) * 1000;
-      expect(getCurrentDrandRound(t)).toBe(round);
+      expect(computeCurrentDrandRound(t)).toBe(round);
     }
   });
 });
@@ -198,60 +195,45 @@ describe('fetchDrandBeacon', () => {
   });
 });
 
-// ─── computeEffectiveSeedFromBeacon ──────────────────────────────────────────
+// ─── computeEffectiveSeed (via DrandBeacon) ──────────────────────────────────
 
-describe('computeEffectiveSeedFromBeacon', () => {
+describe('computeEffectiveSeed (via DrandBeacon)', () => {
   const chainSeed = '0000000000000000000000000000000000000000000000000000000000000001';
   const randomness = '0000000000000000000000000000000000000000000000000000000000000002';
   const beacon = { round: 1, randomness, signature: '' };
 
   it('returns a 64-char hex string', async () => {
-    const result = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const result = await computeEffectiveSeed(chainSeed, beacon.randomness);
     expect(result).toHaveLength(64);
     expect(result).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('is deterministic for same inputs', async () => {
-    const result1 = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
-    const result2 = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const result1 = await computeEffectiveSeed(chainSeed, beacon.randomness);
+    const result2 = await computeEffectiveSeed(chainSeed, beacon.randomness);
     expect(result1).toBe(result2);
   });
 
   it('cross-module consistency: returns deterministic 64-char hex for known inputs', async () => {
-    const result = await computeEffectiveSeedFromBeacon(chainSeed, {
-      round: 1,
-      randomness: '0000000000000000000000000000000000000000000000000000000000000002',
-      signature: '',
-    });
+    const result = await computeEffectiveSeed(
+      chainSeed,
+      '0000000000000000000000000000000000000000000000000000000000000002',
+    );
     expect(result).toHaveLength(64);
     expect(result).toMatch(/^[0-9a-f]{64}$/);
     // Verify determinism by calling again
-    const result2 = await computeEffectiveSeedFromBeacon(chainSeed, {
-      round: 1,
-      randomness: '0000000000000000000000000000000000000000000000000000000000000002',
-      signature: '',
-    });
+    const result2 = await computeEffectiveSeed(
+      chainSeed,
+      '0000000000000000000000000000000000000000000000000000000000000002',
+    );
     expect(result).toBe(result2);
   });
 
   it('key ordering: swapping key and data gives a different result', async () => {
     // Normal: key=randomness, data=chainSeed
-    const normal = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const normal = await computeEffectiveSeed(chainSeed, beacon.randomness);
 
     // Swapped: key=chainSeed (as raw bytes), data=randomness — raw crypto.subtle call
-    function hexToBytes(hex: string): Uint8Array {
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-      }
-      return bytes;
-    }
-    function bytesToHex(bytes: Uint8Array): string {
-      return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-    }
-
     const keyBytes = hexToBytes(chainSeed);
     const dataBytes = hexToBytes(randomness);
     const key = await crypto.subtle.importKey(

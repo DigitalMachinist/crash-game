@@ -25,11 +25,16 @@ const PLAYER_ID_KEY = 'crashPlayerId';
  * @see docs/game-state-machine.md §3.8
  */
 export function getOrCreatePlayerId(): string {
-  const existing = localStorage.getItem(PLAYER_ID_KEY);
-  if (existing) return existing;
-  const id = crypto.randomUUID();
-  localStorage.setItem(PLAYER_ID_KEY, id);
-  return id;
+  try {
+    const existing = localStorage.getItem(PLAYER_ID_KEY);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    localStorage.setItem(PLAYER_ID_KEY, id);
+    return id;
+  } catch {
+    // localStorage unavailable (private browsing, quota exceeded) — use a session-only ID
+    return crypto.randomUUID();
+  }
 }
 
 export function getBalance(): number {
@@ -44,7 +49,7 @@ export function getBalance(): number {
 }
 
 /**
- * Deducts `wager` from the stored balance. Called in `messageHandler.ts`
+ * Deducts `wager` from the stored balance. Called in `message-handler.ts`
  * on `playerJoined` (server confirmation), NOT optimistically on bet submit.
  *
  * @see docs/game-state-machine.md §3.8
@@ -52,13 +57,17 @@ export function getBalance(): number {
 export function applyBet(wager: number): number {
   const current = getBalance();
   const next = Math.round((current - wager) * 100) / 100;
-  localStorage.setItem(BALANCE_KEY, String(next));
+  try {
+    localStorage.setItem(BALANCE_KEY, String(next));
+  } catch {
+    // localStorage unavailable — balance update is session-only
+  }
   return next;
 }
 
 /**
- * Credits `payout` to the stored balance. Called from `App.svelte` on
- * `crash:crashed` or `crash:pendingPayout` events. Guarded externally by
+ * Credits `payout` to the stored balance. Called from `App.svelte` when
+ * `lastCrashResult` or `lastPendingPayout` stores are updated. Guarded externally by
  * `hasPendingResult()` to prevent double-application.
  *
  * @see docs/game-state-machine.md §3.8
@@ -66,7 +75,11 @@ export function applyBet(wager: number): number {
 export function applyCashout(payout: number): number {
   const current = getBalance();
   const next = Math.round((current + payout) * 100) / 100;
-  localStorage.setItem(BALANCE_KEY, String(next));
+  try {
+    localStorage.setItem(BALANCE_KEY, String(next));
+  } catch {
+    // localStorage unavailable — balance update is session-only
+  }
   return next;
 }
 
@@ -74,14 +87,33 @@ export function addHistoryEntry(entry: RoundResult): void {
   const history = getHistory();
   history.unshift(entry);
   const trimmed = history.slice(0, CLIENT_HISTORY_LIMIT);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch {
+    // localStorage unavailable — history entry is session-only
+  }
 }
 
 export function getHistory(): RoundResult[] {
   try {
     const stored = localStorage.getItem(HISTORY_KEY);
     if (!stored) return [];
-    return JSON.parse(stored) as RoundResult[];
+    const parsed: unknown = JSON.parse(stored);
+    // Validate the parsed value is an array of objects with required RoundResult fields.
+    // Guards against schema drift between app versions that could silently corrupt accounting.
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is RoundResult => {
+      if (typeof item !== 'object' || item === null) return false;
+      const r = item as Record<string, unknown>;
+      return (
+        typeof r.roundId === 'number' &&
+        typeof r.wager === 'number' &&
+        typeof r.payout === 'number' &&
+        typeof r.crashPoint === 'number' &&
+        typeof r.timestamp === 'number' &&
+        (typeof r.cashoutMultiplier === 'number' || r.cashoutMultiplier === null)
+      );
+    });
   } catch {
     return [];
   }

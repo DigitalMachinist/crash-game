@@ -30,7 +30,7 @@ import {
   players,
 } from './stores';
 
-export function handleMessage(msg: ServerMessage): void {
+export function dispatchMessage(msg: ServerMessage): void {
   switch (msg.type) {
     case 'state': {
       const { type: _type, ...snapshot } = msg as ServerMessage & { type: 'state' };
@@ -40,9 +40,7 @@ export function handleMessage(msg: ServerMessage): void {
         record[p.playerId] = p;
       }
       players.set(record);
-      if (snapshot.history) {
-        history.set(snapshot.history);
-      }
+      history.set(snapshot.history);
       // CRASHED state: freeze the multiplier display and notify App for accounting.
       // Fires for both fresh crashes and reconnects during the CRASHED display window;
       // App.svelte's hasPendingResult guard prevents double-application in both cases.
@@ -81,12 +79,11 @@ export function handleMessage(msg: ServerMessage): void {
     }
     case 'playerCashedOut': {
       players.update((p) => {
-        const entry = Object.entries(p).find(([, player]) => player.id === msg.id);
-        if (!entry) return p;
-        const [playerId, player] = entry;
+        const player = p[msg.playerId];
+        if (!player) return p;
         return {
           ...p,
-          [playerId]: {
+          [msg.playerId]: {
             ...player,
             cashedOut: true,
             cashoutMultiplier: msg.multiplier,

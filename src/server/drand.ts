@@ -1,10 +1,10 @@
 /**
- * drand quicknet beacon fetching and effective seed computation.
+ * drand quicknet beacon fetching.
  *
  * drand provides independent, verifiable randomness that prevents the server
- * from choosing seeds to manipulate crash points. The drand randomness value
- * is used as the HMAC key (not data) — see §2.5 for why this ordering is
- * security-critical.
+ * from choosing seeds to manipulate crash points. The drand beacon's randomness
+ * is consumed by `computeEffectiveSeed` in `provably-fair.ts` as the HMAC key
+ * (not data) — see §2.5 for why this ordering is security-critical.
  *
  * @see docs/provably-fair.md §2.3
  * @see docs/provably-fair.md §2.5
@@ -15,17 +15,12 @@ import {
   DRAND_GENESIS_TIME,
   DRAND_PERIOD_SECS,
 } from '../config';
+import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
-export interface DrandBeacon {
-  round: number;
-  randomness: string; // 64-char hex
-  signature: string;
-}
-
 export class DrandFetchError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'DrandFetchError';
   }
 }
@@ -36,7 +31,7 @@ export class DrandFetchError extends Error {
  *
  * @see docs/provably-fair.md §2.3
  */
-export function getCurrentDrandRound(nowMs?: number): number {
+export function computeCurrentDrandRound(nowMs?: number): number {
   const nowSec = (nowMs ?? Date.now()) / 1000;
   return Math.floor((nowSec - DRAND_GENESIS_TIME) / DRAND_PERIOD_SECS) + 1;
 }
@@ -75,56 +70,17 @@ export async function fetchDrandBeacon(
 
   try {
     return await attemptFetch(primaryUrl);
-  } catch {
+  } catch (primaryErr) {
+    console.warn('[drand] primary fetch failed, trying fallback:', primaryErr);
     try {
       return await attemptFetch(fallbackUrl);
-    } catch (e) {
-      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}: ${e}`);
+    } catch (fallbackErr) {
+      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}`, {
+        cause: new AggregateError(
+          [primaryErr, fallbackErr],
+          'Both primary and fallback drand fetches failed',
+        ),
+      });
     }
   }
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-/**
- * Computes the effective seed by mixing the chain seed with the drand beacon.
- * Formula: `HMAC-SHA256(key = beacon.randomness, data = chainSeed)`
- *
- * SECURITY: drand randomness MUST be the HMAC key (not data). This prevents a
- * malicious server from choosing chain seeds to exploit predictable drand values.
- * See §2.5 for the full explanation.
- *
- * @see docs/provably-fair.md §2.5
- * @see docs/provably-fair.md §2.4
- */
-export async function computeEffectiveSeedFromBeacon(
-  chainSeed: string,
-  beacon: DrandBeacon,
-): Promise<string> {
-  // drandRandomness is the KEY (critical: uncontrollable external input in privileged position)
-  const keyBytes = hexToBytes(beacon.randomness);
-  const dataBytes = hexToBytes(chainSeed);
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyBytes,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, dataBytes);
-  return bytesToHex(new Uint8Array(signature));
 }

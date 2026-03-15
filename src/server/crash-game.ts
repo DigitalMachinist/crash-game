@@ -3,7 +3,7 @@
  *
  * Extends `partyserver.Server` to handle WebSocket connections, the game alarm
  * loop, and HTTP debug requests. Delegates all pure state transitions to
- * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, and `crash-math.ts`
+ * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, and `provably-fair.ts`
  * for provably fair seed and crash point computation.
  *
  * @see docs/project-architecture.md §1.4
@@ -16,12 +16,14 @@ import {
   COUNTDOWN_TICK_MS,
   CRASHED_DISPLAY_MS,
   MAX_PENDING_PAYOUTS,
+  MAX_PLAYER_ID_LENGTH,
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
-import type { GameStateSnapshot, ServerMessage } from '../types';
-import { deriveCrashPoint } from './crash-math';
-import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
+import { sha256Hex } from '../crypto-hex';
+import { computeEffectiveSeed, deriveCrashPoint } from '../provably-fair';
+import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
+import { computeCurrentDrandRound, fetchDrandBeacon } from './drand';
 import {
   buildStateSnapshot,
   createInitialState,
@@ -32,14 +34,12 @@ import {
   handleJoin,
   handleStartingComplete,
   handleTick,
-  transitionToWaiting,
+  handleTransitionToWaiting,
+  type OutboundMessage,
+  type RoundIngredients,
+  type RunningGameState,
 } from './game-state';
-import {
-  computeTerminalHash,
-  generateRootSeed,
-  getChainSeedForGame,
-  sha256Hex,
-} from './hash-chain';
+import { computeChainSeedForGame, computeTerminalHash, generateRootSeed } from './hash-chain';
 import { isValidClientMessage, isValidStoredGameData } from './validation';
 
 interface Env {
@@ -72,7 +72,7 @@ export class CrashGame extends Server<Env> {
   /** Returns cached snapshot if valid; otherwise rebuilds and caches it. */
   private getSnapshot(): GameStateSnapshot {
     if (this.cachedSnapshot === null) {
-      this.cachedSnapshot = buildStateSnapshot(this.gameState);
+      this.cachedSnapshot = buildStateSnapshot(this.gameState, Date.now());
     }
     return this.cachedSnapshot;
   }
@@ -94,7 +94,7 @@ export class CrashGame extends Server<Env> {
           console.warn('CrashGame: stored state failed validation, reinitializing from scratch');
         }
         // First run or corrupted state — generate hash chain
-        this.rootSeed = await generateRootSeed();
+        this.rootSeed = generateRootSeed();
         this.gameNumber = 0;
         const terminalHash = await computeTerminalHash(this.rootSeed);
         this.gameState = createInitialState(terminalHash);
@@ -111,7 +111,7 @@ export class CrashGame extends Server<Env> {
       console.error('CrashGame initialization failed:', error);
       // Attempt to initialize fresh state so the game loop can continue [Backend-3]
       try {
-        this.rootSeed = await generateRootSeed();
+        this.rootSeed = generateRootSeed();
         this.gameNumber = 0;
         const terminalHash = await computeTerminalHash(this.rootSeed);
         this.gameState = createInitialState(terminalHash);
@@ -125,19 +125,22 @@ export class CrashGame extends Server<Env> {
     }
   }
 
-  override async onConnect(conn: Connection, ctx: ConnectionContext): Promise<void> {
+  override onConnect(conn: Connection, ctx: ConnectionContext): void {
     // Register connection→player mapping immediately if playerId is in the URL query string.
     // This lets reconnecting players cashout without re-sending a join. [Phase 4.6]
     const url = new URL(ctx.request.url);
     const playerId = url.searchParams.get('playerId');
-    if (playerId && this.gameState.players.has(playerId)) {
+    if (
+      playerId &&
+      playerId.length <= MAX_PLAYER_ID_LENGTH &&
+      this.gameState.players.has(playerId)
+    ) {
       this.connectionToPlayer.set(conn.id, playerId);
     }
 
     // Send current game state snapshot to the newly connected client (use cache)
     const snapshot = this.getSnapshot();
-    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
-    conn.send(JSON.stringify(stateMsg));
+    conn.send(JSON.stringify({ type: 'state', ...snapshot } satisfies ServerMessage));
   }
 
   override async onMessage(conn: Connection, message: string): Promise<void> {
@@ -194,8 +197,11 @@ export class CrashGame extends Server<Env> {
         conn.id,
       );
       this.gameState = result.state;
+      const joinSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerJoined',
+      );
       // Invalidate cache if state changed (player was added successfully)
-      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerJoined')) {
+      if (joinSucceeded) {
         this.invalidateSnapshot();
       }
 
@@ -206,20 +212,15 @@ export class CrashGame extends Server<Env> {
       }
 
       // Persist player join so DO eviction does not lose the wager [Backend-1]
-      const joinSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerJoined',
-      );
       if (joinSucceeded) {
-        await this.persistState();
-      }
-
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
-        } else {
-          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
+        try {
+          await this.persistState();
+        } catch (err) {
+          console.error('[onMessage/join] failed to persist state:', err);
         }
       }
+
+      this.dispatchMessages(result.messages, conn);
     } else if (msg.type === 'cashout') {
       // Resolve playerId via connection mapping to support reconnected players. [Phase 4.6]
       const playerId = this.connectionToPlayer.get(conn.id);
@@ -235,26 +236,24 @@ export class CrashGame extends Server<Env> {
 
       const result = handleCashout(this.gameState, playerId, Date.now());
       this.gameState = result.state;
+      const cashoutSucceeded = result.messages.some(
+        (m) => m.broadcast && m.message.type === 'playerCashedOut',
+      );
       // Invalidate cache if state changed (cashout was accepted)
-      if (result.messages.some((m) => m.broadcast && m.message.type === 'playerCashedOut')) {
+      if (cashoutSucceeded) {
         this.invalidateSnapshot();
       }
 
       // Persist cashout so DO eviction does not lose the payout record [Backend-2]
-      const cashoutSucceeded = result.messages.some(
-        (m) => m.broadcast && m.message.type === 'playerCashedOut',
-      );
       if (cashoutSucceeded) {
-        await this.persistState();
-      }
-
-      for (const outbound of result.messages) {
-        if (outbound.broadcast) {
-          this.broadcast(JSON.stringify(outbound.message));
-        } else {
-          this.sendToTarget(outbound.targetPlayerId, conn).send(JSON.stringify(outbound.message));
+        try {
+          await this.persistState();
+        } catch (err) {
+          console.error('[onMessage/cashout] failed to persist state:', err);
         }
       }
+
+      this.dispatchMessages(result.messages, conn);
     }
   }
 
@@ -277,7 +276,7 @@ export class CrashGame extends Server<Env> {
    * - WAITING → `handleCountdownTick`; triggers `startRound` when countdown = 0.
    * - STARTING → safety reschedule (alarm fired while `blockConcurrencyWhile` in progress).
    * - RUNNING → `handleTick`; triggers `crashRound` when multiplier ≥ crashPoint.
-   * - CRASHED → `nextRound` after display timer.
+   * - CRASHED → `beginNextRound` after display timer.
    *
    * Wrapped in try/catch so that any unexpected error is logged and the game loop
    * is always rescheduled via the finally block. [Backend-4]
@@ -287,21 +286,17 @@ export class CrashGame extends Server<Env> {
   override async onAlarm(): Promise<void> {
     const now = Date.now();
     // Track whether we are in the CRASHED→WAITING transition so the finally
-    // block can skip rescheduling if nextRound() already scheduled the alarm.
+    // block can skip rescheduling if beginNextRound() already scheduled the alarm.
     let alarmScheduled = false;
 
     try {
       if (this.gameState.phase === 'WAITING') {
-        const result = handleCountdownTick(this.gameState, now);
+        const result = handleCountdownTick(this.gameState);
         this.gameState = result.state;
         // Countdown changed (or phase transitioned to STARTING); invalidate cache
         this.invalidateSnapshot();
 
-        for (const outbound of result.messages) {
-          if (outbound.broadcast) {
-            this.broadcast(JSON.stringify(outbound.message));
-          }
-        }
+        this.broadcastMessages(result.messages);
 
         if (result.shouldStartRound) {
           // Transition to STARTING — use blockConcurrencyWhile for isolation
@@ -321,11 +316,7 @@ export class CrashGame extends Server<Env> {
           this.invalidateSnapshot();
         }
 
-        for (const outbound of result.messages) {
-          if (outbound.broadcast) {
-            this.broadcast(JSON.stringify(outbound.message));
-          }
-        }
+        this.broadcastMessages(result.messages);
 
         if (result.shouldCrash) {
           await this.crashRound(now);
@@ -336,8 +327,8 @@ export class CrashGame extends Server<Env> {
         }
       } else if (this.gameState.phase === 'CRASHED') {
         // Display timer expired — transition to WAITING
-        await this.nextRound();
-        alarmScheduled = true; // nextRound() schedules its own alarm
+        await this.beginNextRound();
+        alarmScheduled = true; // beginNextRound() schedules its own alarm
       } else if (this.gameState.phase === 'STARTING') {
         // Alarm fired while still in STARTING (drand fetch in progress or failed).
         // Reschedule and wait for blockConcurrencyWhile to complete or retry.
@@ -394,24 +385,25 @@ export class CrashGame extends Server<Env> {
 
     // Rotate chain if we are within CHAIN_ROTATION_THRESHOLD games of exhausting it
     if (this.gameNumber > CHAIN_LENGTH - CHAIN_ROTATION_THRESHOLD) {
-      this.rootSeed = await generateRootSeed();
+      this.rootSeed = generateRootSeed();
       this.gameNumber = 1;
     }
 
-    const chainSeed = await getChainSeedForGame(this.rootSeed, this.gameNumber);
+    const chainSeed = await computeChainSeedForGame(this.rootSeed, this.gameNumber);
     const nextChainCommitment = await sha256Hex(chainSeed);
 
-    let beacon: import('./drand').DrandBeacon;
+    let beacon: DrandBeacon;
     let drandRound: number;
     let drandRandomness: string;
 
     try {
-      const round = getCurrentDrandRound();
+      const round = computeCurrentDrandRound();
       beacon = await fetchDrandBeacon(round);
       drandRound = beacon.round;
       drandRandomness = beacon.randomness;
-    } catch {
+    } catch (drandErr) {
       // Void round — drand fetch failed; rewind game number and return to WAITING
+      console.warn('[startRound] drand fetch failed, voiding round:', drandErr);
       this.gameNumber -= 1;
       this.gameState = { ...this.gameState, phase: 'WAITING', countdown: WAITING_DURATION_MS };
       this.invalidateSnapshot();
@@ -420,33 +412,29 @@ export class CrashGame extends Server<Env> {
       return;
     }
 
-    const effectiveSeed = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    // HMAC-SHA256(key=drand randomness, data=chainSeed) — drand is the key (§2.5)
+    const effectiveSeed = await computeEffectiveSeed(chainSeed, beacon.randomness);
     const crashPoint = deriveCrashPoint(effectiveSeed);
     const now = Date.now();
 
-    const result = handleStartingComplete(
-      this.gameState,
+    const ingredients: RoundIngredients = {
       crashPoint,
       chainSeed,
       drandRound,
       drandRandomness,
       nextChainCommitment,
-      now,
-    );
+    };
+    const result = handleStartingComplete(this.gameState, ingredients, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
-
-    // Broadcast full state update to all connections so clients know the round started
-    const snapshot = this.getSnapshot();
-    const stateMsg: ServerMessage = { type: 'state', ...snapshot, history: this.gameState.history };
-    this.broadcast(JSON.stringify(stateMsg));
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + TICK_INTERVAL_MS);
   }
 
   /**
-   * Transitions from RUNNING to CRASHED. Broadcasts the `crashed` message with
+   * Transitions from RUNNING to CRASHED. Broadcasts a `state{phase:'CRASHED'}` message with
    * provably-fair ingredients, then stores pending payouts for any auto-cashed-out
    * players who are no longer connected. A `Map<connectionId, Connection>` is
    * built once from `this.getConnections()` so disconnection checks are O(1) per
@@ -459,24 +447,19 @@ export class CrashGame extends Server<Env> {
     if (
       !this.gameState.chainSeed ||
       this.gameState.drandRound === null ||
-      !this.gameState.drandRandomness
+      !this.gameState.drandRandomness ||
+      this.gameState.crashPoint === null
     ) {
       // Throw instead of returning silently: the caller (onAlarm) sets
       // alarmScheduled = true AFTER this method returns, so a silent return
       // without scheduling an alarm would kill the alarm loop. Throwing
       // ensures the catch/finally recovery path fires instead.
       throw new Error(
-        'crashRound: missing provably-fair ingredients (chainSeed, drandRound, or drandRandomness)',
+        'crashRound: missing provably-fair ingredients (chainSeed, drandRound, drandRandomness, or crashPoint)',
       );
     }
 
-    const result = handleCrash(
-      this.gameState,
-      this.gameState.chainSeed,
-      this.gameState.drandRound,
-      this.gameState.drandRandomness,
-      now,
-    );
+    const result = handleCrash(this.gameState as RunningGameState, now);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
@@ -494,44 +477,68 @@ export class CrashGame extends Server<Env> {
         if (!isConnected) {
           // Evict oldest entry if the map is at capacity [High-10]
           if (this.pendingPayouts.size >= MAX_PENDING_PAYOUTS) {
-            const oldestPlayerId = this.pendingPayouts.keys().next().value as string;
-            this.pendingPayouts.delete(oldestPlayerId);
-            console.warn(`Evicting stale pending payout for ${oldestPlayerId}`);
+            const entry = this.pendingPayouts.keys().next();
+            if (!entry.done) {
+              this.pendingPayouts.delete(entry.value);
+              console.warn(`Evicting stale pending payout for ${entry.value}`);
+            }
           }
           this.pendingPayouts.set(player.playerId, {
             roundId: this.gameState.roundId,
             wager: player.wager,
             payout: player.payout,
             cashoutMultiplier: player.cashoutMultiplier,
-            crashPoint: this.gameState.crashPoint ?? 1,
+            crashPoint: this.gameState.crashPoint!,
           });
         }
       }
     }
 
-    for (const outbound of result.messages) {
-      if (outbound.broadcast) {
-        this.broadcast(JSON.stringify(outbound.message));
-      }
-    }
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
   }
 
-  private async nextRound(): Promise<void> {
-    const result = transitionToWaiting(this.gameState, this.gameState.chainCommitment, Date.now());
+  private async beginNextRound(): Promise<void> {
+    const result = handleTransitionToWaiting(this.gameState);
     this.gameState = result.state;
     this.invalidateSnapshot();
 
-    for (const outbound of result.messages) {
-      if (outbound.broadcast) {
-        this.broadcast(JSON.stringify(outbound.message));
-      }
-    }
+    this.broadcastMessages(result.messages);
 
     await this.persistState();
     await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+  }
+
+  /**
+   * Sends all outbound messages from alarm-path state transitions.
+   * All alarm-path handlers only produce broadcast messages; a targeted message
+   * here is a programming error, so it is logged and dropped.
+   */
+  private broadcastMessages(messages: OutboundMessage[]): void {
+    for (const outbound of messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      } else {
+        console.warn('[broadcastMessages] targeted message on alarm path — dropped');
+      }
+    }
+  }
+
+  /**
+   * Dispatches all outbound messages from message-path handlers (join/cashout).
+   * Broadcasts go to every connection; targeted messages go to `conn` (the
+   * requesting connection).
+   */
+  private dispatchMessages(messages: OutboundMessage[], conn: Connection): void {
+    for (const outbound of messages) {
+      if (outbound.broadcast) {
+        this.broadcast(JSON.stringify(outbound.message));
+      } else {
+        conn.send(JSON.stringify(outbound.message));
+      }
+    }
   }
 
   /**
@@ -541,20 +548,6 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/game-state-machine.md §3.9
    */
-  /**
-   * Resolves a targeted outbound message to the correct connection. [High-15]
-   * Looks up the target player's current connection by playerId; falls back to
-   * `fallback` (the sender) if the player is not found or disconnected.
-   */
-  private sendToTarget(targetPlayerId: string, fallback: Connection): Connection {
-    const player = this.gameState.players.get(targetPlayerId);
-    if (player) {
-      const target = Array.from(this.getConnections()).find((c) => c.id === player.id);
-      if (target) return target;
-    }
-    return fallback;
-  }
-
   private async persistState(): Promise<void> {
     await this.ctx.storage.put('gameData', {
       rootSeed: this.rootSeed,
@@ -573,8 +566,7 @@ export class CrashGame extends Server<Env> {
    *
    * @see docs/project-architecture.md §1.7
    */
-  // Debug HTTP endpoint (only when CRASH_DEBUG=true)
-  override async onRequest(req: Request): Promise<Response> {
+  override onRequest(req: Request): Response {
     const url = new URL(req.url);
 
     if (url.searchParams.get('debug') === 'true' && this.env.CRASH_DEBUG === 'true') {

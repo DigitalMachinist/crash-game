@@ -1,7 +1,7 @@
 <script lang="ts">
 /**
  * Bet placement form. Visible only during WAITING phase.
- * Watches the `lastError` store (set by `messageHandler.ts`) to surface
+ * Watches the `lastError` store (set by `message-handler.ts`) to surface
  * server-side validation errors (e.g., invalid wager, already joined).
  */
 

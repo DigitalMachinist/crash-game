@@ -16,14 +16,24 @@ import {
   handleJoin,
   handleStartingComplete,
   handleTick,
-  transitionToWaiting,
+  handleTransitionToWaiting,
 } from '../game-state';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRunningState(crashPoint = 3.0, nowMs = 1_000_000) {
   let state = createInitialState('commitment123');
-  state = handleStartingComplete(state, crashPoint, 'seed1', 1, 'rand1', 'nextcommit', nowMs).state;
+  state = handleStartingComplete(
+    state,
+    {
+      crashPoint: crashPoint,
+      chainSeed: 'seed1',
+      drandRound: 1,
+      drandRandomness: 'rand1',
+      nextChainCommitment: 'nextcommit',
+    },
+    nowMs,
+  ).state;
   return { state, nowMs };
 }
 
@@ -82,8 +92,8 @@ describe('handleJoin', () => {
   });
 
   it('returns error if phase is CRASHED', () => {
-    let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
+    const { state: running } = makeRunningState(2.0);
+    const state = handleCrash(running, Date.now()).state;
     const { messages } = handleJoin(
       state,
       { playerId: 'player1', wager: 50, autoCashout: null },
@@ -280,7 +290,17 @@ describe('handleJoin', () => {
       'conn1',
     );
     const nowMs = 1_000_000;
-    const s2 = handleStartingComplete(s1, 3.0, 'seed', 1, 'rand', 'nextcommit', nowMs).state;
+    const s2 = handleStartingComplete(
+      s1,
+      {
+        crashPoint: 3.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
+      nowMs,
+    ).state;
 
     // Cashout by playerId works even though we never updated player.id to a new conn
     const elapsed = Math.log(1.5) / 0.00006;
@@ -605,11 +625,13 @@ function makeRunningStateWithPlayer(
   const { state: withPlayer } = handleJoin(state, { playerId, wager, autoCashout }, connectionId);
   const running = handleStartingComplete(
     withPlayer,
-    crashPoint,
-    'seed',
-    1,
-    'rand',
-    'next',
+    {
+      crashPoint,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      nextChainCommitment: 'next',
+    },
     nowMs,
   ).state;
   return { state: running, nowMs };
@@ -711,7 +733,17 @@ describe('handleTick', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc');
     // crashPoint = 10.0 — far in the future
-    state = handleStartingComplete(state, 10.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 10.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     // Only 100ms elapsed — multiplier ≈ 1.006, well below 10.0
     const { shouldCrash } = handleTick(state, nowMs + 100);
@@ -722,7 +754,17 @@ describe('handleTick', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc');
     // crashPoint = 1.0 — crashes immediately
-    state = handleStartingComplete(state, 1.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 1.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     // At t=0, multiplierAtTime(0) = 1.0 >= 1.0
     const { shouldCrash } = handleTick(state, nowMs);
@@ -768,7 +810,17 @@ describe('handleTick', () => {
     const { state: s1 } = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: 2.0 }, 'c1');
     const { state: s2 } = handleJoin(s1, { playerId: 'p2', wager: 50, autoCashout: 2.0 }, 'c2');
     const { state: s3 } = handleJoin(s2, { playerId: 'p3', wager: 75, autoCashout: 3.0 }, 'c3');
-    const running = handleStartingComplete(s3, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s3,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     // Tick to 2.1x — p1 and p2 should auto-cashout, p3 should not
     const GROWTH_RATE = 0.00006;
@@ -802,7 +854,17 @@ describe('handleTick', () => {
   it('elapsed is computed as nowMs - roundStartTime', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc');
-    state = handleStartingComplete(state, 10.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 10.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     const tickTime = nowMs + 3000;
     const { messages } = handleTick(state, tickTime);
@@ -835,9 +897,19 @@ describe('handleCrash', () => {
       'c1',
     );
     const { state: s2 } = handleJoin(s1, { playerId: 'p2', wager: 50, autoCashout: null }, 'c2');
-    const running = handleStartingComplete(s2, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s2,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
-    const { state: crashed } = handleCrash(running, 'seed123', 42, 'randval', nowMs + 5000);
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
     expect(crashed.players.get('p1')?.payout).toBe(0);
     expect(crashed.players.get('p2')?.payout).toBe(0);
@@ -849,7 +921,7 @@ describe('handleCrash', () => {
     const { state: afterCashout } = handleCashout(state, 'p1', nowMs + 5000);
     const payoutBefore = afterCashout.players.get('p1')?.payout;
 
-    const { state: crashed } = handleCrash(afterCashout, 'seed123', 42, 'randval', nowMs + 10000);
+    const { state: crashed } = handleCrash(afterCashout, nowMs + 10000);
 
     expect(crashed.players.get('p1')?.payout).toBe(payoutBefore);
     expect(crashed.players.get('p1')?.cashedOut).toBe(true);
@@ -858,9 +930,19 @@ describe('handleCrash', () => {
   it('broadcasts state message with phase CRASHED and reveals crashPoint, drandRound, drandRandomness', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc');
-    state = handleStartingComplete(state, 2.5, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 2.5,
+        chainSeed: 'revealedSeed',
+        drandRound: 99,
+        drandRandomness: 'drandRand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
-    const { messages } = handleCrash(state, 'revealedSeed', 99, 'drandRand', nowMs + 3000);
+    const { messages } = handleCrash(state, nowMs + 3000);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -878,18 +960,38 @@ describe('handleCrash', () => {
   it('phase transitions to CRASHED', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc');
-    state = handleStartingComplete(state, 2.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 2.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
-    const { state: crashed } = handleCrash(state, 'seed', 1, 'rand', nowMs + 5000);
+    const { state: crashed } = handleCrash(state, nowMs + 5000);
     expect(crashed.phase).toBe('CRASHED');
   });
 
   it('history entry added with correct roundId, crashPoint, roundSeed', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('abc', 5);
-    state = handleStartingComplete(state, 3.14, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 3.14,
+        chainSeed: 'theSeed',
+        drandRound: 7,
+        drandRandomness: 'theRand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
-    const { state: crashed } = handleCrash(state, 'theSeed', 7, 'theRand', nowMs + 5000);
+    const { state: crashed } = handleCrash(state, nowMs + 5000);
 
     expect(crashed.history).toHaveLength(1);
     expect(crashed.history[0].roundId).toBe(5);
@@ -911,9 +1013,19 @@ describe('handleCrash', () => {
       chainCommitment: 'commit',
     }));
     state = { ...state, history: existingHistory };
-    state = handleStartingComplete(state, 2.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 2.0,
+        chainSeed: 'newseed',
+        drandRound: 99,
+        drandRandomness: 'newrand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
-    const { state: crashed } = handleCrash(state, 'newseed', 99, 'newrand', nowMs + 1000);
+    const { state: crashed } = handleCrash(state, nowMs + 1000);
 
     expect(crashed.history.length).toBe(HISTORY_LENGTH);
     expect(crashed.history[0].roundSeed).toBe('newseed');
@@ -927,11 +1039,13 @@ describe('handleStartingComplete', () => {
     const state = { ...createInitialState('abc'), phase: 'STARTING' as const };
     const { state: newState } = handleStartingComplete(
       state,
-      2.5,
-      'seed',
-      1,
-      'rand',
-      'nextcommit',
+      {
+        crashPoint: 2.5,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
       1_000_000,
     );
     expect(newState.phase).toBe('RUNNING');
@@ -941,11 +1055,13 @@ describe('handleStartingComplete', () => {
     const state = createInitialState('abc');
     const { state: newState } = handleStartingComplete(
       state,
-      3.75,
-      'seed',
-      1,
-      'rand',
-      'nextcommit',
+      {
+        crashPoint: 3.75,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
       1_000_000,
     );
     expect(newState.crashPoint).toBe(3.75);
@@ -956,28 +1072,37 @@ describe('handleStartingComplete', () => {
     const nowMs = 9_999_000;
     const { state: newState } = handleStartingComplete(
       state,
-      2.0,
-      'seed',
-      1,
-      'rand',
-      'nextcommit',
+      {
+        crashPoint: 2.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
       nowMs,
     );
     expect(newState.roundStartTime).toBe(nowMs);
   });
 
-  it('does NOT broadcast the crashPoint in any message (messages are empty)', () => {
+  it('broadcasts a state message with phase RUNNING but does NOT reveal crashPoint', () => {
     const state = createInitialState('abc');
     const { messages } = handleStartingComplete(
       state,
-      2.0,
-      'seed',
-      1,
-      'rand',
-      'nextcommit',
+      {
+        crashPoint: 2.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
       1_000_000,
     );
-    expect(messages).toHaveLength(0);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].broadcast).toBe(true);
+    if (messages[0].broadcast && messages[0].message.type === 'state') {
+      expect(messages[0].message.phase).toBe('RUNNING');
+      expect(messages[0].message.crashPoint).toBeNull(); // never revealed until CRASHED
+    }
   });
 
   it('sets crashTimeMs based on crashPoint', () => {
@@ -985,11 +1110,13 @@ describe('handleStartingComplete', () => {
     const crashPoint = 2.0;
     const { state: newState } = handleStartingComplete(
       state,
-      crashPoint,
-      'seed',
-      1,
-      'rand',
-      'nextcommit',
+      {
+        crashPoint,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'nextcommit',
+      },
       1_000_000,
     );
     // crashTimeMs(2.0) = ln(2) / 0.00006 ≈ 11552ms
@@ -1004,32 +1131,32 @@ describe('handleCountdownTick', () => {
   it('decrements countdown by 1000ms', () => {
     const state = createInitialState('abc');
     // initial countdown = WAITING_DURATION_MS = 10000
-    const { state: newState } = handleCountdownTick(state, Date.now());
+    const { state: newState } = handleCountdownTick(state);
     expect(newState.countdown).toBe(WAITING_DURATION_MS - 1000);
   });
 
   it('sets shouldStartRound = true when countdown reaches 0 (was 1000, now 0)', () => {
     const state = { ...createInitialState('abc'), countdown: 1000 };
-    const { shouldStartRound, state: newState } = handleCountdownTick(state, Date.now());
+    const { shouldStartRound, state: newState } = handleCountdownTick(state);
     expect(shouldStartRound).toBe(true);
     expect(newState.countdown).toBe(0);
   });
 
   it('phase transitions to STARTING when shouldStartRound is true', () => {
     const state = { ...createInitialState('abc'), countdown: 1000 };
-    const { state: newState } = handleCountdownTick(state, Date.now());
+    const { state: newState } = handleCountdownTick(state);
     expect(newState.phase).toBe('STARTING');
   });
 
   it('phase stays WAITING when countdown > 0 after decrement', () => {
     const state = createInitialState('abc'); // countdown = 10000
-    const { state: newState } = handleCountdownTick(state, Date.now());
+    const { state: newState } = handleCountdownTick(state);
     expect(newState.phase).toBe('WAITING');
   });
 
   it('broadcasts state message with updated countdown', () => {
     const state = createInitialState('abc');
-    const { messages } = handleCountdownTick(state, Date.now());
+    const { messages } = handleCountdownTick(state);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -1040,56 +1167,86 @@ describe('handleCountdownTick', () => {
 
   it('returns no messages and shouldStartRound=false when phase is not WAITING', () => {
     const { state } = makeRunningState();
-    const { messages, shouldStartRound } = handleCountdownTick(state, Date.now());
+    const { messages, shouldStartRound } = handleCountdownTick(state);
     expect(messages).toHaveLength(0);
     expect(shouldStartRound).toBe(false);
   });
 
   it('does not decrement below 0', () => {
     const state = { ...createInitialState('abc'), countdown: 500 };
-    const { state: newState } = handleCountdownTick(state, Date.now());
+    const { state: newState } = handleCountdownTick(state);
     expect(newState.countdown).toBe(0);
   });
 });
 
-// ─── transitionToWaiting ─────────────────────────────────────────────────────
+// ─── handleTransitionToWaiting ─────────────────────────────────────────────────────
 
-describe('transitionToWaiting', () => {
+describe('handleTransitionToWaiting', () => {
   it('clears all players (players map is empty)', () => {
     const nowMs = 1_000_000;
     // Join during WAITING, then transition to RUNNING, then crash
     const { state: running } = makeRunningStateWithPlayer('p1', 100, null, 'c1', 2.0, nowMs);
-    const { state: crashed } = handleCrash(running, 'seed', 1, 'rand', nowMs + 5000);
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
-    const { state: waiting } = transitionToWaiting(crashed, 'newcommit', Date.now());
+    const { state: waiting } = handleTransitionToWaiting(crashed);
     expect(waiting.players.size).toBe(0);
   });
 
   it('increments roundId', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc', 3);
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.roundId).toBe(4);
   });
 
   it('resets countdown to WAITING_DURATION_MS', () => {
     let state = createInitialState('abc');
     state = { ...state, countdown: 0 };
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.countdown).toBe(WAITING_DURATION_MS);
   });
 
   it('phase is WAITING', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { state: waiting } = transitionToWaiting(state, 'newcommit', Date.now());
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.phase).toBe('WAITING');
   });
 
   it('broadcasts state message with empty players array', () => {
+    const nowMs = Date.now();
     let state = createInitialState('abc');
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    const { messages } = transitionToWaiting(state, 'newcommit', Date.now());
+    state = {
+      ...state,
+      chainSeed: 'seed',
+      drandRound: 1,
+      drandRandomness: 'rand',
+      crashPoint: 2.0,
+      roundStartTime: nowMs,
+      crashTimeMs: 10000,
+    };
+    state = handleCrash(state as import('../game-state').RunningGameState, nowMs + 1000).state;
+    const { messages } = handleTransitionToWaiting(state);
 
     expect(messages).toHaveLength(1);
     expect(messages[0].broadcast).toBe(true);
@@ -1099,9 +1256,9 @@ describe('transitionToWaiting', () => {
     }
   });
 
-  it('uses the new chain commitment', () => {
-    const state = createInitialState('oldcommit');
-    const { state: waiting } = transitionToWaiting(state, 'freshcommit', Date.now());
+  it('carries chain commitment from current state', () => {
+    const state = createInitialState('freshcommit');
+    const { state: waiting } = handleTransitionToWaiting(state);
     expect(waiting.chainCommitment).toBe('freshcommit');
   });
 });
@@ -1126,7 +1283,17 @@ describe('handleTick — auto-cashout behavioral parity (High-7)', () => {
       );
       s = next;
     }
-    const running = handleStartingComplete(s, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     const GROWTH_RATE = 0.00006;
     const elapsed = Math.log(2.1) / GROWTH_RATE; // ~12397ms — past 2.0x threshold
@@ -1155,7 +1322,17 @@ describe('handleTick — auto-cashout behavioral parity (High-7)', () => {
       );
       s = next;
     }
-    const running = handleStartingComplete(s, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     const GROWTH_RATE = 0.00006;
     const elapsed = Math.log(2.1) / GROWTH_RATE; // past 2.0x, not yet 4.0x
@@ -1182,7 +1359,17 @@ describe('handleTick — auto-cashout behavioral parity (High-7)', () => {
       { playerId: 'bob', wager: 50, autoCashout: 2.0 },
       'conn-bob',
     );
-    const running = handleStartingComplete(s2, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s2,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     const GROWTH_RATE = 0.00006;
     const elapsed = Math.log(2.1) / GROWTH_RATE;
@@ -1212,8 +1399,18 @@ describe('handleCrash — behavioral parity (High-7)', () => {
       );
       s = next;
     }
-    const running = handleStartingComplete(s, 2.0, 'seed', 1, 'rand', 'next', nowMs).state;
-    const { state: crashed } = handleCrash(running, 'seed123', 42, 'randval', nowMs + 5000);
+    const running = handleStartingComplete(
+      s,
+      {
+        crashPoint: 2.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
+    const { state: crashed } = handleCrash(running, nowMs + 5000);
 
     for (let i = 1; i <= 20; i++) {
       expect(crashed.players.get(`player${i}`)?.payout).toBe(0);
@@ -1234,7 +1431,17 @@ describe('handleCrash — behavioral parity (High-7)', () => {
       );
       s = next;
     }
-    const running = handleStartingComplete(s, 3.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    const running = handleStartingComplete(
+      s,
+      {
+        crashPoint: 3.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     // Tick past 2.0x so players 1-5 auto-cashout
     const GROWTH_RATE = 0.00006;
@@ -1242,13 +1449,7 @@ describe('handleCrash — behavioral parity (High-7)', () => {
     const { state: afterTick } = handleTick(running, nowMs + elapsed);
 
     // Then crash
-    const { state: crashed } = handleCrash(
-      afterTick,
-      'seed123',
-      42,
-      'randval',
-      nowMs + elapsed + 1000,
-    );
+    const { state: crashed } = handleCrash(afterTick, nowMs + elapsed + 1000);
 
     // Players 1-5 should retain their cashout payout (floor(100 * 2.0 * 100)/100 = 200)
     for (let i = 1; i <= 5; i++) {
@@ -1302,7 +1503,17 @@ describe('buildStateSnapshot', () => {
   it('does not expose crashPoint during RUNNING phase', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('commit1');
-    state = handleStartingComplete(state, 3.5, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 3.5,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1315,8 +1526,18 @@ describe('buildStateSnapshot', () => {
   it('reveals crashPoint, drandRound, drandRandomness during CRASHED phase', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('commit1');
-    state = handleStartingComplete(state, 2.5, 'seed', 1, 'rand', 'next', nowMs).state;
-    state = handleCrash(state, 'theSeed', 42, 'theRand', nowMs + 5000).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 2.5,
+        chainSeed: 'theSeed',
+        drandRound: 42,
+        drandRandomness: 'theRand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
+    state = handleCrash(state, nowMs + 5000).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1342,7 +1563,17 @@ describe('buildStateSnapshot', () => {
     const nowMs = 1_000_000;
     let state = createInitialState('commit1');
     state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
-    state = handleStartingComplete(state, 5.0, 'seed', 1, 'rand', 'next', nowMs).state;
+    state = handleStartingComplete(
+      state,
+      {
+        crashPoint: 5.0,
+        chainSeed: 'seed',
+        drandRound: 1,
+        drandRandomness: 'rand',
+        nextChainCommitment: 'next',
+      },
+      nowMs,
+    ).state;
     state = handleCashout(state, 'p1', nowMs + 5000).state;
 
     const snapshot = buildStateSnapshot(state);
@@ -1352,11 +1583,10 @@ describe('buildStateSnapshot', () => {
     expect(p1?.cashoutMultiplier).not.toBeNull();
   });
 
-  it('snapshot reflects updated state after transitionToWaiting (empty players)', () => {
-    let state = createInitialState('commit1');
-    state = handleJoin(state, { playerId: 'p1', wager: 100, autoCashout: null }, 'conn1').state;
-    state = handleCrash(state, 'seed', 1, 'rand', Date.now()).state;
-    state = transitionToWaiting(state, 'newcomm', Date.now()).state;
+  it('snapshot reflects updated state after handleTransitionToWaiting (empty players)', () => {
+    const { state: running, nowMs } = makeRunningStateWithPlayer('p1', 100, null, 'conn1', 2.0);
+    let state = handleCrash(running, nowMs + 5000).state;
+    state = handleTransitionToWaiting(state).state;
 
     const snapshot = buildStateSnapshot(state);
 
@@ -1389,20 +1619,29 @@ describe('round lifecycle', () => {
 
     // 3. Countdown to STARTING
     for (let i = 0; i < 10; i++) {
-      const r = handleCountdownTick(state, Date.now());
+      const r = handleCountdownTick(state);
       state = r.state;
     }
     expect(state.phase).toBe('STARTING');
 
     // 4. STARTING → RUNNING with crashPoint = 3.0 (so auto-cashout at 2x triggers)
     const now = Date.now();
-    const r3 = handleStartingComplete(state, 3.0, 'seed123', 100, 'rand456', 'nextcommit', now);
+    const r3 = handleStartingComplete(
+      state,
+      {
+        crashPoint: 3.0,
+        chainSeed: 'seed123',
+        drandRound: 100,
+        drandRandomness: 'rand456',
+        nextChainCommitment: 'nextcommit',
+      },
+      now,
+    );
     state = r3.state;
     expect(state.phase).toBe('RUNNING');
 
     // 5. Tick past auto-cashout target (2x) — compute elapsed where multiplier > 2.0
     // multiplierAtTime(elapsed) > 2.0 → elapsed > ln(2)/0.00006 ≈ 11553ms
-    const { multiplierAtTime } = await import('../crash-math');
     const elapsed = Math.log(2.1) / 0.00006; // ~12397ms
     const tickTime = now + elapsed;
     const r4 = handleTick(state, tickTime);
@@ -1413,13 +1652,13 @@ describe('round lifecycle', () => {
     expect(state.players.get('p1')?.payout).toBe(200); // floor(100 * 2.0 * 100) / 100 = 200
 
     // 6. Crash
-    const r5 = handleCrash(state, 'seed123', 100, 'rand456', tickTime + 1000);
+    const r5 = handleCrash(state, tickTime + 1000);
     state = r5.state;
     expect(state.phase).toBe('CRASHED');
     expect(state.players.get('p2')?.payout).toBe(0); // Bob didn't cash out
 
     // 7. Transition to WAITING
-    const r6 = transitionToWaiting(state, 'newcommit', Date.now());
+    const r6 = handleTransitionToWaiting(state);
     state = r6.state;
     expect(state.phase).toBe('WAITING');
     expect(state.roundId).toBe(2);
