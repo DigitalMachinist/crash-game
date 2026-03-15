@@ -345,7 +345,6 @@ export function handleCrash(
   state: RunningGameState,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
-  const elapsed = nowMs - state.roundStartTime;
   const { crashPoint, chainSeed, drandRound, drandRandomness } = state;
 
   // Mark all non-cashed-out players as lost

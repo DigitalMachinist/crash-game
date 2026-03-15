@@ -488,7 +488,7 @@ export class CrashGame extends Server<Env> {
             wager: player.wager,
             payout: player.payout,
             cashoutMultiplier: player.cashoutMultiplier,
-            crashPoint: this.gameState.crashPoint ?? 1,
+            crashPoint: this.gameState.crashPoint!,
           });
         }
       }
