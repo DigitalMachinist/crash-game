@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FairnessModal from '../FairnessModal.svelte';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('FairnessModal component', () => {
   describe('rendering', () => {
@@ -32,6 +36,16 @@ describe('FairnessModal component', () => {
       // "commit/committed/commitment" appears multiple times
       expect(screen.getAllByText(/pre-commit|before.*bet|commit/i).length).toBeGreaterThan(0);
     });
+
+    it('renders a native <dialog> element', () => {
+      const { container } = render(FairnessModal, { props: { onClose: vi.fn() } });
+      expect(container.querySelector('dialog')).toBeInTheDocument();
+    });
+
+    it('calls showModal() on mount', () => {
+      render(FairnessModal, { props: { onClose: vi.fn() } });
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('interactions', () => {
@@ -42,17 +56,20 @@ describe('FairnessModal component', () => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('clicking the backdrop calls onClose', () => {
+    it('clicking the backdrop (dialog element itself) calls onClose', () => {
       const onClose = vi.fn();
-      render(FairnessModal, { props: { onClose } });
-      fireEvent.click(document.querySelector('.modal-backdrop')!);
+      const { container } = render(FairnessModal, { props: { onClose } });
+      const dialogEl = container.querySelector('dialog')!;
+      // Simulate a click where target === dialog (backdrop click)
+      fireEvent.click(dialogEl);
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('pressing Escape on the backdrop calls onClose', () => {
+    it('pressing Escape (cancel event on dialog) calls onClose', () => {
       const onClose = vi.fn();
-      render(FairnessModal, { props: { onClose } });
-      fireEvent.keyDown(document.querySelector('.modal-backdrop')!, { key: 'Escape' });
+      const { container } = render(FairnessModal, { props: { onClose } });
+      const dialogEl = container.querySelector('dialog')!;
+      fireEvent(dialogEl, new Event('cancel'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });

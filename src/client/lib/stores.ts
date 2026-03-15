@@ -12,7 +12,7 @@
  *
  * @see docs/project-architecture.md §1.3
  */
-import { derived, get, writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import type {
   GameStateSnapshot,
   HistoryEntry,

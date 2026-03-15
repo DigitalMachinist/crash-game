@@ -12,7 +12,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { COUNTDOWN_TICK_MS, CRASHED_DISPLAY_MS, TICK_INTERVAL_MS } from '../../config';
+import { COUNTDOWN_TICK_MS, CRASHED_DISPLAY_MS } from '../../config';
 import { createInitialState } from '../game-state';
 
 // ─── Mock drand module ────────────────────────────────────────────────────────
