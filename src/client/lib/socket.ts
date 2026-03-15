@@ -19,37 +19,44 @@ import { connectionStatus, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
 
+/** Required field checks per server message variant. Each entry is [field, 'string'|'number'|'array']. */
+type FieldType = 'string' | 'number' | 'array';
+const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
+  state: [
+    ['phase', 'string'],
+    ['roundId', 'number'],
+    ['players', 'array'],
+  ],
+  tick: [
+    ['multiplier', 'number'],
+    ['elapsed', 'number'],
+  ],
+  playerJoined: [
+    ['id', 'string'],
+    ['playerId', 'string'],
+    ['wager', 'number'],
+  ],
+  playerCashedOut: [
+    ['id', 'string'],
+    ['playerId', 'string'],
+    ['multiplier', 'number'],
+  ],
+  pendingPayout: [
+    ['roundId', 'number'],
+    ['payout', 'number'],
+  ],
+  error: [['message', 'string']],
+};
+
+function checkField(msg: Record<string, unknown>, field: string, type: FieldType): boolean {
+  return type === 'array' ? Array.isArray(msg[field]) : typeof msg[field] === type;
+}
+
 function isValidServerMessage(data: unknown): data is ServerMessage {
   if (typeof data !== 'object' || data === null) return false;
   const msg = data as Record<string, unknown>;
-  switch (msg.type) {
-    case 'state':
-      return (
-        typeof msg.phase === 'string' &&
-        typeof msg.roundId === 'number' &&
-        Array.isArray(msg.players)
-      );
-    case 'tick':
-      return typeof msg.multiplier === 'number' && typeof msg.elapsed === 'number';
-    case 'playerJoined':
-      return (
-        typeof msg.id === 'string' &&
-        typeof msg.playerId === 'string' &&
-        typeof msg.wager === 'number'
-      );
-    case 'playerCashedOut':
-      return (
-        typeof msg.id === 'string' &&
-        typeof msg.playerId === 'string' &&
-        typeof msg.multiplier === 'number'
-      );
-    case 'pendingPayout':
-      return typeof msg.roundId === 'number' && typeof msg.payout === 'number';
-    case 'error':
-      return typeof msg.message === 'string';
-    default:
-      return false;
-  }
+  const checks = MESSAGE_FIELDS[msg.type as string];
+  return checks !== undefined && checks.every(([field, type]) => checkField(msg, field, type));
 }
 
 function onOpen(): void {
