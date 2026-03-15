@@ -3,8 +3,8 @@
  *
  * Extends `partyserver.Server` to handle WebSocket connections, the game alarm
  * loop, and HTTP debug requests. Delegates all pure state transitions to
- * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, and `crash-math.ts`
- * for provably fair seed and crash point computation.
+ * `game-state.ts` and uses `hash-chain.ts`, `drand.ts`, `crash-math.ts`, and
+ * `provably-fair.ts` for provably fair seed and crash point computation.
  *
  * @see docs/project-architecture.md §1.4
  * @see docs/game-state-machine.md
@@ -20,9 +20,9 @@ import {
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
-import { deriveCrashPoint } from '../provably-fair';
+import { computeEffectiveSeed, deriveCrashPoint } from '../provably-fair';
 import type { DrandBeacon, GameStateSnapshot, ServerMessage } from '../types';
-import { computeEffectiveSeedFromBeacon, fetchDrandBeacon, getCurrentDrandRound } from './drand';
+import { fetchDrandBeacon, getCurrentDrandRound } from './drand';
 import {
   buildStateSnapshot,
   createInitialState,
@@ -415,7 +415,8 @@ export class CrashGame extends Server<Env> {
       return;
     }
 
-    const effectiveSeed = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    // HMAC-SHA256(key=drand randomness, data=chainSeed) — drand is the key (§2.5)
+    const effectiveSeed = await computeEffectiveSeed(chainSeed, beacon.randomness);
     const crashPoint = deriveCrashPoint(effectiveSeed);
     const now = Date.now();
 

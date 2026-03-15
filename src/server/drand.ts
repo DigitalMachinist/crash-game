@@ -20,8 +20,8 @@ import type { DrandBeacon } from '../types';
 import { isValidDrandBeacon } from './validation';
 
 export class DrandFetchError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'DrandFetchError';
   }
 }
@@ -76,25 +76,7 @@ export async function fetchDrandBeacon(
     try {
       return await attemptFetch(fallbackUrl);
     } catch (e) {
-      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}: ${e}`);
+      throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}`, { cause: e });
     }
   }
-}
-
-/**
- * Computes the effective seed by mixing the chain seed with the drand beacon.
- * Formula: `HMAC-SHA256(key = beacon.randomness, data = chainSeed)`
- *
- * SECURITY: drand randomness MUST be the HMAC key (not data). This prevents a
- * malicious server from choosing chain seeds to exploit predictable drand values.
- * See §2.5 for the full explanation.
- *
- * @see docs/provably-fair.md §2.5
- * @see docs/provably-fair.md §2.4
- */
-export function computeEffectiveSeedFromBeacon(
-  chainSeed: string,
-  beacon: DrandBeacon,
-): Promise<string> {
-  return computeEffectiveSeed(chainSeed, beacon.randomness);
 }

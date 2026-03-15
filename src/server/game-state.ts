@@ -76,14 +76,15 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
 }
 
 /**
- * Processes a player's bet. Only valid during WAITING phase.
+ * Processes a player's bet. Primarily valid during WAITING phase; also handles
+ * reconnects transparently in any phase (updates connectionId only, no-op).
  * Returns a `playerJoined` broadcast on success, or an `error` to the player.
  *
  * Validation rules (returns error message if violated):
  * - `playerId` must be a non-empty string of at most `MAX_PLAYER_ID_LENGTH` (256) characters.
  * - `wager` must be a finite positive number.
  * - `autoCashout`, if non-null, must be a finite number strictly greater than 1.0.
- * - Player must not already be in the current round.
+ * - Player must not already be in the current round (reconnects exempt — see above).
  *
  * @see docs/game-state-machine.md §3.4
  */

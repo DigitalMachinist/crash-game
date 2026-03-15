@@ -1,12 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DRAND_BASE_URL, DRAND_GENESIS_TIME, DRAND_PERIOD_SECS } from '../../config';
 import { bytesToHex, hexToBytes } from '../../crypto-hex';
-import {
-  computeEffectiveSeedFromBeacon,
-  DrandFetchError,
-  fetchDrandBeacon,
-  getCurrentDrandRound,
-} from '../drand';
+import { computeEffectiveSeed } from '../../provably-fair';
+import { DrandFetchError, fetchDrandBeacon, getCurrentDrandRound } from '../drand';
 
 /** Local inverse of getCurrentDrandRound for test assertions (mirrors unexported drandRoundTime). */
 function drandRoundTime(round: number): number {
@@ -199,45 +195,43 @@ describe('fetchDrandBeacon', () => {
   });
 });
 
-// ─── computeEffectiveSeedFromBeacon ──────────────────────────────────────────
+// ─── computeEffectiveSeed (via DrandBeacon) ──────────────────────────────────
 
-describe('computeEffectiveSeedFromBeacon', () => {
+describe('computeEffectiveSeed (via DrandBeacon)', () => {
   const chainSeed = '0000000000000000000000000000000000000000000000000000000000000001';
   const randomness = '0000000000000000000000000000000000000000000000000000000000000002';
   const beacon = { round: 1, randomness, signature: '' };
 
   it('returns a 64-char hex string', async () => {
-    const result = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const result = await computeEffectiveSeed(chainSeed, beacon.randomness);
     expect(result).toHaveLength(64);
     expect(result).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('is deterministic for same inputs', async () => {
-    const result1 = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
-    const result2 = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const result1 = await computeEffectiveSeed(chainSeed, beacon.randomness);
+    const result2 = await computeEffectiveSeed(chainSeed, beacon.randomness);
     expect(result1).toBe(result2);
   });
 
   it('cross-module consistency: returns deterministic 64-char hex for known inputs', async () => {
-    const result = await computeEffectiveSeedFromBeacon(chainSeed, {
-      round: 1,
-      randomness: '0000000000000000000000000000000000000000000000000000000000000002',
-      signature: '',
-    });
+    const result = await computeEffectiveSeed(
+      chainSeed,
+      '0000000000000000000000000000000000000000000000000000000000000002',
+    );
     expect(result).toHaveLength(64);
     expect(result).toMatch(/^[0-9a-f]{64}$/);
     // Verify determinism by calling again
-    const result2 = await computeEffectiveSeedFromBeacon(chainSeed, {
-      round: 1,
-      randomness: '0000000000000000000000000000000000000000000000000000000000000002',
-      signature: '',
-    });
+    const result2 = await computeEffectiveSeed(
+      chainSeed,
+      '0000000000000000000000000000000000000000000000000000000000000002',
+    );
     expect(result).toBe(result2);
   });
 
   it('key ordering: swapping key and data gives a different result', async () => {
     // Normal: key=randomness, data=chainSeed
-    const normal = await computeEffectiveSeedFromBeacon(chainSeed, beacon);
+    const normal = await computeEffectiveSeed(chainSeed, beacon.randomness);
 
     // Swapped: key=chainSeed (as raw bytes), data=randomness — raw crypto.subtle call
     const keyBytes = hexToBytes(chainSeed);
