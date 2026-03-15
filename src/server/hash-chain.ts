@@ -20,7 +20,7 @@ import { bytesToHex, sha256Hex } from '../crypto-hex';
  *
  * @see docs/provably-fair.md §2.2
  */
-export async function computeNextChainCommitment(chainSeed: string): Promise<string> {
+export function computeNextChainCommitment(chainSeed: string): Promise<string> {
   return sha256Hex(chainSeed);
 }
 

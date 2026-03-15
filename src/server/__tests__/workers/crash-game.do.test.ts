@@ -25,15 +25,28 @@ async function connectWS(room: string): Promise<WebSocket> {
   return ws;
 }
 
-// Helper: collect all messages received on `ws` for `durationMs` milliseconds.
-function collectMessages(ws: WebSocket, durationMs: number): Promise<string[]> {
+// Helper: collect up to `count` messages on `ws`, resolving as soon as `count`
+// messages arrive or `timeoutMs` elapses (whichever comes first). Replaces the
+// fixed-sleep collectMessages pattern which is fragile under load.
+function waitForMessages(ws: WebSocket, count: number, timeoutMs = 2000): Promise<string[]> {
   const msgs: string[] = [];
   return new Promise<string[]>((resolve) => {
+    const timer = setTimeout(() => resolve(msgs), timeoutMs);
     ws.addEventListener('message', (e) => {
       msgs.push(e.data as string);
+      if (msgs.length >= count) {
+        clearTimeout(timer);
+        resolve(msgs);
+      }
     });
-    setTimeout(() => resolve(msgs), durationMs);
   });
+}
+
+// Helper: collect any messages received on `ws` for `durationMs` milliseconds.
+// Use only when verifying silence (expecting zero messages) — prefer
+// waitForMessages when the expected count is known.
+function collectMessages(ws: WebSocket, durationMs: number): Promise<string[]> {
+  return waitForMessages(ws, Infinity, durationMs);
 }
 
 // Helper: wait for the first message on `ws` (with a timeout).
@@ -118,8 +131,8 @@ describe('CrashGame DO (integration)', () => {
     // Wait for initial state message first
     await waitForMessage(ws);
 
-    // Start collecting subsequent messages
-    const pending = collectMessages(ws, 300);
+    // Collect until playerJoined arrives (or timeout)
+    const pending = waitForMessages(ws, 1);
 
     ws.send(JSON.stringify({ type: 'join', playerId: 'player-abc', wager: 100, name: 'Alice' }));
 
@@ -168,7 +181,7 @@ describe('CrashGame DO (integration)', () => {
 
     await waitForMessage(ws);
 
-    const pending = collectMessages(ws, 300);
+    const pending = waitForMessages(ws, 1);
     ws.send('not valid json at all');
     const msgs = await pending;
 
@@ -185,7 +198,7 @@ describe('CrashGame DO (integration)', () => {
 
     await waitForMessage(ws);
 
-    const pending = collectMessages(ws, 300);
+    const pending = waitForMessages(ws, 1);
     ws.send(JSON.stringify({ type: 'cashout' }));
     const msgs = await pending;
 
@@ -238,10 +251,9 @@ describe('CrashGame DO (integration)', () => {
     // Drain the initial state messages for both sockets
     await Promise.all([waitForMessage(ws1), waitForMessage(ws2)]);
 
-    // ws2 may also need to drain a state message if ws1 connected before it
-    // Start collecting on both sockets before the join
-    const p1 = collectMessages(ws1, 400);
-    const p2 = collectMessages(ws2, 400);
+    // Start collecting on both sockets before the join (expect 1 playerJoined each)
+    const p1 = waitForMessages(ws1, 1);
+    const p2 = waitForMessages(ws2, 1);
 
     ws1.send(
       JSON.stringify({ type: 'join', playerId: 'player-broadcast', wager: 200, name: 'Carol' }),
@@ -305,7 +317,7 @@ describe('CrashGame DO (integration)', () => {
     // Drain the initial state message
     await waitForMessage(ws);
 
-    const pending = collectMessages(ws, 400);
+    const pending = waitForMessages(ws, 1);
     ws.send(JSON.stringify({ type: 'join', playerId: 'player-persist', wager: 50, name: 'Dave' }));
     const msgs = await pending;
 
@@ -336,7 +348,7 @@ describe('CrashGame DO (integration)', () => {
 
     await waitForMessage(ws);
 
-    const pending = collectMessages(ws, 300);
+    const pending = waitForMessages(ws, 1);
     ws.send(JSON.stringify({ type: 'cashout' }));
     const msgs = await pending;
 
@@ -467,9 +479,9 @@ describe('CrashGame DO (integration)', () => {
     // Drain initial state messages for both connections
     await Promise.all([waitForMessage(wsA), waitForMessage(wsB)]);
 
-    // Collect messages on both connections while Player A sends an invalid join
-    const pendingA = collectMessages(wsA, 400);
-    const pendingB = collectMessages(wsB, 400);
+    // Player A expects 1 error; Player B expects silence (use small window to verify)
+    const pendingA = waitForMessages(wsA, 1);
+    const pendingB = collectMessages(wsB, 200);
 
     // Send a join with an invalid wager (negative) from Player A's connection
     wsA.send(
@@ -500,9 +512,9 @@ describe('CrashGame DO (integration)', () => {
     // Drain initial state messages for both connections
     await Promise.all([waitForMessage(wsA), waitForMessage(wsB)]);
 
-    // Collect messages on both connections
-    const pendingA = collectMessages(wsA, 400);
-    const pendingB = collectMessages(wsB, 400);
+    // Both connections expect 1 playerJoined broadcast
+    const pendingA = waitForMessages(wsA, 1);
+    const pendingB = waitForMessages(wsB, 1);
 
     // Player A sends a valid join — should produce a `playerJoined` broadcast
     wsA.send(
@@ -540,9 +552,9 @@ describe('CrashGame DO (integration)', () => {
     );
     await new Promise<void>((resolve) => setTimeout(resolve, 200));
 
-    // Now collect fresh messages on both sockets
-    const pendingA = collectMessages(wsA, 400);
-    const pendingB = collectMessages(wsB, 400);
+    // Player A expects 1 error; Player B expects silence
+    const pendingA = waitForMessages(wsA, 1);
+    const pendingB = collectMessages(wsB, 200);
 
     // Player A sends a malformed join (autoCashout <= 1.0 is invalid)
     wsA.send(
