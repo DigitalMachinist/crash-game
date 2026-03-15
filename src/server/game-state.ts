@@ -240,8 +240,8 @@ export function handleCashout(
   const elapsed = nowMs - state.roundStartTime!;
   const multiplier = multiplierAtTime(elapsed);
 
-  // Must be strictly less than crash point
-  if (state.crashPoint !== null && multiplier >= state.crashPoint) {
+  // Must be strictly less than crash point (crashPoint is invariantly non-null during RUNNING)
+  if (multiplier >= state.crashPoint!) {
     return reject('Round has already crashed');
   }
 
