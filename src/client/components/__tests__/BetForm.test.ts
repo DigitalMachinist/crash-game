@@ -294,4 +294,32 @@ describe('BetForm component', () => {
       expect(screen.getByText(/RTP: 99%/)).toBeTruthy();
     });
   });
+
+  describe('wager preset buttons', () => {
+    it('renders preset buttons for each WAGER_PRESETS value', async () => {
+      render(BetForm);
+      await tick();
+      expect(screen.getByRole('button', { name: '$1' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '$5' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '$10' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '$50' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '$100' })).toBeTruthy();
+    });
+
+    it('sets wager input value when a preset button is clicked', async () => {
+      render(BetForm);
+      await fireEvent.click(screen.getByRole('button', { name: '$50' }));
+      await tick();
+      const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
+      expect(wagerInput.value).toBe('50.00');
+    });
+
+    it('enables Join Round button after clicking a preset', async () => {
+      render(BetForm);
+      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
+      await fireEvent.click(screen.getByRole('button', { name: '$10' }));
+      await tick();
+      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+    });
+  });
 });

@@ -58,6 +58,8 @@ export const HISTORY_LENGTH = 20;
 // ─── Client ──────────────────────────────────────────────────────────────────
 /** Maximum rounds kept in localStorage history */
 export const CLIENT_HISTORY_LIMIT = 50;
+/** Quick-bet preset amounts shown below the wager input */
+export const WAGER_PRESETS = [1, 5, 10, 50, 100] as const;
 // Note: multiplier animation is handled via CSS transition matching TICK_INTERVAL_MS,
 // not a tweened store. The CSS duration is set directly in Multiplier.svelte as:
 //   transition: all ${TICK_INTERVAL_MS}ms linear;

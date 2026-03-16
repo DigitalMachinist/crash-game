@@ -5,7 +5,7 @@
  * server-side validation errors (e.g., invalid wager, already joined).
  */
 
-import { HOUSE_EDGE, MAX_WAGER, MIN_WAGER } from '../../config';
+import { HOUSE_EDGE, MAX_WAGER, MIN_WAGER, WAGER_PRESETS } from '../../config';
 import { sendJoin } from '../lib/commands';
 import { balance, lastError, phase } from '../lib/stores';
 
@@ -26,6 +26,10 @@ $effect(() => {
 const wagerNum = $derived(parseFloat(wager));
 const autoCashoutNum = $derived(autoCashoutStr ? parseFloat(autoCashoutStr) : null);
 const isValid = $derived(!isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER);
+
+function setWager(amount: number) {
+  wager = amount.toFixed(2);
+}
 
 function handleJoin() {
   if (!isValid) return;
@@ -55,9 +59,14 @@ function handleJoin() {
         aria-describedby={errorMessage ? 'wager-error' : undefined}
         aria-invalid={errorMessage ? 'true' : undefined}
       />
+      <div class="presets" role="group" aria-label="Wager presets">
+        {#each WAGER_PRESETS as amount}
+          <button type="button" onclick={() => setWager(amount)}>${amount}</button>
+        {/each}
+      </div>
     </div>
 
-    <div class="field">
+    <div class="field field-secondary">
       <label for="auto-cashout">Auto-cashout at (optional)</label>
       <input
         id="auto-cashout"
@@ -138,6 +147,41 @@ function handleJoin() {
   input:focus-visible {
     outline: 2px solid #42a5f5;
     outline-offset: 2px;
+  }
+
+  .presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+
+  .presets button {
+    flex: 1;
+    padding: 0.3rem 0;
+    background: transparent;
+    border: 1px solid #2a2a3e;
+    border-radius: 4px;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .presets button:hover {
+    background: #1a1a2e;
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  .field-secondary label {
+    font-size: 0.75rem;
+    color: #666;
+  }
+
+  .field-secondary input {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
+    border-color: #2a2a2a;
   }
 
   .join-btn {
