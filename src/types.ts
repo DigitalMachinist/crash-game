@@ -126,4 +126,5 @@ export type ServerMessage =
 // @see docs/websocket-protocol.md §4.2
 export type ClientMessage =
   | { type: 'join'; playerId: string; wager: number; name?: string; autoCashout?: number | null }
-  | { type: 'cashout' };
+  | { type: 'cashout' }
+  | { type: 'setName'; playerId: string; name: string };

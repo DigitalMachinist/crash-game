@@ -13,7 +13,6 @@ const houseEdgePct = Math.round(HOUSE_EDGE * 100);
 const rtpPct = 100 - houseEdgePct;
 
 let wager = $state('');
-let playerName = $state('');
 let autoCashoutStr = $state('');
 let errorMessage = $state('');
 
@@ -31,7 +30,7 @@ const isValid = $derived(!isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <
 function handleJoin() {
   if (!isValid) return;
   errorMessage = '';
-  sendJoin(wagerNum, playerName || '', autoCashoutNum);
+  sendJoin(wagerNum, autoCashoutNum);
   wager = '';
   autoCashoutStr = '';
 }
@@ -57,17 +56,6 @@ function handleJoin() {
         step="0.01"
         aria-describedby={errorMessage ? 'wager-error' : undefined}
         aria-invalid={errorMessage ? 'true' : undefined}
-      />
-    </div>
-
-    <div class="field">
-      <label for="name">Name (optional)</label>
-      <input
-        id="name"
-        type="text"
-        bind:value={playerName}
-        placeholder="Anonymous"
-        maxlength="20"
       />
     </div>
 

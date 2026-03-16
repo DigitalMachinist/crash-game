@@ -18,13 +18,20 @@ function send(msg: ClientMessage): void {
   socket.send(JSON.stringify(msg));
 }
 
-export function sendJoin(wager: number, name: string, autoCashout: number | null): void {
+export function sendJoin(wager: number, autoCashout: number | null): void {
   send({
     type: 'join',
     playerId: get(myPlayerId),
     wager,
-    name,
     autoCashout,
+  });
+}
+
+export function sendSetName(name: string): void {
+  send({
+    type: 'setName',
+    playerId: get(myPlayerId),
+    name,
   });
 }
 

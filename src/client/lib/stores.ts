@@ -29,6 +29,7 @@ export const countdown = derived(gameState, ($s) => $s?.countdown ?? 10000);
 export const displayMultiplier = writable(1.0);
 export const multiplierAnimating = writable(false);
 export const myPlayerId = writable<string>('');
+export const myPlayerName = writable<string>('');
 export const balance = writable<number>(0);
 export const connectionStatus = writable<
   'connecting' | 'connected' | 'reconnecting' | 'disconnected'

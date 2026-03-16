@@ -17,6 +17,7 @@ import {
   CRASHED_DISPLAY_MS,
   MAX_PENDING_PAYOUTS,
   MAX_PLAYER_ID_LENGTH,
+  MAX_PLAYER_NAME_LENGTH,
   TICK_INTERVAL_MS,
   WAITING_DURATION_MS,
 } from '../config';
@@ -54,6 +55,8 @@ export class CrashGame extends Server<Env> {
   private pendingPayouts: Map<string, PendingPayout> = new Map();
   /** Maps connectionId → playerId to support cashout from reconnected connections. [Phase 4.6] */
   private connectionToPlayer: Map<string, string> = new Map();
+  /** Transient in-memory map; lost on DO eviction. Re-populated by clients sending setName on reconnect. */
+  private playerNames: Map<string, string> = new Map();
   private cachedSnapshot: GameStateSnapshot | null = null;
 
   /** Invalidates the cached snapshot so the next read rebuilds from current state. */
@@ -164,15 +167,25 @@ export class CrashGame extends Server<Env> {
 
     const msg = parsed;
 
+    if (msg.type === 'setName') {
+      const trimmed = msg.name.trim().slice(0, MAX_PLAYER_NAME_LENGTH);
+      if (trimmed) {
+        this.playerNames.set(msg.playerId, trimmed);
+      }
+      return;
+    }
+
     if (msg.type === 'join') {
       // Deliver any stored payout before processing the join (pre-join hook)
       await this.deliverPendingPayout(conn, msg.playerId);
 
+      // Resolve name: explicit join field > stored name registry > fallback in handleJoin
+      const resolvedName = msg.name?.trim() || this.playerNames.get(msg.playerId) || undefined;
       const result = handleJoin(
         this.gameState,
         {
           playerId: msg.playerId,
-          ...(msg.name !== undefined ? { name: msg.name } : {}),
+          ...(resolvedName !== undefined ? { name: resolvedName } : {}),
           wager: msg.wager,
           autoCashout: msg.autoCashout ?? null,
         },
