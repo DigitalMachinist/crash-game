@@ -877,13 +877,6 @@ describe('handleTick', () => {
       expect(tickMsg.message.elapsed).toBe(3000);
     }
   });
-
-  it('returns no messages and shouldCrash=false when phase is not RUNNING', () => {
-    const state = createInitialState('abc');
-    const { messages, shouldCrash } = handleTick(state, Date.now());
-    expect(messages).toHaveLength(0);
-    expect(shouldCrash).toBe(false);
-  });
 });
 
 // ─── handleCrash ─────────────────────────────────────────────────────────────

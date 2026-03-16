@@ -8,7 +8,7 @@ describe('isValidClientMessage', () => {
     expect(
       isValidClientMessage({
         type: 'join',
-        playerId: 'abc-123',
+        playerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         wager: 100,
         name: 'Alice',
         autoCashout: 2.5,
@@ -20,7 +20,7 @@ describe('isValidClientMessage', () => {
     expect(
       isValidClientMessage({
         type: 'join',
-        playerId: 'abc-123',
+        playerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         wager: 50,
       }),
     ).toBe(true);
@@ -30,7 +30,7 @@ describe('isValidClientMessage', () => {
     expect(
       isValidClientMessage({
         type: 'join',
-        playerId: 'abc-123',
+        playerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         wager: 50,
         autoCashout: null,
       }),
