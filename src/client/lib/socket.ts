@@ -12,12 +12,20 @@
  * @see docs/websocket-protocol.md §4.1
  */
 import PartySocket from 'partysocket';
-import { ROOM_ID } from '../../config';
+import { PING_INTERVAL_MS, ROOM_ID } from '../../config';
 import type { ServerMessage } from '../../types';
 import { dispatchMessage } from './message-handler';
-import { connectionStatus, multiplierAnimating } from './stores';
+import { connectionStatus, latency, multiplierAnimating } from './stores';
 
 let socket: PartySocket | null = null;
+let pingInterval: ReturnType<typeof setInterval> | null = null;
+
+function clearPingInterval(): void {
+  if (pingInterval !== null) {
+    clearInterval(pingInterval);
+    pingInterval = null;
+  }
+}
 
 /** Required field checks per server message variant. Each entry is [field, type]. */
 type FieldType = 'string' | 'number' | 'array' | 'nullable-number' | 'nullable-string';
@@ -59,6 +67,7 @@ const MESSAGE_FIELDS: Record<ServerMessage['type'], [string, FieldType][]> = {
     ['cashoutMultiplier', 'number'],
     ['crashPoint', 'number'],
   ],
+  pong: [['t', 'number']],
   error: [['message', 'string']],
 };
 
@@ -80,11 +89,19 @@ function isValidServerMessage(data: unknown): data is ServerMessage {
 
 function onOpen(): void {
   connectionStatus.set('connected');
+  clearPingInterval();
+  pingInterval = setInterval(() => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'ping', t: Date.now() }));
+    }
+  }, PING_INTERVAL_MS);
 }
 
 function onClose(): void {
   connectionStatus.set('reconnecting');
   multiplierAnimating.set(false);
+  clearPingInterval();
+  latency.set(null);
 }
 
 function onMessage(e: MessageEvent): void {
@@ -129,6 +146,8 @@ export function disconnect(): void {
     socket.close();
     socket = null;
   }
+  clearPingInterval();
+  latency.set(null);
   connectionStatus.set('disconnected');
 }
 

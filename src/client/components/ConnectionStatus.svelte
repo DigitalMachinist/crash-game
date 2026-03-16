@@ -1,5 +1,5 @@
 <script lang="ts">
-import { connectionStatus } from '../lib/stores';
+import { connectionStatus, latency } from '../lib/stores';
 
 type StatusConfig = {
   label: string;
@@ -14,11 +14,21 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 };
 
 const config = $derived(STATUS_CONFIG[$connectionStatus] ?? STATUS_CONFIG.disconnected);
+
+function latencyColor(ms: number): string {
+  if (ms < 100) return '#00c853';
+  if (ms < 250) return 'gold';
+  return 'crimson';
+}
 </script>
 
 <div class="connection-status">
   <span class="dot" style="background-color: {config.color};"></span>
   <span class="label">{config.label}</span>
+  {#if $connectionStatus === 'connected' && $latency !== null}
+    <span class="separator">·</span>
+    <span class="latency" style="color: {latencyColor($latency)};">{$latency}ms</span>
+  {/if}
 </div>
 
 <style>
@@ -40,5 +50,14 @@ const config = $derived(STATUS_CONFIG[$connectionStatus] ?? STATUS_CONFIG.discon
 
   .label {
     white-space: nowrap;
+  }
+
+  .separator {
+    color: #666;
+  }
+
+  .latency {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 </style>

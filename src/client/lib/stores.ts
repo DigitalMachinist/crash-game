@@ -34,6 +34,7 @@ export const balance = writable<number>(0);
 export const connectionStatus = writable<
   'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 >('connecting');
+export const latency = writable<number | null>(null);
 
 /**
  * Set by message-handler when a state{phase:'CRASHED'} message arrives.

@@ -196,6 +196,38 @@ describe('CrashGame.onMessage() — validation logging', () => {
   });
 });
 
+// ─── Ping/pong tests ──────────────────────────────────────────────────────────
+
+describe('CrashGame.onMessage() — ping/pong', () => {
+  let game: CrashGame;
+  let conn: ReturnType<typeof makeMockConn>;
+
+  beforeEach(async () => {
+    const ctx = makeCtx();
+    const env = makeEnv();
+    // @ts-expect-error — ctx/env are minimal mocks
+    game = new CrashGame(ctx, env);
+    conn = makeMockConn();
+  });
+
+  it('responds to ping with pong echoing the t value', async () => {
+    const msg = JSON.stringify({ type: 'ping', t: 1234567890 });
+    // @ts-expect-error — conn is a minimal mock
+    await game.onMessage(conn, msg);
+
+    expect(conn.send).toHaveBeenCalledWith(JSON.stringify({ type: 'pong', t: 1234567890 }));
+  });
+
+  it('does not broadcast pong to other connections', async () => {
+    const broadcastSpy = vi.spyOn(game as any, 'broadcast');
+    const msg = JSON.stringify({ type: 'ping', t: 9999 });
+    // @ts-expect-error — conn is a minimal mock
+    await game.onMessage(conn, msg);
+
+    expect(broadcastSpy).not.toHaveBeenCalled();
+  });
+});
+
 // ─── Alarm loop tests ─────────────────────────────────────────────────────────
 
 const MOCK_CHAIN_COMMITMENT = 'a'.repeat(64);
