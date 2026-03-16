@@ -15,6 +15,7 @@ const accessibleLabel = $derived(
 
 <div class="multiplier-container" aria-live="off" class:crashed-container={$phase === 'CRASHED'}>
   {#if $phase === 'STARTING'}
+    <!-- STARTING suppresses the multiplier number entirely; other phases show it with conditional styling -->
     <div class="multiplier starting">STARTING...</div>
   {:else}
     {#if $phase === 'CRASHED'}

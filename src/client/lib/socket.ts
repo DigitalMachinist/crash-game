@@ -62,7 +62,7 @@ const MESSAGE_FIELDS: Record<ServerMessage['type'], [string, FieldType][]> = {
   error: [['message', 'string']],
 };
 
-function checkField(msg: Record<string, unknown>, field: string, type: FieldType): boolean {
+function isFieldOfType(msg: Record<string, unknown>, field: string, type: FieldType): boolean {
   if (type === 'array') return Array.isArray(msg[field]);
   if (type === 'nullable-number') return msg[field] === null || typeof msg[field] === 'number';
   if (type === 'nullable-string') return msg[field] === null || typeof msg[field] === 'string';
@@ -75,7 +75,7 @@ function isValidServerMessage(data: unknown): data is ServerMessage {
   const msgType = msg.type;
   if (typeof msgType !== 'string' || !(msgType in MESSAGE_FIELDS)) return false;
   const checks = MESSAGE_FIELDS[msgType as ServerMessage['type']];
-  return checks.every(([field, type]) => checkField(msg, field, type));
+  return checks.every(([field, type]) => isFieldOfType(msg, field, type));
 }
 
 function onOpen(): void {

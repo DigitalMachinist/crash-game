@@ -97,24 +97,16 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
  *
  * @see docs/game-state-machine.md §3.4
  */
-function buildRejectionResult(
-  state: GameState,
-  message: string,
-): { state: GameState; messages: OutboundMessage[]; joined: false; cashedOut: false } {
-  return {
-    state,
-    messages: [{ broadcast: false, message: { type: 'error', message } }],
-    joined: false,
-    cashedOut: false,
-  };
-}
-
 export function handleJoin(
   state: GameState,
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
 ): { state: GameState; messages: OutboundMessage[]; joined: boolean } {
-  const reject = (message: string) => buildRejectionResult(state, message);
+  const reject = (message: string) => ({
+    state,
+    messages: [{ broadcast: false, message: { type: 'error' as const, message } }],
+    joined: false as const,
+  });
   // Handle existing player first (any phase) — must precede phase check so reconnects during
   // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
   if (state.players.has(msg.playerId)) {
@@ -133,6 +125,8 @@ export function handleJoin(
       // Reconnect during RUNNING/STARTING: update connection ID silently.
       // All clients already know this player is in the round; re-broadcasting playerJoined
       // would cause the reconnecting client to double-deduct their balance.
+      // joined: false — no playerJoined broadcast; connection ID updated silently.
+      // Callers use gameState.players to determine player presence, not this flag.
       return { state: updatedState, messages: [], joined: false };
     }
     return {
@@ -227,7 +221,11 @@ export function handleCashout(
   playerId: string,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[]; cashedOut: boolean } {
-  const reject = (message: string) => buildRejectionResult(state, message);
+  const reject = (message: string) => ({
+    state,
+    messages: [{ broadcast: false, message: { type: 'error' as const, message } }],
+    cashedOut: false as const,
+  });
   if (state.phase !== 'RUNNING') {
     return reject(`Cannot cashout during ${state.phase} phase`);
   }
