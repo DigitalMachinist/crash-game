@@ -22,19 +22,21 @@ import {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRunningState(crashPoint = 3.0, nowMs = 1_000_000) {
-  let state = createInitialState('commitment123');
-  state = handleStartingComplete(
-    state,
-    {
-      crashPoint: crashPoint,
-      chainSeed: 'seed1',
-      drandRound: 1,
-      drandRandomness: 'rand1',
-      nextChainCommitment: 'nextcommit',
-    },
+  const initial = createInitialState('commitment123');
+  return {
+    state: handleStartingComplete(
+      initial,
+      {
+        crashPoint: crashPoint,
+        chainSeed: 'seed1',
+        drandRound: 1,
+        drandRandomness: 'rand1',
+        nextChainCommitment: 'nextcommit',
+      },
+      nowMs,
+    ).state,
     nowMs,
-  ).state;
-  return { state, nowMs };
+  };
 }
 
 // ─── handleJoin ──────────────────────────────────────────────────────────────

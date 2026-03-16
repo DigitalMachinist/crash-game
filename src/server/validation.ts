@@ -14,8 +14,11 @@ function isObject(data: unknown): data is Record<string, unknown> {
   return typeof data === 'object' && data !== null;
 }
 
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function isValidJoinFields(obj: Record<string, unknown>): boolean {
   if (typeof obj.playerId !== 'string') return false;
+  if (!UUID_V4_PATTERN.test(obj.playerId)) return false;
   if (typeof obj.wager !== 'number') return false;
   if (obj.name !== undefined && typeof obj.name !== 'string') return false;
   if (

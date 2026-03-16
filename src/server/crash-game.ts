@@ -271,8 +271,10 @@ export class CrashGame extends Server<Env> {
    */
   override async onAlarm(): Promise<void> {
     const now = Date.now();
-    // Track whether we are in the CRASHED→WAITING transition so the finally
-    // block can skip rescheduling if beginNextRound() already scheduled the alarm.
+    // Invariant: every branch in the try block that exits normally MUST set
+    // alarmScheduled = true. The finally block uses this flag to schedule a
+    // recovery alarm only when a branch fails to do so (e.g. on thrown error).
+    // Adding a new phase handler: ensure it schedules its alarm before returning.
     let alarmScheduled = false;
 
     try {
@@ -295,7 +297,7 @@ export class CrashGame extends Server<Env> {
           alarmScheduled = true;
         }
       } else if (this.gameState.phase === 'RUNNING') {
-        const result = handleTick(this.gameState, now);
+        const result = handleTick(this.gameState as RunningGameState, now);
         this.gameState = result.state;
         // Invalidate if any auto-cashouts fired (player state changed)
         if (result.autoCashoutsOccurred) {
@@ -449,7 +451,9 @@ export class CrashGame extends Server<Env> {
     }
 
     const result = handleCrash(this.gameState as RunningGameState, now);
-    this.gameState = result.state;
+    // Cast to RunningGameState: CRASHED state preserves all provably-fair fields from RUNNING.
+    const crashedState = result.state as RunningGameState;
+    this.gameState = crashedState;
     this.invalidateSnapshot();
 
     // Build a connection lookup map once (O(n)) to avoid O(n²) getConnections().some() per player
@@ -459,7 +463,7 @@ export class CrashGame extends Server<Env> {
     }
 
     // Store pending payouts for auto-cashed-out players who are disconnected
-    for (const [, player] of this.gameState.players) {
+    for (const [, player] of crashedState.players) {
       if (player.cashedOut && player.payout !== null && player.cashoutMultiplier !== null) {
         // O(1) lookup instead of O(n) scan per player
         const isConnected = connectionMap.has(player.id);
@@ -473,11 +477,11 @@ export class CrashGame extends Server<Env> {
             }
           }
           this.pendingPayouts.set(player.playerId, {
-            roundId: this.gameState.roundId,
+            roundId: crashedState.roundId,
             wager: player.wager,
             payout: player.payout,
             cashoutMultiplier: player.cashoutMultiplier,
-            crashPoint: this.gameState.crashPoint!,
+            crashPoint: crashedState.crashPoint,
           });
         }
       }

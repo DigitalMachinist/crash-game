@@ -97,7 +97,7 @@ function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
  *
  * @see docs/game-state-machine.md §3.4
  */
-function playerError(
+function buildRejectionResult(
   state: GameState,
   message: string,
 ): { state: GameState; messages: OutboundMessage[]; joined: false; cashedOut: false } {
@@ -114,7 +114,7 @@ export function handleJoin(
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
 ): { state: GameState; messages: OutboundMessage[]; joined: boolean } {
-  const reject = (message: string) => playerError(state, message);
+  const reject = (message: string) => buildRejectionResult(state, message);
   // Handle existing player first (any phase) — must precede phase check so reconnects during
   // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
   if (state.players.has(msg.playerId)) {
@@ -227,11 +227,13 @@ export function handleCashout(
   playerId: string,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[]; cashedOut: boolean } {
-  const reject = (message: string) => playerError(state, message);
+  const reject = (message: string) => buildRejectionResult(state, message);
   if (state.phase !== 'RUNNING') {
     return reject(`Cannot cashout during ${state.phase} phase`);
   }
 
+  // phase === 'RUNNING' guarantees roundStartTime and crashPoint are non-null
+  const s = state as RunningGameState;
   const player = state.players.get(playerId);
   if (!player) {
     return reject('Not in current round');
@@ -241,12 +243,10 @@ export function handleCashout(
     return reject('Already cashed out');
   }
 
-  // roundStartTime is always set when phase is RUNNING (set in handleStartingComplete)
-  const elapsed = nowMs - state.roundStartTime!;
+  const elapsed = nowMs - s.roundStartTime;
   const multiplier = multiplierAtTime(elapsed);
 
-  // Must be strictly less than crash point (crashPoint is invariantly non-null during RUNNING)
-  if (multiplier >= state.crashPoint!) {
+  if (multiplier >= s.crashPoint) {
     return reject('Round has already crashed');
   }
 
@@ -288,18 +288,14 @@ export function handleCashout(
  * @see docs/game-state-machine.md §3.6 (multiplier curve)
  */
 export function handleTick(
-  state: GameState,
+  state: RunningGameState,
   nowMs: number,
 ): {
-  state: GameState;
+  state: RunningGameState;
   messages: OutboundMessage[];
   shouldCrash: boolean;
   autoCashoutsOccurred: boolean;
 } {
-  if (state.phase !== 'RUNNING' || state.roundStartTime === null || state.crashPoint === null) {
-    return { state, messages: [], shouldCrash: false, autoCashoutsOccurred: false };
-  }
-
   const elapsed = nowMs - state.roundStartTime;
   const currentMultiplier = multiplierAtTime(elapsed);
   const messages: OutboundMessage[] = [];
@@ -339,7 +335,7 @@ export function handleTick(
   });
 
   return {
-    state: { ...state, players: newPlayers },
+    state: { ...state, players: newPlayers } as RunningGameState,
     messages,
     shouldCrash,
     autoCashoutsOccurred,
@@ -415,11 +411,11 @@ export function handleStartingComplete(
   state: GameState,
   ingredients: RoundIngredients,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: RunningGameState; messages: OutboundMessage[] } {
   const { crashPoint, chainSeed, drandRound, drandRandomness, nextChainCommitment } = ingredients;
   const crashTime = computeCrashTimeMs(crashPoint);
 
-  const newState: GameState = {
+  const newState: RunningGameState = {
     ...state,
     phase: 'RUNNING',
     crashPoint,
@@ -452,6 +448,8 @@ export function handleCountdownTick(state: GameState): {
   messages: OutboundMessage[];
   shouldStartRound: boolean;
 } {
+  // Guard: unreachable from normal call path — crash-game.ts onAlarm only calls
+  // handleCountdownTick inside `if (phase === 'WAITING')`. Present for defensive testability.
   if (state.phase !== 'WAITING') {
     return { state, messages: [], shouldStartRound: false };
   }

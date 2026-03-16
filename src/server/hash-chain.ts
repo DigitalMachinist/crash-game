@@ -25,7 +25,6 @@ export function generateRootSeed(): string {
 
 /**
  * Computes `SHA-256^index(rootSeed)` by applying SHA-256 `index` times forward.
- * Index 0 returns `rootSeed` unchanged; index `CHAIN_LENGTH` returns `terminalHash`.
  *
  * @see docs/provably-fair.md §2.2
  */
