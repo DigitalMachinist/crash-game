@@ -58,7 +58,7 @@ describe('PlayerList component', () => {
     players.set({ p1: makePlayer({ name: 'Alice', wager: 100 }) });
     render(PlayerList);
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.getByText('100')).toBeTruthy();
+    expect(screen.getByText('$100.00')).toBeTruthy();
   });
 
   it("local player's row has class 'me'", () => {
@@ -93,12 +93,12 @@ describe('PlayerList component', () => {
     expect(screen.queryByText(/Auto:/)).toBeNull();
   });
 
-  it('shows cashed-out result "Won 2.50x (+250)" when player has cashedOut=true and cashoutMultiplier set', () => {
+  it('shows cashed-out result "Won 2.50x (+$250.00)" when player has cashedOut=true and cashoutMultiplier set', () => {
     players.set({
       p1: makePlayer({ cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
     });
     render(PlayerList);
-    expect(screen.getByText('Won 2.50x (+250)')).toBeTruthy();
+    expect(screen.getByText('Won 2.50x (+$250.00)')).toBeTruthy();
   });
 
   it('table header columns have scope="col"', () => {
