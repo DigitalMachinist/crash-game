@@ -2,7 +2,7 @@
 
 ---
 
-## 2.0 Plain-English Explainer
+## 1.0 Plain-English Explainer
 
 *This section is written for any player who wants to understand whether the game is fair. No technical background required.*
 
@@ -47,7 +47,7 @@ Click **"Verify"** next to any round in the history panel. The page re-computes 
 
 ---
 
-## 2.1 Overview & Goals
+## 1.1 Overview & Goals
 
 The provably fair system provides two guarantees:
 
@@ -60,7 +60,7 @@ The design uses two layers of cryptographic commitment:
 
 ---
 
-## 2.2 Hash Chain
+## 1.2 Hash Chain
 
 ### Construction and consumption
 
@@ -122,11 +122,11 @@ i.e., each game's revealed seed is the value that the *next* game committed to. 
 ### Chain length and rotation
 
 - Length: `CHAIN_LENGTH = 10,000` games per chain.
-- Rotation threshold: `CHAIN_ROTATION_THRESHOLD = 100` — when fewer than 100 games remain, a new `rootSeed` is generated and the `chainCommitment` resets to the new `terminalHash`. No round is interrupted. See §2.8.
+- Rotation threshold: `CHAIN_ROTATION_THRESHOLD = 100` — when fewer than 100 games remain, a new `rootSeed` is generated and the `chainCommitment` resets to the new `terminalHash`. No round is interrupted. See §1.8.
 
 ---
 
-## 2.3 drand Beacon Integration
+## 1.3 drand Beacon Integration
 
 ### What drand is
 
@@ -141,7 +141,7 @@ Without drand, a malicious server could pre-select seeds that produce favorable 
 - **Primary URL**: `{DRAND_BASE_URL}/public/{round}` (specific round number)
 - **Fallback URL**: `{DRAND_BASE_URL}/public/latest`
 - **Timeout**: `DRAND_FETCH_TIMEOUT_MS = 2,000 ms` per attempt
-- **Error type**: `DrandFetchError` — thrown when both URLs fail; triggers a void round (see §2.3 and §3.2)
+- **Error type**: `DrandFetchError` — thrown when both URLs fail; triggers a void round (see §1.3 and `docs/game-state-machine.md §3.2`)
 
 ### Round timing
 
@@ -165,7 +165,7 @@ interface DrandBeacon {
 
 ---
 
-## 2.4 Effective Seed Computation
+## 1.4 Effective Seed Computation
 
 ```mermaid
 sequenceDiagram
@@ -197,11 +197,11 @@ sequenceDiagram
     Server->>Clients: crashed (crashPoint, roundSeed=chainSeed, drandRound, drandRandomness, players)
 ```
 
-**Key security point**: `crashPoint` is `null` in all `state` and `tick` messages. It is only revealed in the `crashed` message, after the round has ended. This prevents any client from using foreknowledge of the crash point.
+**Key security point**: `crashPoint` is explicitly set to `null` in every `state` message sent during `WAITING`, `STARTING`, and `RUNNING` phases — it is never populated until the `crashed` message. The field is included with a `null` value (rather than omitted) because `GameStateSnapshot` has a fixed shape with `crashPoint: number | null`; the `null` value is an explicit "not yet revealed" signal that clients can check. Omitting the field entirely would be ambiguous — `null` makes the withholding intentional and inspectable.
 
 ---
 
-## 2.5 HMAC Ordering — Security-Critical Detail
+## 1.5 HMAC Ordering — Security-Critical Detail
 
 The effective seed is computed as:
 
@@ -224,11 +224,11 @@ effectiveSeed = HMAC-SHA256(key = chainSeed, data = drandRandomness)
 
 With the correct ordering — drand as the **key** — the server cannot choose seeds to cancel out or exploit drand's entropy. The uncontrollable external input occupies the privileged position.
 
-This ordering is used consistently in both `src/provably-fair.ts` (`computeEffectiveSeed`) and `src/client/lib/verify.ts` (`computeEffectiveSeed`).
+This ordering is defined once in `src/provably-fair.ts` (`computeEffectiveSeed`) and imported by both the server (`crash-game.ts`) and the client verifier (`verify.ts`).
 
 ---
 
-## 2.6 Crash Point Derivation
+## 1.6 Crash Point Derivation
 
 ### Step 1 — `hashToFloat`
 
@@ -243,17 +243,12 @@ Takes the first 13 hex characters of the effective seed (52 bits, matching JS `f
 
 ### Step 2 — Crash point formula
 
-**Server** (`src/server/crash-math.ts`) — parameterized:
+**Single implementation** (`src/provably-fair.ts`, `deriveCrashPoint`) — used by both server and client:
 ```
 crashPoint = max(1.00, floor((1 − HOUSE_EDGE) × 100 / (1 − h)) / 100)
 ```
 
-**Client** (`src/client/lib/verify.ts`) — hardcoded:
-```
-crashPoint = max(1.00, floor(99 / (1 − h)) / 100)
-```
-
-> **Known technical debt**: The two formulas are numerically equivalent when `HOUSE_EDGE = 0.01` (the default), but would diverge if the house edge is changed. If `HOUSE_EDGE` is updated in `src/config.ts`, the literal `99` in `src/client/lib/verify.ts` must also be updated. See `docs/project-architecture.md §1.5` for the sync dependency note.
+`HOUSE_EDGE` is imported from `src/config.ts`. Both the server (`crash-game.ts`) and the client verifier (`verify.ts`) import `deriveCrashPoint` directly from `src/provably-fair.ts`, so a config change propagates to both automatically. There is no separate client-side formula.
 
 ### Distribution properties
 
@@ -264,7 +259,7 @@ crashPoint = max(1.00, floor(99 / (1 − h)) / 100)
 
 ---
 
-## 2.7 Client-Side Verification
+## 1.7 Client-Side Verification
 
 ### How `verify.ts` works
 
@@ -309,7 +304,7 @@ Verification runs on `onMount` (client-side only, no server request).
 
 ---
 
-## 2.8 Chain Rotation
+## 1.8 Chain Rotation
 
 When `gameNumber > CHAIN_LENGTH − CHAIN_ROTATION_THRESHOLD` (i.e., fewer than 100 games remain in the current chain), `startRound()` in `crash-game.ts` triggers a rotation:
 

@@ -4,7 +4,7 @@
  * Owns `multiplierAtTime` and `computeCrashTimeMs`. Crash-point derivation
  * lives in `provably-fair.ts`; import from there directly.
  *
- * @see docs/provably-fair.md §2.6
+ * @see docs/provably-fair.md §1.6
  * @see docs/game-state-machine.md §3.6
  */
 import { GROWTH_RATE } from '../config';

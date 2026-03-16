@@ -362,7 +362,7 @@ export class CrashGame extends Server<Env> {
    * point computation. On `DrandFetchError`, rewinds `gameNumber` and resets
    * to WAITING (void round).
    *
-   * @see docs/provably-fair.md §2.4
+   * @see docs/provably-fair.md §1.4
    * @see docs/game-state-machine.md §3.2 (void rounds)
    */
   private async startRound(): Promise<void> {
@@ -393,7 +393,7 @@ export class CrashGame extends Server<Env> {
       return;
     }
 
-    // HMAC-SHA256(key=drand randomness, data=chainSeed) — drand is the key (§2.5)
+    // HMAC-SHA256(key=drand randomness, data=chainSeed) — drand is the key (§1.5)
     const effectiveSeed = await computeEffectiveSeed(chainSeed, beacon.randomness);
     const crashPoint = deriveCrashPoint(effectiveSeed);
     const now = Date.now();
