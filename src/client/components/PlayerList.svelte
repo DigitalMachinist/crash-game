@@ -24,10 +24,10 @@ import { myPlayerId, phase, playersList } from '../lib/stores';
                 <span class="auto-badge">Auto: {player.autoCashout.toFixed(2)}x</span>
               {/if}
             </td>
-            <td>{player.wager}</td>
+            <td>${player.wager.toFixed(2)}</td>
             <td>
               {#if player.cashedOut && player.cashoutMultiplier !== null}
-                <span class="cashed-out">Won {player.cashoutMultiplier.toFixed(2)}x (+{player.payout})</span>
+                <span class="cashed-out">Won {player.cashoutMultiplier.toFixed(2)}x (+${(player.payout ?? 0).toFixed(2)})</span>
               {:else if $phase === 'CRASHED' && !player.cashedOut}
                 <span class="lost">Lost</span>
               {:else}
