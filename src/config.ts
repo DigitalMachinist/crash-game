@@ -60,6 +60,8 @@ export const HISTORY_LENGTH = 20;
 export const CLIENT_HISTORY_LIMIT = 50;
 /** Quick-bet preset amounts shown below the wager input */
 export const WAGER_PRESETS = [1, 5, 10, 50, 100] as const;
+/** Interval between latency pings sent by the client */
+export const PING_INTERVAL_MS = 5_000;
 // ─── Multiplier rarity colors (Borderlands-style) ───────────────────────────
 /** Tiers must be sorted ascending by minMultiplier. First tier should start at 1. */
 export const MULTIPLIER_RARITY_TIERS = [

@@ -167,6 +167,11 @@ export class CrashGame extends Server<Env> {
 
     const msg = parsed;
 
+    if (msg.type === 'ping') {
+      conn.send(JSON.stringify({ type: 'pong', t: msg.t } satisfies ServerMessage));
+      return;
+    }
+
     if (msg.type === 'setName') {
       const trimmed = msg.name.trim().slice(0, MAX_PLAYER_NAME_LENGTH);
       if (trimmed) {

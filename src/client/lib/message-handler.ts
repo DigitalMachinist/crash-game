@@ -25,6 +25,7 @@ import {
   lastCrashResult,
   lastError,
   lastPendingPayout,
+  latency,
   multiplierAnimating,
   myPlayerId,
   players,
@@ -95,6 +96,10 @@ export function dispatchMessage(msg: ServerMessage): void {
     }
     case 'pendingPayout': {
       lastPendingPayout.set(msg);
+      break;
+    }
+    case 'pong': {
+      latency.set(Date.now() - msg.t);
       break;
     }
     case 'error': {

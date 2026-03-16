@@ -96,6 +96,18 @@ describe('isValidClientMessage', () => {
       }),
     ).toBe(false);
   });
+
+  it('accepts valid ping message', () => {
+    expect(isValidClientMessage({ type: 'ping', t: 1234567890 })).toBe(true);
+  });
+
+  it('rejects ping with missing t', () => {
+    expect(isValidClientMessage({ type: 'ping' })).toBe(false);
+  });
+
+  it('rejects ping with non-number t', () => {
+    expect(isValidClientMessage({ type: 'ping', t: 'not-a-number' })).toBe(false);
+  });
 });
 
 // ─── isValidDrandBeacon ─────────────────────────────────────────────────────

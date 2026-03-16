@@ -52,6 +52,8 @@ export function isValidClientMessage(data: unknown): data is ClientMessage {
       return true;
     case 'setName':
       return isValidSetNameFields(data);
+    case 'ping':
+      return typeof data.t === 'number';
     default:
       return false;
   }

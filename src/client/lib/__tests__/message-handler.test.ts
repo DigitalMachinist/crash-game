@@ -10,6 +10,7 @@ import {
   lastCrashResult,
   lastError,
   lastPendingPayout,
+  latency,
   multiplierAnimating,
   myPlayerId,
   players,
@@ -57,6 +58,7 @@ beforeEach(() => {
   lastCrashResult.set(null);
   lastPendingPayout.set(null);
   lastError.set(null);
+  latency.set(null);
   localStorage.clear();
 });
 
@@ -344,6 +346,17 @@ describe("dispatchMessage — 'error'", () => {
     dispatchMessage({ type: 'error', message: 'Something went wrong' });
     document.removeEventListener('crash:error', handler);
     expect(eventFired).toBe(false);
+  });
+});
+
+describe("dispatchMessage — 'pong'", () => {
+  it('sets latency store to approximate round-trip time', () => {
+    const now = Date.now();
+    dispatchMessage({ type: 'pong', t: now - 42 });
+    const lat = get(latency);
+    // Should be approximately 42ms (allow some margin for test execution time)
+    expect(lat).toBeGreaterThanOrEqual(42);
+    expect(lat).toBeLessThan(100);
   });
 });
 

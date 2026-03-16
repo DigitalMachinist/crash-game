@@ -120,6 +120,7 @@ export type ServerMessage =
       cashoutMultiplier: number;
       crashPoint: number;
     }
+  | { type: 'pong'; t: number }
   | { type: 'error'; message: string };
 
 // ─── Client → Server message union ──────────────────────────────────────────
@@ -127,4 +128,5 @@ export type ServerMessage =
 export type ClientMessage =
   | { type: 'join'; playerId: string; wager: number; name?: string; autoCashout?: number | null }
   | { type: 'cashout' }
-  | { type: 'setName'; playerId: string; name: string };
+  | { type: 'setName'; playerId: string; name: string }
+  | { type: 'ping'; t: number };
