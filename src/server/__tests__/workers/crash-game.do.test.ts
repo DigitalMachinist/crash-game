@@ -131,17 +131,32 @@ describe('CrashGame DO (integration)', () => {
     // Wait for initial state message first
     await waitForMessage(ws);
 
+    // Set name via setName (the real client flow) before joining
+    ws.send(
+      JSON.stringify({
+        type: 'setName',
+        playerId: '00000000-0000-4000-a000-000000000abc',
+        name: 'Alice',
+      }),
+    );
+
     // Collect until playerJoined arrives (or timeout)
     const pending = waitForMessages(ws, 1);
 
-    ws.send(JSON.stringify({ type: 'join', playerId: 'player-abc', wager: 100, name: 'Alice' }));
+    ws.send(
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-000000000abc',
+        wager: 100,
+      }),
+    );
 
     const msgs = await pending;
     const parsed = msgs.map((m) => JSON.parse(m) as Record<string, unknown>);
     const joined = parsed.find((m) => m.type === 'playerJoined');
 
     expect(joined).toBeDefined();
-    expect(joined!.playerId).toBe('player-abc');
+    expect(joined!.playerId).toBe('00000000-0000-4000-a000-000000000abc');
     expect(joined!.name).toBe('Alice');
     expect(joined!.wager).toBe(100);
 
@@ -154,13 +169,25 @@ describe('CrashGame DO (integration)', () => {
 
     await waitForMessage(ws);
 
-    ws.send(JSON.stringify({ type: 'join', playerId: 'player-dup', wager: 50, name: 'Bob' }));
+    ws.send(
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000d1',
+        wager: 50,
+      }),
+    );
     await waitForMessage(ws); // wait for join ACK before sending second join
 
     // Collect for up to 500ms — resolves early if a message arrives, so a spurious
     // playerJoined would be captured quickly rather than waiting the full window.
     const pending = waitForMessages(ws, 1, 500);
-    ws.send(JSON.stringify({ type: 'join', playerId: 'player-dup', wager: 50, name: 'Bob' }));
+    ws.send(
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000d1',
+        wager: 50,
+      }),
+    );
     const msgs = await pending;
     const parsed = msgs.map((m) => JSON.parse(m) as Record<string, unknown>);
 
@@ -256,7 +283,11 @@ describe('CrashGame DO (integration)', () => {
     const p2 = waitForMessages(ws2, 1);
 
     ws1.send(
-      JSON.stringify({ type: 'join', playerId: 'player-broadcast', wager: 200, name: 'Carol' }),
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000b1',
+        wager: 200,
+      }),
     );
 
     const [msgs1, msgs2] = await Promise.all([p1, p2]);
@@ -268,8 +299,8 @@ describe('CrashGame DO (integration)', () => {
 
     expect(joined1).toBeDefined();
     expect(joined2).toBeDefined();
-    expect(joined1!.playerId).toBe('player-broadcast');
-    expect(joined2!.playerId).toBe('player-broadcast');
+    expect(joined1!.playerId).toBe('00000000-0000-4000-a000-0000000000b1');
+    expect(joined2!.playerId).toBe('00000000-0000-4000-a000-0000000000b1');
 
     ws1.close();
     ws2.close();
@@ -318,7 +349,13 @@ describe('CrashGame DO (integration)', () => {
     await waitForMessage(ws);
 
     const pending = waitForMessages(ws, 1);
-    ws.send(JSON.stringify({ type: 'join', playerId: 'player-persist', wager: 50, name: 'Dave' }));
+    ws.send(
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000e1',
+        wager: 50,
+      }),
+    );
     const msgs = await pending;
 
     const parsed = msgs.map((m) => JSON.parse(m) as Record<string, unknown>);
@@ -327,7 +364,7 @@ describe('CrashGame DO (integration)', () => {
     // Expect that the join was accepted (the persist call is a side-effect we
     // cannot assert directly without storage introspection from workers pool).
     expect(joined).toBeDefined();
-    expect(joined!.playerId).toBe('player-persist');
+    expect(joined!.playerId).toBe('00000000-0000-4000-a000-0000000000e1');
     expect(joined!.wager).toBe(50);
 
     ws.close();
@@ -477,7 +514,11 @@ describe('CrashGame DO (integration)', () => {
 
     // Send a join with an invalid wager (negative) from Player A's connection
     wsA.send(
-      JSON.stringify({ type: 'join', playerId: 'player-a-targeted', wager: -1, name: 'Alice' }),
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000a1',
+        wager: -1,
+      }),
     );
 
     const msgsA = await pendingA;
@@ -513,7 +554,11 @@ describe('CrashGame DO (integration)', () => {
 
     // Player A sends a valid join — should produce a `playerJoined` broadcast
     wsA.send(
-      JSON.stringify({ type: 'join', playerId: 'player-a-broadcast', wager: 50, name: 'Alice' }),
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000a2',
+        wager: 50,
+      }),
     );
 
     const [msgsA, msgsB] = await Promise.all([pendingA, pendingB]);
@@ -526,8 +571,8 @@ describe('CrashGame DO (integration)', () => {
 
     expect(joinedA).toBeDefined();
     expect(joinedB).toBeDefined();
-    expect(joinedA!.playerId).toBe('player-a-broadcast');
-    expect(joinedB!.playerId).toBe('player-a-broadcast');
+    expect(joinedA!.playerId).toBe('00000000-0000-4000-a000-0000000000a2');
+    expect(joinedB!.playerId).toBe('00000000-0000-4000-a000-0000000000a2');
 
     wsA.close();
     wsB.close();
@@ -543,7 +588,11 @@ describe('CrashGame DO (integration)', () => {
 
     // Player B joins successfully first so the room has an observer
     wsB.send(
-      JSON.stringify({ type: 'join', playerId: 'player-b-observer', wager: 25, name: 'Bob' }),
+      JSON.stringify({
+        type: 'join',
+        playerId: '00000000-0000-4000-a000-0000000000b2',
+        wager: 25,
+      }),
     );
     await waitForMessage(wsB); // wait for Player B's join ACK before Player A sends bad join
 
@@ -555,9 +604,8 @@ describe('CrashGame DO (integration)', () => {
     wsA.send(
       JSON.stringify({
         type: 'join',
-        playerId: 'player-a-bad-autocashout',
+        playerId: '00000000-0000-4000-a000-0000000000a3',
         wager: 10,
-        name: 'Alice',
         autoCashout: 0.5,
       }),
     );
@@ -577,7 +625,7 @@ describe('CrashGame DO (integration)', () => {
 
     // Player B must also receive no spurious playerJoined for the invalid attempt
     const invalidJoinForB = parsedB.find(
-      (m) => m.type === 'playerJoined' && m.playerId === 'player-a-bad-autocashout',
+      (m) => m.type === 'playerJoined' && m.playerId === '00000000-0000-4000-a000-0000000000a3',
     );
     expect(invalidJoinForB).toBeUndefined();
 

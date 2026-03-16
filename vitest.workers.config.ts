@@ -8,6 +8,9 @@ export default defineWorkersConfig({
       workers: {
         wrangler: { configPath: './wrangler.toml' },
         isolatedStorage: false,
+        miniflare: {
+          bindings: { CRASH_DEBUG: 'true' },
+        },
       },
     },
   },
