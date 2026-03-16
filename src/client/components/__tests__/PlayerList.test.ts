@@ -101,6 +101,24 @@ describe('PlayerList component', () => {
     expect(screen.getByText('Won 2.50x (+$250.00)')).toBeTruthy();
   });
 
+  it('applies rarity color to cashout multiplier (Uncommon green for 2.50x)', () => {
+    players.set({
+      p1: makePlayer({ cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
+    });
+    render(PlayerList);
+    const span = screen.getByText('Won 2.50x (+$250.00)');
+    expect(span.style.color).toBe('rgb(0, 200, 83)');
+  });
+
+  it('applies Epic rarity color for high cashout multiplier (10.00x)', () => {
+    players.set({
+      p1: makePlayer({ cashedOut: true, cashoutMultiplier: 10, payout: 1000 }),
+    });
+    render(PlayerList);
+    const span = screen.getByText('Won 10.00x (+$1000.00)');
+    expect(span.style.color).toBe('rgb(171, 71, 188)');
+  });
+
   it('table header columns have scope="col"', () => {
     render(PlayerList);
     const headers = document.querySelectorAll('th');

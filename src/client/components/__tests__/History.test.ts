@@ -47,18 +47,25 @@ describe('History component', () => {
       expect(screen.getByText('3.50x')).toBeTruthy();
     });
 
-    it('adds class "low" to crash-point span when crashPoint < 2', () => {
+    it('applies Common rarity color (#d0d0d0) when crashPoint < 2', () => {
       history.set([makeEntry({ crashPoint: 1.23 })]);
       render(History);
       const span = screen.getByText('1.23x');
-      expect(span.classList.contains('low')).toBe(true);
+      expect(span.style.color).toBe('rgb(208, 208, 208)');
     });
 
-    it('does NOT add class "low" to crash-point span when crashPoint >= 2', () => {
+    it('applies Uncommon rarity color (#00c853) when crashPoint >= 2', () => {
       history.set([makeEntry({ crashPoint: 2.5 })]);
       render(History);
       const span = screen.getByText('2.50x');
-      expect(span.classList.contains('low')).toBe(false);
+      expect(span.style.color).toBe('rgb(0, 200, 83)');
+    });
+
+    it('applies Rare rarity color (#42a5f5) when crashPoint >= 5', () => {
+      history.set([makeEntry({ crashPoint: 5.75 })]);
+      render(History);
+      const span = screen.getByText('5.75x');
+      expect(span.style.color).toBe('rgb(66, 165, 245)');
     });
 
     it('renders a "Verify" button for each round', () => {

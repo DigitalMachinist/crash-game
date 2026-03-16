@@ -1,4 +1,5 @@
 <script lang="ts">
+import { getRarityColor } from '../lib/rarity';
 import { myPlayerId, phase, playersList } from '../lib/stores';
 </script>
 
@@ -27,7 +28,7 @@ import { myPlayerId, phase, playersList } from '../lib/stores';
             <td>${player.wager.toFixed(2)}</td>
             <td>
               {#if player.cashedOut && player.cashoutMultiplier !== null}
-                <span class="cashed-out">Won {player.cashoutMultiplier.toFixed(2)}x (+${(player.payout ?? 0).toFixed(2)})</span>
+                <span class="cashed-out" style:color={getRarityColor(player.cashoutMultiplier)}>Won {player.cashoutMultiplier.toFixed(2)}x (+${(player.payout ?? 0).toFixed(2)})</span>
               {:else if $phase === 'CRASHED' && !player.cashedOut}
                 <span class="lost">Lost</span>
               {:else}
@@ -85,7 +86,7 @@ import { myPlayerId, phase, playersList } from '../lib/stores';
   }
 
   .cashed-out {
-    color: #00c853;
+    /* color set via inline style:color (rarity tier) */
   }
 
   .lost {

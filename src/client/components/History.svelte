@@ -3,6 +3,7 @@
  * Displays the server-broadcast round history and orchestrates the
  * `VerifyModal` — opens it with the selected round's `HistoryEntry` data.
  */
+import { getRarityColor } from '../lib/rarity';
 import { history } from '../lib/stores';
 import VerifyModal from './VerifyModal.svelte';
 
@@ -26,7 +27,7 @@ function closeVerify() {
       {#each $history as entry (entry.roundId)}
         <li>
           <span class="round-id">#{entry.roundId}</span>
-          <span class="crash-point" class:low={entry.crashPoint < 2}>
+          <span class="crash-point" style:color={getRarityColor(entry.crashPoint)}>
             {entry.crashPoint.toFixed(2)}x
           </span>
           <button class="verify-btn" onclick={() => openVerify(entry)}>Verify</button>
@@ -79,10 +80,6 @@ function closeVerify() {
   .crash-point {
     flex: 1;
     font-weight: bold;
-  }
-
-  .crash-point.low {
-    color: #d32f2f;
   }
 
   .verify-btn {
