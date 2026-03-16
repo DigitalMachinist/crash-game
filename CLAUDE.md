@@ -18,7 +18,7 @@
 
 When making tool calls to execute commands defined in package.json, prefer using them as written in this section.
 
-- Set correct node version: `nvm use v20.20.1`
+- Set correct node version: `nvm use v24.14.0`
 - Build client: `npm run build:client`
 - Host client locally for dev: `npm run dev:client`
 - Host workers locally for dev: `npm run dev:server`
@@ -37,7 +37,7 @@ When making tool calls to execute commands defined in package.json, prefer using
 ## Tech Stack
 
 - Svelte 5 with Vite
-- Node v20.20.1
+- Node v24.14.0
 - PartyKit (partyserver 0.3.3 & partysocket 1.1.16)
 - Cloudflare Workers
 - See package.json and package-lock.json for dependency versions
