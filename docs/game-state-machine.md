@@ -184,20 +184,20 @@ sequenceDiagram
 
     Note over S,P: Round plays out
     S->>P: crashed { players: [...] }
-    Note over P: crash:crashed DOM event fires → App.svelte
-    Note over P: hasPendingResult(roundId) guard (prevents double-apply)
+    Note over P: lastCrashResult store updated → App.svelte $effect
+    Note over P: isRoundRecorded(roundId) guard (prevents double-apply)
     alt player cashed out
-        Note over P,LS: applyCashout(payout) → balance += payout<br/>addHistoryEntry(...)
+        Note over P,LS: applyRoundResult() → applyCashout(payout) + addHistoryEntry(...)
     else player lost
-        Note over P,LS: addHistoryEntry({ payout: 0, ... })<br/>(balance unchanged — already deducted at join)
+        Note over P,LS: applyRoundResult() → addHistoryEntry({ payout: 0, ... })<br/>(balance unchanged — already deducted at join)
     end
 
     Note over S,P: OR — player was disconnected during auto-cashout
     P->>S: join (reconnect + new bet attempt)
     S->>P: pendingPayout { roundId, wager, payout, cashoutMultiplier, crashPoint }
-    Note over P: crash:pendingPayout DOM event → App.svelte
-    Note over P: hasPendingResult(roundId) guard
-    Note over P,LS: applyCashout(payout) → balance += payout<br/>addHistoryEntry(...)
+    Note over P: lastPendingPayout store updated → App.svelte $effect
+    Note over P: isRoundRecorded(roundId) guard
+    Note over P,LS: applyPendingPayout() → applyCashout(payout) + addHistoryEntry(...)
 ```
 
 **Key accounting rules**:
@@ -205,8 +205,8 @@ sequenceDiagram
 | Rule | Detail |
 |---|---|
 | Bet deduction | `applyBet()` called in `messageHandler.ts` on `playerJoined` (server confirmation), **not** on bet submit |
-| Payout credit | `applyCashout()` called in `App.svelte` on `crash:crashed` or `crash:pendingPayout` |
-| Double-apply guard | `hasPendingResult(roundId)` checks localStorage history before applying any result |
+| Payout credit | `applyRoundResult()` / `applyPendingPayout()` in `balance.ts`, called from `App.svelte` `$effect` blocks when `lastCrashResult` or `lastPendingPayout` stores update |
+| Double-apply guard | `isRoundRecorded(roundId)` checks localStorage history before applying any result |
 | Loss recording | No balance change — wager was deducted at join. `addHistoryEntry` records `payout=0` |
 | Player ID | `getOrCreatePlayerId()` in `balance.ts` generates a stable UUID via `crypto.randomUUID()`, stored in localStorage under `crashPlayerId` |
 
@@ -238,7 +238,7 @@ The Durable Object stores all persistent data under a **single key** `'gameData'
 
 **`chainCommitment` in storage**: The stored `chainCommitment` is the value from `this.gameState.chainCommitment` at crash time, which equals `SHA-256(chainSeed_for_that_game)`. On restart (`onStart`), `createInitialState` is called with this value, so the commitment is correctly restored without recomputing the chain.
 
-**`PendingPayout` interface** is defined locally in `crash-game.ts` and is not exported via `src/types.ts`:
+**`PendingPayout` interface** is defined and exported from `validation.ts` (not via `src/types.ts`), imported by `crash-game.ts`:
 
 ```typescript
 interface PendingPayout {

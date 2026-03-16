@@ -119,6 +119,12 @@ export function getHistory(): RoundResult[] {
   }
 }
 
+/**
+ * Returns true if `roundId` already appears in the stored history.
+ * Used as a double-apply guard before crediting payouts or recording results.
+ *
+ * @see docs/game-state-machine.md §3.8
+ */
 export function isRoundRecorded(roundId: number): boolean {
   return getHistory().some((r) => r.roundId === roundId);
 }
