@@ -84,7 +84,7 @@ export interface RoundResult {
 }
 
 // ─── Provably fair verification result ───────────────────────────────────────
-/** Result of `verifyRound()` in `src/client/lib/verify.ts`. @see docs/provably-fair.md §2.7 */
+/** Result of `verifyRound()` in `src/client/lib/verify.ts`. @see docs/provably-fair.md §1.7 */
 export interface VerificationResult {
   valid: boolean;
   reason?: string;

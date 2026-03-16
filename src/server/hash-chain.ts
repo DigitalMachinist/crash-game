@@ -8,7 +8,7 @@
  * - **Chain index** (0 = rootSeed, CHAIN_LENGTH = terminalHash) — used in `computeSeedAtIndex`.
  * - **Game number** (1, 2, 3 …) — used in `computeChainSeedForGame`.
  *
- * @see docs/provably-fair.md §2.2
+ * @see docs/provably-fair.md §1.2
  */
 import { CHAIN_LENGTH } from '../config';
 import { bytesToHex, sha256Hex } from '../crypto-hex';
@@ -17,7 +17,7 @@ import { bytesToHex, sha256Hex } from '../crypto-hex';
  * Generates a cryptographically random 256-bit root seed (32 bytes as hex).
  * Called on first DO initialization and on chain rotation.
  *
- * @see docs/provably-fair.md §2.2
+ * @see docs/provably-fair.md §1.2
  */
 export function generateRootSeed(): string {
   return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
@@ -26,7 +26,7 @@ export function generateRootSeed(): string {
 /**
  * Computes `SHA-256^index(rootSeed)` by applying SHA-256 `index` times forward.
  *
- * @see docs/provably-fair.md §2.2
+ * @see docs/provably-fair.md §1.2
  */
 export async function computeSeedAtIndex(rootSeed: string, index: number): Promise<string> {
   let current = rootSeed;
@@ -41,7 +41,7 @@ export async function computeSeedAtIndex(rootSeed: string, index: number): Promi
  * This is published as the initial `chainCommitment`, committing to all future
  * game seeds in the chain without revealing any of them.
  *
- * @see docs/provably-fair.md §2.2
+ * @see docs/provably-fair.md §1.2
  */
 export async function computeTerminalHash(rootSeed: string): Promise<string> {
   return computeSeedAtIndex(rootSeed, CHAIN_LENGTH);
@@ -51,7 +51,7 @@ export async function computeTerminalHash(rootSeed: string): Promise<string> {
  * Verifies that `SHA-256(seed) === expectedHash`.
  * Used to confirm a revealed seed was pre-committed by a published hash.
  *
- * @see docs/provably-fair.md §2.7
+ * @see docs/provably-fair.md §1.7
  */
 export async function verifySeedAgainstHash(seed: string, expectedHash: string): Promise<boolean> {
   const computed = await sha256Hex(seed);
@@ -66,7 +66,7 @@ export async function verifySeedAgainstHash(seed: string, expectedHash: string):
  * Games consume the chain in reverse so that the published `terminalHash`
  * commits to all future seeds without revealing them.
  *
- * @see docs/provably-fair.md §2.2 (two numbering systems)
+ * @see docs/provably-fair.md §1.2 (two numbering systems)
  */
 export async function computeChainSeedForGame(
   rootSeed: string,

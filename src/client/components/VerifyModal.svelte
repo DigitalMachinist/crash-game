@@ -7,7 +7,7 @@
  * Uses the native <dialog> element for built-in focus trap, Escape key handling,
  * and proper ARIA semantics via showModal()/close().
  *
- * @see docs/provably-fair.md §2.7
+ * @see docs/provably-fair.md §1.7
  */
 import { onMount } from 'svelte';
 import type { HistoryEntry, VerificationResult } from '../../../types';

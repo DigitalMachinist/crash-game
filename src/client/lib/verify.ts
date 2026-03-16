@@ -2,7 +2,7 @@
  * Client-side provably fair verification. No server dependency — all inputs
  * are public and available in the round history.
  *
- * @see docs/provably-fair.md §2.7
+ * @see docs/provably-fair.md §1.7
  */
 import { sha256Hex } from '../../crypto-hex';
 import { computeEffectiveSeed, deriveCrashPoint } from '../../provably-fair';
@@ -16,7 +16,7 @@ import type { VerificationResult } from '../../types';
  * 2. Crash point: re-derive via `HMAC(key=drandRandomness, data=roundSeed)`
  *    → `deriveCrashPoint(effectiveSeed)`, compare with ±0.001 tolerance.
  *
- * @see docs/provably-fair.md §2.7
+ * @see docs/provably-fair.md §1.7
  */
 export async function verifyRound(params: {
   roundSeed: string;
@@ -32,7 +32,7 @@ export async function verifyRound(params: {
   const chainValid = computedHash === chainCommitment;
 
   // Step 2: derive crash point
-  // HMAC-SHA256(key=drandRandomness, data=roundSeed) — drand is the key (§2.5)
+  // HMAC-SHA256(key=drandRandomness, data=roundSeed) — drand is the key (§1.5)
   const effectiveSeed = await computeEffectiveSeed(roundSeed, drandRandomness);
   const computedCrashPoint = deriveCrashPoint(effectiveSeed);
 

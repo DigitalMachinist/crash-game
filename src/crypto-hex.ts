@@ -41,7 +41,7 @@ export async function sha256Hex(input: string): Promise<string> {
 
 /**
  * Computes `HMAC-SHA256(key = keyHex, data = dataHex)` and returns a 64-char lowercase hex string.
- * SECURITY: the key must be the uncontrollable external input (drand randomness) — see provably-fair.md §2.5.
+ * SECURITY: the key must be the uncontrollable external input (drand randomness) — see provably-fair.md §1.5.
  *
  * @remarks Asynchronous — uses WebCrypto SubtleCrypto.
  */

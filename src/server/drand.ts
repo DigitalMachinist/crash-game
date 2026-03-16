@@ -4,10 +4,10 @@
  * drand provides independent, verifiable randomness that prevents the server
  * from choosing seeds to manipulate crash points. The drand beacon's randomness
  * is consumed by `computeEffectiveSeed` in `provably-fair.ts` as the HMAC key
- * (not data) — see §2.5 for why this ordering is security-critical.
+ * (not data) — see §1.5 for why this ordering is security-critical.
  *
- * @see docs/provably-fair.md §2.3
- * @see docs/provably-fair.md §2.5
+ * @see docs/provably-fair.md §1.3
+ * @see docs/provably-fair.md §1.5
  */
 import {
   DRAND_BASE_URL,
@@ -29,7 +29,7 @@ export class DrandFetchError extends Error {
  * Computes the current drand quicknet round number from the wall clock.
  * Formula: `floor((nowSec − DRAND_GENESIS_TIME) / DRAND_PERIOD_SECS) + 1`
  *
- * @see docs/provably-fair.md §2.3
+ * @see docs/provably-fair.md §1.3
  */
 export function computeCurrentDrandRound(nowMs?: number): number {
   const nowSec = (nowMs ?? Date.now()) / 1000;
@@ -42,7 +42,7 @@ export function computeCurrentDrandRound(nowMs?: number): number {
  * Throws `DrandFetchError` if both attempts fail or if the response fails structure
  * validation (`isValidDrandBeacon`) — triggers a void round in `startRound()`.
  *
- * @see docs/provably-fair.md §2.3
+ * @see docs/provably-fair.md §1.3
  * @see docs/game-state-machine.md §3.2 (void rounds)
  */
 export async function fetchDrandBeacon(

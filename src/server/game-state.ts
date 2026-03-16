@@ -395,7 +395,7 @@ export function handleCrash(
  * Broadcasts a `state{phase:'RUNNING'}` message — `crashPoint` is deliberately
  * omitted (null) from the broadcast to prevent client foreknowledge.
  *
- * @see docs/provably-fair.md §2.4
+ * @see docs/provably-fair.md §1.4
  */
 export interface RoundIngredients {
   crashPoint: number;
