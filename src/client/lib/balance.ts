@@ -68,7 +68,7 @@ export function applyBet(wager: number): number {
 /**
  * Credits `payout` to the stored balance. Called from `App.svelte` when
  * `lastCrashResult` or `lastPendingPayout` stores are updated. Guarded externally by
- * `hasPendingResult()` to prevent double-application.
+ * `isRoundRecorded()` to prevent double-application.
  *
  * @see docs/game-state-machine.md §3.8
  */
@@ -119,6 +119,6 @@ export function getHistory(): RoundResult[] {
   }
 }
 
-export function hasPendingResult(roundId: number): boolean {
+export function isRoundRecorded(roundId: number): boolean {
   return getHistory().some((r) => r.roundId === roundId);
 }

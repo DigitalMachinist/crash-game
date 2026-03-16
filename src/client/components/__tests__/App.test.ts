@@ -22,7 +22,7 @@ vi.mock('../../lib/balance', () => ({
   getBalance: vi.fn().mockReturnValue(100),
   applyCashout: vi.fn(),
   addHistoryEntry: vi.fn(),
-  hasPendingResult: vi.fn().mockReturnValue(false),
+  isRoundRecorded: vi.fn().mockReturnValue(false),
 }));
 
 import {
@@ -30,7 +30,7 @@ import {
   applyCashout,
   getBalance,
   getOrCreatePlayerId,
-  hasPendingResult,
+  isRoundRecorded,
 } from '../../lib/balance';
 import { connect, disconnect } from '../../lib/socket';
 
@@ -64,7 +64,7 @@ beforeEach(() => {
   lastPendingPayout.set(null);
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
-  vi.mocked(hasPendingResult).mockReturnValue(false);
+  vi.mocked(isRoundRecorded).mockReturnValue(false);
 });
 
 describe('App component', () => {
@@ -168,8 +168,8 @@ describe('App component', () => {
       );
     });
 
-    it('hasPendingResult guard prevents double-apply of pendingPayout', async () => {
-      vi.mocked(hasPendingResult).mockReturnValue(true);
+    it('isRoundRecorded guard prevents double-apply of pendingPayout', async () => {
+      vi.mocked(isRoundRecorded).mockReturnValue(true);
       render(App);
       lastPendingPayout.set({
         type: 'pendingPayout',
@@ -312,8 +312,8 @@ describe('App component', () => {
       expect(addHistoryEntry).not.toHaveBeenCalled();
     });
 
-    it('hasPendingResult guard prevents double-apply when lastCrashResult is set', async () => {
-      vi.mocked(hasPendingResult).mockReturnValue(true);
+    it('isRoundRecorded guard prevents double-apply when lastCrashResult is set', async () => {
+      vi.mocked(isRoundRecorded).mockReturnValue(true);
       render(App);
       lastCrashResult.set(
         makeCrashedSnapshot(5, [

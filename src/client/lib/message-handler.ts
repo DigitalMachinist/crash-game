@@ -43,7 +43,7 @@ export function dispatchMessage(msg: ServerMessage): void {
       history.set(snapshot.history);
       // CRASHED state: freeze the multiplier display and notify App for accounting.
       // Fires for both fresh crashes and reconnects during the CRASHED display window;
-      // App.svelte's hasPendingResult guard prevents double-application in both cases.
+      // App.svelte's isRoundRecorded guard prevents double-application in both cases.
       if (snapshot.phase === 'CRASHED' && snapshot.crashPoint !== null) {
         multiplierAnimating.set(false);
         displayMultiplier.set(snapshot.crashPoint);

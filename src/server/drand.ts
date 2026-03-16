@@ -52,7 +52,7 @@ export async function fetchDrandBeacon(
   const primaryUrl = `${DRAND_BASE_URL}/public/${round}`;
   const fallbackUrl = `${DRAND_BASE_URL}/public/latest`;
 
-  async function attemptFetch(url: string): Promise<DrandBeacon> {
+  async function fetchBeaconFromUrl(url: string): Promise<DrandBeacon> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -69,11 +69,11 @@ export async function fetchDrandBeacon(
   }
 
   try {
-    return await attemptFetch(primaryUrl);
+    return await fetchBeaconFromUrl(primaryUrl);
   } catch (primaryErr) {
     console.warn('[drand] primary fetch failed, trying fallback:', primaryErr);
     try {
-      return await attemptFetch(fallbackUrl);
+      return await fetchBeaconFromUrl(fallbackUrl);
     } catch (fallbackErr) {
       throw new DrandFetchError(`Failed to fetch drand beacon for round ${round}`, {
         cause: new AggregateError(

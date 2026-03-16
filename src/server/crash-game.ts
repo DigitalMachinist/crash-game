@@ -31,10 +31,10 @@ import {
   handleCashout,
   handleCountdownTick,
   handleCrash,
+  handleCrashExpired,
   handleJoin,
   handleStartingComplete,
   handleTick,
-  handleTransitionToWaiting,
   type OutboundMessage,
   type RoundIngredients,
   type RunningGameState,
@@ -490,7 +490,7 @@ export class CrashGame extends Server<Env> {
   }
 
   private async beginNextRound(): Promise<void> {
-    const result = handleTransitionToWaiting(this.gameState);
+    const result = handleCrashExpired(this.gameState);
     this.gameState = result.state;
     this.invalidateSnapshot();
 

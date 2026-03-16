@@ -6,9 +6,9 @@
  * - Initializes `myPlayerId` and `balance` from localStorage on mount.
  * - Watches `lastCrashResult` store (set by `message-handler.ts`) and applies
  *   cashout or records loss via `applyCashout` / `addHistoryEntry`, guarded
- *   by `hasPendingResult()` to prevent double-application.
+ *   by `isRoundRecorded()` to prevent double-application.
  * - Watches `lastPendingPayout` store and credits disconnected auto-cashout
- *   payouts, also guarded by `hasPendingResult()`.
+ *   payouts, also guarded by `isRoundRecorded()`.
  * - Displays a toast notification for pending payout delivery.
  *
  * @see docs/game-state-machine.md §3.8
@@ -29,7 +29,7 @@ import {
   applyCashout,
   getBalance,
   getOrCreatePlayerId,
-  hasPendingResult,
+  isRoundRecorded,
 } from './lib/balance';
 import { connect, disconnect } from './lib/socket';
 import { balance, lastCrashResult, lastPendingPayout, myPlayerId } from './lib/stores';
@@ -48,7 +48,7 @@ function showToast(msg: string) {
 
 function applyPendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
   // Guard against double-applying
-  if (hasPendingResult(detail.roundId)) return;
+  if (isRoundRecorded(detail.roundId)) return;
   applyCashout(detail.payout);
   addHistoryEntry({
     roundId: detail.roundId,
@@ -68,7 +68,7 @@ function applyRoundResult(snapshot: GameStateSnapshot) {
   if (!id) return;
   const myPlayer = snapshot.players.find((p) => p.playerId === id);
   if (!myPlayer) return;
-  if (hasPendingResult(snapshot.roundId)) return;
+  if (isRoundRecorded(snapshot.roundId)) return;
   if (myPlayer.cashedOut && myPlayer.payout !== null) {
     applyCashout(myPlayer.payout);
     addHistoryEntry({

@@ -224,7 +224,7 @@ effectiveSeed = HMAC-SHA256(key = chainSeed, data = drandRandomness)
 
 With the correct ordering — drand as the **key** — the server cannot choose seeds to cancel out or exploit drand's entropy. The uncontrollable external input occupies the privileged position.
 
-This ordering is used consistently in both `src/server/drand.ts` (`computeEffectiveSeedFromBeacon`) and `src/client/lib/verify.ts` (`computeEffectiveSeed`).
+This ordering is used consistently in both `src/provably-fair.ts` (`computeEffectiveSeed`) and `src/client/lib/verify.ts` (`computeEffectiveSeed`).
 
 ---
 
@@ -233,7 +233,7 @@ This ordering is used consistently in both `src/server/drand.ts` (`computeEffect
 ### Step 1 — `hashToFloat`
 
 ```typescript
-// src/server/crash-math.ts and src/client/lib/verify.ts
+// src/provably-fair.ts and src/client/lib/verify.ts
 function hashToFloat(hex: string): number {
   return parseInt(hex.slice(0, 13), 16) / 2**52;
 }

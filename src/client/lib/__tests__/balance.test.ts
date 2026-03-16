@@ -8,7 +8,7 @@ import {
   getBalance,
   getHistory,
   getOrCreatePlayerId,
-  hasPendingResult,
+  isRoundRecorded,
 } from '../balance';
 
 function makeRoundResult(roundId: number): RoundResult {
@@ -129,13 +129,13 @@ describe('addHistoryEntry', () => {
   });
 });
 
-describe('hasPendingResult', () => {
+describe('isRoundRecorded', () => {
   it('returns false for unknown roundId', () => {
-    expect(hasPendingResult(999)).toBe(false);
+    expect(isRoundRecorded(999)).toBe(false);
   });
 
   it('returns true after addHistoryEntry for that roundId', () => {
     addHistoryEntry(makeRoundResult(42));
-    expect(hasPendingResult(42)).toBe(true);
+    expect(isRoundRecorded(42)).toBe(true);
   });
 });

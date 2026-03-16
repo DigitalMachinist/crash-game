@@ -479,7 +479,7 @@ export function handleCountdownTick(state: GameState): {
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED → WAITING transition)
  */
-export function handleTransitionToWaiting(state: GameState): {
+export function handleCrashExpired(state: GameState): {
   state: GameState;
   messages: OutboundMessage[];
 } {

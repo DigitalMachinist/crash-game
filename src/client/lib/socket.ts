@@ -21,7 +21,7 @@ let socket: PartySocket | null = null;
 
 /** Required field checks per server message variant. Each entry is [field, type]. */
 type FieldType = 'string' | 'number' | 'array' | 'nullable-number' | 'nullable-string';
-const MESSAGE_FIELDS: Record<string, [string, FieldType][]> = {
+const MESSAGE_FIELDS: Record<ServerMessage['type'], [string, FieldType][]> = {
   state: [
     ['phase', 'string'],
     ['roundId', 'number'],
@@ -72,8 +72,10 @@ function checkField(msg: Record<string, unknown>, field: string, type: FieldType
 function isValidServerMessage(data: unknown): data is ServerMessage {
   if (typeof data !== 'object' || data === null) return false;
   const msg = data as Record<string, unknown>;
-  const checks = MESSAGE_FIELDS[msg.type as string];
-  return checks !== undefined && checks.every(([field, type]) => checkField(msg, field, type));
+  const msgType = msg.type;
+  if (typeof msgType !== 'string' || !(msgType in MESSAGE_FIELDS)) return false;
+  const checks = MESSAGE_FIELDS[msgType as ServerMessage['type']];
+  return checks.every(([field, type]) => checkField(msg, field, type));
 }
 
 function onOpen(): void {
