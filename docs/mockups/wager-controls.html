@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wager Controls — Style Options (Round 2)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a16;
+    color: #e0e0e0;
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 2rem;
+  }
+  h1 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2.5rem;
+    font-size: 0.9rem;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .option {
+    border: 1px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .option-header {
+    background: #1a1a2e;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .option-header h2 {
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 600;
+  }
+  .option-header .tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .tag-a { background: #1565c033; color: #42a5f5; }
+  .tag-b { background: #00c85333; color: #00c853; }
+  .tag-c { background: #ff980033; color: #ff9800; }
+  .tag-d { background: #e040fb33; color: #e040fb; }
+  .tag-e { background: #ff525233; color: #ff5252; }
+  .tag-f { background: #40c4ff33; color: #40c4ff; }
+
+  /* ── Shared form base styles (matching the real game) ── */
+  .bet-form {
+    padding: 1.25rem;
+    background: #0d0d1a;
+  }
+  .bet-form h3 {
+    margin: 0 0 1rem;
+    color: #aaa;
+    font-size: 1rem;
+  }
+  .field { margin-bottom: 0.75rem; }
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.25rem;
+  }
+  .field input {
+    width: 100%;
+    padding: 0.5rem;
+    background: #0d0d1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 1rem;
+  }
+  .field input:focus {
+    border-color: #666;
+    outline: 2px solid #42a5f5;
+    outline-offset: 2px;
+  }
+  .join-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #1565c0;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  .join-btn:hover { background: #1976d2; }
+  .balance {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #888;
+  }
+  .rtp-notice {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #555;
+  }
+
+  /* Auto-cashout de-emphasized (shared) */
+  .field-secondary label {
+    font-size: 0.75rem;
+    color: #666;
+  }
+  .field-secondary input {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
+    border-color: #2a2a2a;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION A — Compact Chips (equal width)
+     Flat chips, equal flex sizing, tight spacing
+     ══════════════════════════════════════════════════════ */
+  .a-presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .a-presets button {
+    flex: 1;
+    padding: 0.25rem 0;
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 3px;
+    color: #999;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .a-presets button:hover {
+    background: #252545;
+    border-color: #555;
+    color: #fff;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION B — Compact Chips (natural width)
+     Same chip style but sized to content, left-aligned
+     ══════════════════════════════════════════════════════ */
+  .b-presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .b-presets button {
+    padding: 0.25rem 0.6rem;
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 3px;
+    color: #999;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .b-presets button:hover {
+    background: #252545;
+    border-color: #555;
+    color: #fff;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION C — Ghost Buttons (equal width)
+     Transparent background, border only, subtle hover fill
+     ══════════════════════════════════════════════════════ */
+  .c-presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .c-presets button {
+    flex: 1;
+    padding: 0.3rem 0;
+    background: transparent;
+    border: 1px solid #2a2a3e;
+    border-radius: 4px;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .c-presets button:hover {
+    background: #1a1a2e;
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION D — Ghost Buttons (natural width)
+     Same ghost style, content-sized, left-aligned
+     ══════════════════════════════════════════════════════ */
+  .d-presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .d-presets button {
+    padding: 0.3rem 0.65rem;
+    background: transparent;
+    border: 1px solid #2a2a3e;
+    border-radius: 4px;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .d-presets button:hover {
+    background: #1a1a2e;
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION E — Accent Tint Chips (equal width)
+     Subtle blue tint background, blue-ish border
+     ══════════════════════════════════════════════════════ */
+  .e-presets {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .e-presets button {
+    flex: 1;
+    padding: 0.28rem 0;
+    background: #1565c00e;
+    border: 1px solid #1565c033;
+    border-radius: 3px;
+    color: #7baed4;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .e-presets button:hover {
+    background: #1565c028;
+    border-color: #42a5f5;
+    color: #fff;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     OPTION F — Underline Buttons (equal width)
+     No side/top borders, just a bottom accent line
+     ══════════════════════════════════════════════════════ */
+  .f-presets {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  .f-presets button {
+    flex: 1;
+    padding: 0.3rem 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #2a2a3e;
+    border-radius: 0;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .f-presets button:hover {
+    border-bottom-color: #42a5f5;
+    color: #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Wager Preset Buttons — Style Options (Round 2)</h1>
+<p class="subtitle">Presets only, no half/double. Exploring chip style (C/D from round 1) and ghost style (D from round 1) with variations.</p>
+
+<div class="options-grid">
+
+  <!-- ════ OPTION A ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>A — Filled Chips (equal width)</h2>
+      <span class="tag tag-a">Stretch</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="a-wager">Wager</label>
+        <input id="a-wager" type="number" value="50" step="0.01">
+        <div class="a-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="a-ac">Auto-cashout at (optional)</label>
+        <input id="a-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+  <!-- ════ OPTION B ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>B — Filled Chips (natural width)</h2>
+      <span class="tag tag-b">Compact</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="b-wager">Wager</label>
+        <input id="b-wager" type="number" value="50" step="0.01">
+        <div class="b-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="b-ac">Auto-cashout at (optional)</label>
+        <input id="b-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+  <!-- ════ OPTION C ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>C — Ghost Buttons (equal width)</h2>
+      <span class="tag tag-c">Stretch</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="c-wager">Wager</label>
+        <input id="c-wager" type="number" value="50" step="0.01">
+        <div class="c-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="c-ac">Auto-cashout at (optional)</label>
+        <input id="c-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+  <!-- ════ OPTION D ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>D — Ghost Buttons (natural width)</h2>
+      <span class="tag tag-d">Compact</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="d-wager">Wager</label>
+        <input id="d-wager" type="number" value="50" step="0.01">
+        <div class="d-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="d-ac">Auto-cashout at (optional)</label>
+        <input id="d-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+  <!-- ════ OPTION E ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>E — Accent Tint Chips</h2>
+      <span class="tag tag-e">Tinted</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="e-wager">Wager</label>
+        <input id="e-wager" type="number" value="50" step="0.01">
+        <div class="e-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="e-ac">Auto-cashout at (optional)</label>
+        <input id="e-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+  <!-- ════ OPTION F ════ -->
+  <div class="option">
+    <div class="option-header">
+      <h2>F — Underline Buttons</h2>
+      <span class="tag tag-f">Minimal</span>
+    </div>
+    <div class="bet-form">
+      <h3>Place Your Bet</h3>
+      <div class="field">
+        <label for="f-wager">Wager</label>
+        <input id="f-wager" type="number" value="50" step="0.01">
+        <div class="f-presets">
+          <button>$1</button>
+          <button>$5</button>
+          <button>$10</button>
+          <button>$50</button>
+          <button>$100</button>
+        </div>
+      </div>
+      <div class="field field-secondary">
+        <label for="f-ac">Auto-cashout at (optional)</label>
+        <input id="f-ac" type="number" placeholder="e.g. 2.00" step="0.01">
+      </div>
+      <button class="join-btn">Join Round</button>
+      <div class="balance">Balance: +100.00</div>
+      <p class="rtp-notice">Game of chance &middot; House edge: 1% &middot; RTP: 99%</p>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

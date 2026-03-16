@@ -78,7 +78,12 @@ function handleJoin() {
     </button>
 
     <div class="balance">Balance: {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}</div>
-    <p class="rtp-notice">Game of chance · House edge: {houseEdgePct}% · RTP: {rtpPct}%</p>
+    <p class="rtp-notice">
+      Game of chance · House edge: {houseEdgePct}% ·
+      <span class="rtp-tooltip" title="99% RTP assumes you adopt a consistent cashout strategy. Actual return depends on your play. If you never cashout, you lose 100%.">
+        RTP: {rtpPct}%
+      </span>
+    </p>
   </div>
 {/if}
 
@@ -169,5 +174,15 @@ function handleJoin() {
     text-align: center;
     font-size: 0.75rem;
     color: #555;
+  }
+
+  .rtp-tooltip {
+    border-bottom: 1px dotted #666;
+    cursor: help;
+    transition: color 0.15s;
+  }
+
+  .rtp-tooltip:hover {
+    color: #aaa;
   }
 </style>
