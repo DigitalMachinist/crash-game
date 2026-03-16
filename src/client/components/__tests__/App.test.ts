@@ -20,11 +20,17 @@ vi.mock('../../lib/socket', () => ({
 vi.mock('../../lib/balance', () => ({
   getOrCreatePlayerId: vi.fn().mockReturnValue('test-player-id'),
   getBalance: vi.fn().mockReturnValue(100),
+  getPlayerName: vi.fn().mockReturnValue(null),
+  setPlayerName: vi.fn(),
   applyCashout: vi.fn(),
   addHistoryEntry: vi.fn(),
   isRoundRecorded: vi.fn().mockReturnValue(false),
   applyPendingPayout: vi.fn().mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 }),
   applyRoundResult: vi.fn(),
+}));
+
+vi.mock('../../lib/commands', () => ({
+  sendSetName: vi.fn(),
 }));
 
 import {

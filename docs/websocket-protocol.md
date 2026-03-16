@@ -25,8 +25,9 @@ Defined in `ClientMessage` union type (`src/types.ts`). Sent via `socket.send(JS
 
 | Type | Fields | Phase constraint | Description |
 |---|---|---|---|
-| `join` | `playerId: string`, `wager: number`, `name?: string`, `autoCashout?: number \| null` | WAITING only | Place a bet for the upcoming round. `playerId` is the stable UUID from localStorage. Rejected with `error` if phase ≠ WAITING, wager ≤ 0, or player already joined. |
+| `join` | `playerId: string`, `wager: number`, `name?: string` *(deprecated)*, `autoCashout?: number \| null` | WAITING only | Place a bet for the upcoming round. `playerId` is the stable UUID from localStorage. Rejected with `error` if phase ≠ WAITING, wager ≤ 0, or player already joined. The `name` field is deprecated — use `setName` instead. If present, it takes precedence over the server's stored name for backward compatibility. |
 | `cashout` | *(none)* | RUNNING only | Request cashout at current multiplier. Player identified server-side by `conn.id`. Rejected with `error` if phase ≠ RUNNING or player not in round. |
+| `setName` | `playerId: string`, `name: string` | Any phase | Set or update the player's display name. The server stores the name in an in-memory registry (keyed by `playerId`) and uses it for subsequent `join` rounds. Sent automatically on connect/reconnect and when the player changes their name via the UI. |
 
 **`cashout` has no payload**: The message is `{ type: 'cashout' }`. The server locates the player by matching `conn.id` to `player.id` in `gameState.players`.
 

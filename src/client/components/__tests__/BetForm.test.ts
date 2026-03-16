@@ -157,26 +157,19 @@ describe('BetForm component', () => {
       expect(sendJoin).toHaveBeenCalledTimes(1);
     });
 
-    it('calls sendJoin with correct wager, empty playerName, and null autoCashout', async () => {
+    it('calls sendJoin with correct wager and null autoCashout', async () => {
       render(BetForm);
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '50' } });
       await tick();
       await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
       await tick();
-      expect(sendJoin).toHaveBeenCalledWith(50, '', null);
+      expect(sendJoin).toHaveBeenCalledWith(50, null);
     });
 
-    it('calls sendJoin with correct playerName when provided', async () => {
+    it('does not have a name input field', () => {
       render(BetForm);
-      await fireEvent.input(screen.getByLabelText('Wager'), { target: { value: '25' } });
-      await fireEvent.input(screen.getByLabelText('Name (optional)'), {
-        target: { value: 'Alice' },
-      });
-      await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
-      await tick();
-      expect(sendJoin).toHaveBeenCalledWith(25, 'Alice', null);
+      expect(screen.queryByLabelText('Name (optional)')).toBeNull();
     });
 
     it('calls sendJoin with autoCashout number when auto-cashout is provided', async () => {
@@ -188,7 +181,7 @@ describe('BetForm component', () => {
       await tick();
       await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
       await tick();
-      expect(sendJoin).toHaveBeenCalledWith(100, '', 2.5);
+      expect(sendJoin).toHaveBeenCalledWith(100, 2.5);
     });
 
     it('calls sendJoin with null autoCashout when auto-cashout field is empty', async () => {
@@ -197,7 +190,7 @@ describe('BetForm component', () => {
       await tick();
       await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
       await tick();
-      const [, , autoCashoutArg] = (sendJoin as ReturnType<typeof vi.fn>).mock.calls[0]!;
+      const [, autoCashoutArg] = (sendJoin as ReturnType<typeof vi.fn>).mock.calls[0]!;
       expect(autoCashoutArg).toBeNull();
     });
 

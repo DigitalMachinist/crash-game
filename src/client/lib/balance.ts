@@ -17,6 +17,7 @@ import type { GameStateSnapshot, RoundResult, ServerMessage } from '../../types'
 const BALANCE_KEY = 'crashBalance';
 const HISTORY_KEY = 'crashHistory';
 const PLAYER_ID_KEY = 'crashPlayerId';
+const PLAYER_NAME_KEY = 'crashPlayerName';
 
 /**
  * Returns the stable player UUID from localStorage, creating one via
@@ -34,6 +35,22 @@ export function getOrCreatePlayerId(): string {
   } catch {
     // localStorage unavailable (private browsing, quota exceeded) — use a session-only ID
     return crypto.randomUUID();
+  }
+}
+
+export function getPlayerName(): string | null {
+  try {
+    return localStorage.getItem(PLAYER_NAME_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setPlayerName(name: string): void {
+  try {
+    localStorage.setItem(PLAYER_NAME_KEY, name);
+  } catch {
+    // localStorage unavailable
   }
 }
 

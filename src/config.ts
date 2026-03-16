@@ -35,6 +35,8 @@ export const DRAND_FETCH_TIMEOUT_MS = 2_000;
 // ─── Input validation ────────────────────────────────────────────────────────
 /** Maximum length of a playerId string (DoS prevention). */
 export const MAX_PLAYER_ID_LENGTH = 256;
+/** Maximum length of a player display name. */
+export const MAX_PLAYER_NAME_LENGTH = 20;
 /** Maximum concurrent players in a single round. */
 export const MAX_PLAYERS_PER_ROUND = 5_000;
 /** Minimum allowed wager (inclusive). */

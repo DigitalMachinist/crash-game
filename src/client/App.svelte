@@ -22,19 +22,31 @@ import FairnessModal from './components/FairnessModal.svelte';
 import GameStatus from './components/GameStatus.svelte';
 import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
+import NameModal from './components/NameModal.svelte';
 import PlayerList from './components/PlayerList.svelte';
 import {
   applyPendingPayout,
   applyRoundResult,
   getBalance,
   getOrCreatePlayerId,
+  getPlayerName,
+  setPlayerName as persistPlayerName,
 } from './lib/balance';
+import { sendSetName } from './lib/commands';
 import { connect, disconnect } from './lib/socket';
-import { balance, lastCrashResult, lastPendingPayout, myPlayerId } from './lib/stores';
+import {
+  balance,
+  connectionStatus,
+  lastCrashResult,
+  lastPendingPayout,
+  myPlayerId,
+  myPlayerName,
+} from './lib/stores';
 
 let pendingPayoutToast: string | null = $state(null);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let fairnessModalOpen = $state(false);
+let nameModalOpen = $state(false);
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -67,12 +79,35 @@ $effect(() => {
   }
 });
 
+// Re-send stored name to server on every (re)connect so the DO's in-memory
+// playerNames map is always populated, even after DO eviction.
+$effect(() => {
+  if ($connectionStatus === 'connected' && $myPlayerName) {
+    sendSetName($myPlayerName);
+  }
+});
+
 onMount(() => {
   const id = getOrCreatePlayerId();
   myPlayerId.set(id);
   balance.set(getBalance());
   connect(id);
+
+  const storedName = getPlayerName();
+  if (storedName) {
+    myPlayerName.set(storedName);
+  } else {
+    nameModalOpen = true;
+  }
 });
+
+function handleNameSet(name: string | null) {
+  nameModalOpen = false;
+  if (name) {
+    persistPlayerName(name);
+    myPlayerName.set(name);
+  }
+}
 
 onDestroy(() => {
   disconnect();
@@ -84,6 +119,9 @@ onDestroy(() => {
   <header>
     <h1>Crash</h1>
     <div class="header-right">
+      <button class="name-btn" onclick={() => (nameModalOpen = true)}>
+        {$myPlayerName || 'Anonymous'} ✎
+      </button>
       <button class="fairness-btn" onclick={() => (fairnessModalOpen = true)}>Fairness</button>
       <ConnectionStatus />
       <div
@@ -96,6 +134,10 @@ onDestroy(() => {
       </div>
     </div>
   </header>
+
+  {#if nameModalOpen}
+    <NameModal onClose={handleNameSet} initialName={$myPlayerName} />
+  {/if}
 
   {#if fairnessModalOpen}
     <FairnessModal onClose={() => (fairnessModalOpen = false)} />
@@ -167,6 +209,7 @@ onDestroy(() => {
     color: #888;
   }
 
+  .name-btn,
   .fairness-btn {
     background: transparent;
     border: 1px solid #444;
@@ -177,6 +220,7 @@ onDestroy(() => {
     cursor: pointer;
   }
 
+  .name-btn:hover,
   .fairness-btn:hover {
     background: #1a1a2e;
     color: #e0e0e0;

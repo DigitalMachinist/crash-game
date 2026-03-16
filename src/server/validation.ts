@@ -30,6 +30,13 @@ function isValidJoinFields(obj: Record<string, unknown>): boolean {
   return true;
 }
 
+function isValidSetNameFields(obj: Record<string, unknown>): boolean {
+  if (typeof obj.playerId !== 'string') return false;
+  if (!UUID_V4_PATTERN.test(obj.playerId)) return false;
+  if (typeof obj.name !== 'string') return false;
+  return true;
+}
+
 /**
  * Validates that `data` conforms to the `ClientMessage` union at runtime.
  * Returns false for unknown `type` values, missing required fields, or wrong field types.
@@ -43,6 +50,8 @@ export function isValidClientMessage(data: unknown): data is ClientMessage {
       return isValidJoinFields(data);
     case 'cashout':
       return true;
+    case 'setName':
+      return isValidSetNameFields(data);
     default:
       return false;
   }
