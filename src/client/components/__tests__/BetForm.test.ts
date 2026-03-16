@@ -202,15 +202,15 @@ describe('BetForm component', () => {
     });
   });
 
-  describe('wager field cleared after join', () => {
-    it('clears the wager input after a successful join', async () => {
+  describe('wager field retained after join', () => {
+    it('retains the wager input value after a successful join', async () => {
       render(BetForm);
       const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
       await fireEvent.input(wagerInput, { target: { value: '100' } });
       await tick();
       await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
       await tick();
-      expect(wagerInput.value).toBe('');
+      expect(wagerInput.value).toBe('100');
     });
   });
 

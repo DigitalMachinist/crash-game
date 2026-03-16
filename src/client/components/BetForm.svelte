@@ -31,8 +31,6 @@ function handleJoin() {
   if (!isValid) return;
   errorMessage = '';
   sendJoin(wagerNum, autoCashoutNum);
-  wager = '';
-  autoCashoutStr = '';
 }
 </script>
 
