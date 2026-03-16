@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rarity Multiplier Palette Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 2rem;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    color: #aaa;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+  }
+
+  /* ── Tier Cards ── */
+  .tiers {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+  .tier-card {
+    width: 150px;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    background: #111122;
+  }
+  .tier-card .multiplier {
+    font-size: 2.25rem;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.5rem;
+  }
+  .tier-card .label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+  }
+  .tier-card .range {
+    font-size: 0.75rem;
+    color: #888;
+  }
+  .tier-card .prob {
+    font-size: 0.7rem;
+    color: #555;
+    margin-top: 0.25rem;
+  }
+  .tier-card .swatch {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 0.75rem;
+  }
+
+  /* ── Colors ── */
+  .common    .multiplier, .common    .label { color: #d0d0d0; }
+  .common    .swatch { background: #d0d0d0; }
+  .uncommon  .multiplier, .uncommon  .label { color: #00c853; }
+  .uncommon  .swatch { background: #00c853; }
+  .rare      .multiplier, .rare      .label { color: #42a5f5; }
+  .rare      .swatch { background: #42a5f5; }
+  .epic      .multiplier, .epic      .label { color: #ab47bc; }
+  .epic      .swatch { background: #ab47bc; }
+  .legendary .multiplier, .legendary .label { color: #ff9800; }
+  .legendary .swatch { background: #ff9800; }
+  .mythic    .multiplier, .mythic    .label { color: #ffd740; }
+  .mythic    .swatch { background: #ffd740; }
+
+  /* ── Simulated Components ── */
+  .section {
+    max-width: 700px;
+    margin: 0 auto 2.5rem;
+  }
+  .section h2 {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #222;
+    padding-bottom: 0.35rem;
+  }
+
+  /* Main multiplier display */
+  .main-display {
+    text-align: center;
+    padding: 2rem;
+    background: #111122;
+    border-radius: 8px;
+  }
+  .main-display .big-mult {
+    font-size: 4rem;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .main-display .phase-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.25rem;
+  }
+
+  /* History list */
+  .history-list {
+    background: #111122;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .history-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #1a1a2e;
+    font-size: 0.9rem;
+  }
+  .history-list li:last-child { border-bottom: none; }
+  .history-list .round-id {
+    color: #666;
+    min-width: 3rem;
+  }
+  .history-list .crash-val {
+    font-weight: bold;
+    flex: 1;
+  }
+
+  /* Player list */
+  .player-table {
+    background: #111122;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+  }
+  .player-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .player-table th {
+    text-align: left;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: normal;
+    border-bottom: 1px solid #333;
+  }
+  .player-table td {
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  .player-table .lost { color: #d32f2f; }
+</style>
+</head>
+<body>
+
+<h1>Rarity Multiplier Palette</h1>
+<p class="subtitle">Borderlands-inspired color tiers for crash game multipliers &mdash; on actual game background (#0d0d1a)</p>
+
+<!-- ── Tier Cards ── -->
+<div class="tiers">
+  <div class="tier-card common">
+    <div class="multiplier">1.47x</div>
+    <div class="label">Common</div>
+    <div class="range">1.00x &ndash; 1.99x</div>
+    <div class="prob">~50% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+  <div class="tier-card uncommon">
+    <div class="multiplier">3.21x</div>
+    <div class="label">Uncommon</div>
+    <div class="range">2.00x &ndash; 4.99x</div>
+    <div class="prob">~30% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+  <div class="tier-card rare">
+    <div class="multiplier">7.84x</div>
+    <div class="label">Rare</div>
+    <div class="range">5.00x &ndash; 9.99x</div>
+    <div class="prob">~10% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+  <div class="tier-card epic">
+    <div class="multiplier">18.55x</div>
+    <div class="label">Epic</div>
+    <div class="range">10.00x &ndash; 24.99x</div>
+    <div class="prob">~6% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+  <div class="tier-card legendary">
+    <div class="multiplier">42.07x</div>
+    <div class="label">Legendary</div>
+    <div class="range">25.00x &ndash; 99.99x</div>
+    <div class="prob">~3% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+  <div class="tier-card mythic">
+    <div class="multiplier">247.61x</div>
+    <div class="label">Mythic</div>
+    <div class="range">100.00x+</div>
+    <div class="prob">~1% of rounds</div>
+    <div class="swatch"></div>
+  </div>
+</div>
+
+<!-- ── Main Display Mock ── -->
+<div class="section">
+  <h2>Main Multiplier Display (RUNNING phase)</h2>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <div class="main-display" style="flex:1; min-width: 200px;">
+      <div class="big-mult" style="color: #d0d0d0;">1.83x</div>
+      <div class="phase-label">Common range</div>
+    </div>
+    <div class="main-display" style="flex:1; min-width: 200px;">
+      <div class="big-mult" style="color: #42a5f5;">6.12x</div>
+      <div class="phase-label">Rare range</div>
+    </div>
+    <div class="main-display" style="flex:1; min-width: 200px;">
+      <div class="big-mult" style="color: #ff9800;">37.44x</div>
+      <div class="phase-label">Legendary range</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── History Mock ── -->
+<div class="section">
+  <h2>Round History</h2>
+  <div class="history-list">
+    <ul style="list-style:none; padding:0; margin:0;">
+      <li><span class="round-id">#47</span> <span class="crash-val" style="color:#d0d0d0;">1.12x</span></li>
+      <li><span class="round-id">#46</span> <span class="crash-val" style="color:#00c853;">3.45x</span></li>
+      <li><span class="round-id">#45</span> <span class="crash-val" style="color:#d0d0d0;">1.91x</span></li>
+      <li><span class="round-id">#44</span> <span class="crash-val" style="color:#ab47bc;">14.22x</span></li>
+      <li><span class="round-id">#43</span> <span class="crash-val" style="color:#42a5f5;">7.08x</span></li>
+      <li><span class="round-id">#42</span> <span class="crash-val" style="color:#d0d0d0;">1.00x</span></li>
+      <li><span class="round-id">#41</span> <span class="crash-val" style="color:#00c853;">2.67x</span></li>
+      <li><span class="round-id">#40</span> <span class="crash-val" style="color:#ff9800;">51.33x</span></li>
+      <li><span class="round-id">#39</span> <span class="crash-val" style="color:#d0d0d0;">1.44x</span></li>
+      <li><span class="round-id">#38</span> <span class="crash-val" style="color:#ffd740;">132.87x</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Player List Mock ── -->
+<div class="section">
+  <h2>Player List (post-crash)</h2>
+  <div class="player-table">
+    <table>
+      <thead>
+        <tr><th>Player</th><th>Wager</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Alice</td>
+          <td>$10.00</td>
+          <td><span style="color:#ab47bc;">Won 14.22x (+$132.20)</span></td>
+        </tr>
+        <tr>
+          <td>Bob</td>
+          <td>$50.00</td>
+          <td><span style="color:#00c853;">Won 2.50x (+$75.00)</span></td>
+        </tr>
+        <tr>
+          <td>Charlie</td>
+          <td>$5.00</td>
+          <td><span class="lost">Lost</span></td>
+        </tr>
+        <tr>
+          <td>Diana</td>
+          <td>$25.00</td>
+          <td><span style="color:#42a5f5;">Won 8.33x (+$183.25)</span></td>
+        </tr>
+        <tr>
+          <td>Eve</td>
+          <td>$100.00</td>
+          <td><span style="color:#d0d0d0;">Won 1.15x (+$15.00)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

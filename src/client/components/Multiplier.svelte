@@ -1,9 +1,11 @@
 <script lang="ts">
+import { getRarityColor } from '../lib/rarity';
 import { displayMultiplier, multiplierAnimating, phase } from '../lib/stores';
 
 // Throttled accessible label: only announce at 0.5x thresholds to avoid
 // overwhelming screen readers with rapid 100ms updates during play.
 const accessibleMultiplier = $derived(Math.floor($displayMultiplier * 2) / 2);
+const rarityColor = $derived(getRarityColor($displayMultiplier));
 const accessibleLabel = $derived(
   $phase === 'STARTING'
     ? 'Round starting'
@@ -26,6 +28,7 @@ const accessibleLabel = $derived(
       class:animating={$multiplierAnimating}
       class:live={$phase === 'RUNNING'}
       class:crashed={$phase === 'CRASHED'}
+      style:color={($phase === 'RUNNING' || $phase === 'CRASHED') ? rarityColor : undefined}
     >
       {$displayMultiplier.toFixed(2)}x
     </div>
@@ -66,7 +69,7 @@ const accessibleLabel = $derived(
   }
 
   .multiplier.live {
-    color: #00c853;
+    /* color set via inline style:color (rarity tier) */
   }
 
   .crashed-container {
@@ -82,7 +85,7 @@ const accessibleLabel = $derived(
   }
 
   .multiplier.crashed {
-    color: #d32f2f;
+    /* color set via inline style:color (rarity tier) */
     animation: crash-shake 0.5s ease-out forwards;
   }
 

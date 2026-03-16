@@ -60,6 +60,17 @@ export const HISTORY_LENGTH = 20;
 export const CLIENT_HISTORY_LIMIT = 50;
 /** Quick-bet preset amounts shown below the wager input */
 export const WAGER_PRESETS = [1, 5, 10, 50, 100] as const;
+// ─── Multiplier rarity colors (Borderlands-style) ───────────────────────────
+/** Tiers must be sorted ascending by minMultiplier. First tier should start at 1. */
+export const MULTIPLIER_RARITY_TIERS = [
+  { name: 'Common', minMultiplier: 1, color: '#d0d0d0' },
+  { name: 'Uncommon', minMultiplier: 2, color: '#00c853' },
+  { name: 'Rare', minMultiplier: 5, color: '#42a5f5' },
+  { name: 'Epic', minMultiplier: 10, color: '#ab47bc' },
+  { name: 'Legendary', minMultiplier: 25, color: '#ff9800' },
+  { name: 'Mythic', minMultiplier: 100, color: '#ffd740' },
+] as const;
+
 // Note: multiplier animation is handled via CSS transition matching TICK_INTERVAL_MS,
 // not a tweened store. The CSS duration is set directly in Multiplier.svelte as:
 //   transition: all ${TICK_INTERVAL_MS}ms linear;
