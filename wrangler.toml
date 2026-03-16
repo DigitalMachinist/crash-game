@@ -7,7 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./public"
 
 [vars]
-CRASH_DEBUG = "false"
+# CRASH_DEBUG defaults to absent (debug endpoint disabled) in all deployments.
+# To enable locally: add CRASH_DEBUG = "true" to a .dev.vars file (gitignored by wrangler).
 
 [[durable_objects.bindings]]
 name = "CrashGame"

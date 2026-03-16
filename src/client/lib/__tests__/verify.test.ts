@@ -1,46 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { HOUSE_EDGE } from '../../../config';
-import { computeEffectiveSeed, verifyRound } from '../verify';
-
-// ─── Local helpers (mirrors unexported functions in verify.ts) ────────────────
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function sha256AsHex(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return bytesToHex(new Uint8Array(hashBuffer));
-}
-
-function hashToFloat(hex: string): number {
-  return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
-}
-
-const CRASH_NUMERATOR = Math.round((1 - HOUSE_EDGE) * 100);
-
-function deriveCrashPoint(effectiveSeed: string): number {
-  const h = hashToFloat(effectiveSeed);
-  return Math.max(1.0, Math.floor(CRASH_NUMERATOR / (1 - h)) / 100);
-}
+import { sha256Hex } from '../../../crypto-hex';
+import { computeEffectiveSeed, deriveCrashPoint } from '../../../provably-fair';
+import { verifyRound } from '../verify';
 
 // ─── House edge constant parity ───────────────────────────────────────────────
 
 describe('HOUSE_EDGE config parity', () => {
-  it('CRASH_NUMERATOR equals 99 when HOUSE_EDGE is 0.01', () => {
-    expect(CRASH_NUMERATOR).toBe(99);
+  it('HOUSE_EDGE is 0.01 (1% house edge)', () => {
+    expect(HOUSE_EDGE).toBe(0.01);
   });
 });
 
@@ -49,7 +17,7 @@ describe('HOUSE_EDGE config parity', () => {
 const KEY_HEX = '0000000000000000000000000000000000000000000000000000000000000002';
 const DATA_HEX = '0000000000000000000000000000000000000000000000000000000000000001';
 
-// ─── computeEffectiveSeed ─────────────────────────────────────────────────────
+// ─── computeEffectiveSeed (shared provably-fair primitive) ────────────────────
 
 describe('computeEffectiveSeed', () => {
   it('returns a 64-char hex string', async () => {
@@ -78,7 +46,7 @@ describe('verifyRound', () => {
   const drandRandomness = KEY_HEX;
 
   it('returns valid: true for a consistent round', async () => {
-    const chainCommitment = await sha256AsHex(roundSeed);
+    const chainCommitment = await sha256Hex(roundSeed);
     const effectiveSeed = await computeEffectiveSeed(roundSeed, drandRandomness);
     const displayedCrashPoint = deriveCrashPoint(effectiveSeed);
 
@@ -94,7 +62,7 @@ describe('verifyRound', () => {
   });
 
   it('always includes computedCrashPoint, chainValid, drandRound, drandRandomness', async () => {
-    const chainCommitment = await sha256AsHex(roundSeed);
+    const chainCommitment = await sha256Hex(roundSeed);
     const effectiveSeed = await computeEffectiveSeed(roundSeed, drandRandomness);
     const displayedCrashPoint = deriveCrashPoint(effectiveSeed);
 
@@ -134,7 +102,7 @@ describe('verifyRound', () => {
   });
 
   it('returns valid: false with reason "crash point mismatch" when displayedCrashPoint is wrong', async () => {
-    const chainCommitment = await sha256AsHex(roundSeed);
+    const chainCommitment = await sha256Hex(roundSeed);
     const displayedCrashPoint = 999.99; // deliberately wrong
 
     const result = await verifyRound({

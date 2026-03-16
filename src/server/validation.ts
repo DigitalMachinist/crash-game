@@ -6,8 +6,7 @@
  *
  * @see [High-1] [High-4] [High-2]
  */
-import type { ClientMessage } from '../types';
-import type { DrandBeacon } from './drand';
+import type { ClientMessage, DrandBeacon } from '../types';
 
 // ─── Client message validation ──────────────────────────────────────────────
 
@@ -15,8 +14,11 @@ function isObject(data: unknown): data is Record<string, unknown> {
   return typeof data === 'object' && data !== null;
 }
 
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function isValidJoinFields(obj: Record<string, unknown>): boolean {
   if (typeof obj.playerId !== 'string') return false;
+  if (!UUID_V4_PATTERN.test(obj.playerId)) return false;
   if (typeof obj.wager !== 'number') return false;
   if (obj.name !== undefined && typeof obj.name !== 'string') return false;
   if (
@@ -64,7 +66,15 @@ export function isValidDrandBeacon(data: unknown): data is DrandBeacon {
 
 // ─── Storage validation ─────────────────────────────────────────────────────
 
-export interface StoredGameData {
+export interface PendingPayout {
+  roundId: number;
+  wager: number;
+  payout: number;
+  cashoutMultiplier: number;
+  crashPoint: number;
+}
+
+interface StoredGameData {
   rootSeed: string;
   gameNumber: number;
   chainCommitment: string;
@@ -76,18 +86,7 @@ export interface StoredGameData {
     drandRandomness: string;
     chainCommitment: string;
   }>;
-  pendingPayouts: Array<
-    [
-      string,
-      {
-        roundId: number;
-        wager: number;
-        payout: number;
-        cashoutMultiplier: number;
-        crashPoint: number;
-      },
-    ]
-  >;
+  pendingPayouts?: Array<[string, PendingPayout]>;
 }
 
 /**
@@ -113,11 +112,33 @@ export function isValidStoredGameData(data: unknown): data is StoredGameData {
   if (typeof data.chainCommitment !== 'string' || data.chainCommitment.length !== 64) return false;
   if (!HEX_PATTERN.test(data.chainCommitment)) return false;
 
-  // history: array (content validated loosely — individual entries not deeply checked)
+  // history: array of HistoryEntry objects
   if (!Array.isArray(data.history)) return false;
+  for (const entry of data.history) {
+    if (!isObject(entry)) return false;
+    if (typeof entry.roundId !== 'number') return false;
+    if (typeof entry.crashPoint !== 'number') return false;
+    if (typeof entry.roundSeed !== 'string') return false;
+    if (typeof entry.drandRound !== 'number') return false;
+    if (typeof entry.drandRandomness !== 'string') return false;
+    if (typeof entry.chainCommitment !== 'string') return false;
+  }
 
-  // pendingPayouts: array of tuples (or absent)
-  if (data.pendingPayouts !== undefined && !Array.isArray(data.pendingPayouts)) return false;
+  // pendingPayouts: array of [playerId, payout] tuples (or absent)
+  if (data.pendingPayouts !== undefined) {
+    if (!Array.isArray(data.pendingPayouts)) return false;
+    for (const entry of data.pendingPayouts) {
+      if (!Array.isArray(entry) || entry.length !== 2) return false;
+      if (typeof entry[0] !== 'string') return false;
+      const p = entry[1];
+      if (!isObject(p)) return false;
+      if (typeof p.roundId !== 'number') return false;
+      if (typeof p.wager !== 'number') return false;
+      if (typeof p.payout !== 'number') return false;
+      if (typeof p.cashoutMultiplier !== 'number') return false;
+      if (typeof p.crashPoint !== 'number') return false;
+    }
+  }
 
   return true;
 }

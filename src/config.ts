@@ -1,9 +1,8 @@
 /**
  * Central configuration for the Crash Game. All tunable constants live here.
  *
- * Note: `HOUSE_EDGE` is used in `src/server/crash-math.ts` but the equivalent
- * value is hardcoded as `99` in `src/client/lib/verify.ts`. Both files must
- * be updated in sync when changing the house edge.
+ * `HOUSE_EDGE` is imported by `provably-fair.ts` — a single change here propagates to
+ * both the server (`crash-game.ts`) and client (`verify.ts`) computation paths.
  *
  * @see docs/project-architecture.md §1.5
  */
@@ -27,7 +26,7 @@ export const CHAIN_LENGTH = 10_000;
 export const CHAIN_ROTATION_THRESHOLD = 100;
 
 // ─── drand quicknet ──────────────────────────────────────────────────────────
-export const DRAND_CHAIN_HASH = '52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971';
+const DRAND_CHAIN_HASH = '52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971';
 export const DRAND_GENESIS_TIME = 1_692_803_367; // Unix seconds
 export const DRAND_PERIOD_SECS = 3;
 export const DRAND_BASE_URL = `https://drand.cloudflare.com/${DRAND_CHAIN_HASH}`;

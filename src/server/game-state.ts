@@ -9,6 +9,7 @@
  */
 
 import {
+  COUNTDOWN_TICK_MS,
   HISTORY_LENGTH,
   MAX_PLAYER_ID_LENGTH,
   MAX_PLAYERS_PER_ROUND,
@@ -17,7 +18,7 @@ import {
   WAITING_DURATION_MS,
 } from '../config';
 import type { HistoryEntry, Phase, Player, PlayerSnapshot, ServerMessage } from '../types';
-import { crashTimeMs as computeCrashTimeMs, multiplierAtTime } from './crash-math';
+import { computeCrashTimeMs, multiplierAtTime } from './crash-math';
 
 export interface GameState {
   phase: Phase;
@@ -34,9 +35,20 @@ export interface GameState {
   history: HistoryEntry[];
 }
 
-export type OutboundMessage =
-  | { broadcast: true; message: ServerMessage }
-  | { broadcast: false; targetPlayerId: string; message: ServerMessage };
+/** Narrowed GameState valid during RUNNING/CRASHED — all provably-fair fields are non-null. */
+export type RunningGameState = GameState & {
+  roundStartTime: number;
+  crashPoint: number;
+  crashTimeMs: number;
+  chainSeed: string;
+  drandRound: number;
+  drandRandomness: string;
+};
+
+export interface OutboundMessage {
+  broadcast: boolean;
+  message: ServerMessage;
+}
 
 export function createInitialState(chainCommitment: string, roundId = 1): GameState {
   return {
@@ -68,19 +80,20 @@ function playerToSnapshot(p: Player): PlayerSnapshot {
   };
 }
 
-function getPlayers(state: GameState): PlayerSnapshot[] {
+function getPlayerSnapshots(state: GameState): PlayerSnapshot[] {
   return Array.from(state.players.values()).map(playerToSnapshot);
 }
 
 /**
- * Processes a player's bet. Only valid during WAITING phase.
+ * Processes a player's bet. Primarily valid during WAITING phase; also handles
+ * reconnects transparently in any phase (updates connectionId only, no-op).
  * Returns a `playerJoined` broadcast on success, or an `error` to the player.
  *
  * Validation rules (returns error message if violated):
  * - `playerId` must be a non-empty string of at most `MAX_PLAYER_ID_LENGTH` (256) characters.
  * - `wager` must be a finite positive number.
  * - `autoCashout`, if non-null, must be a finite number strictly greater than 1.0.
- * - Player must not already be in the current round.
+ * - Player must not already be in the current round (reconnects exempt — see above).
  *
  * @see docs/game-state-machine.md §3.4
  */
@@ -88,25 +101,21 @@ export function handleJoin(
   state: GameState,
   msg: { playerId: string; name?: string; wager: number; autoCashout: number | null },
   connectionId: string,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: GameState; messages: OutboundMessage[]; joined: boolean } {
+  const reject = (message: string) => ({
+    state,
+    messages: [{ broadcast: false, message: { type: 'error' as const, message } }],
+    joined: false as const,
+  });
   // Handle existing player first (any phase) — must precede phase check so reconnects during
   // RUNNING/STARTING are handled silently rather than returning a spurious phase error. [Phase 4.6]
   if (state.players.has(msg.playerId)) {
     const existing = state.players.get(msg.playerId)!;
     if (existing.wager !== msg.wager) {
-      return {
-        state,
-        messages: [
-          {
-            broadcast: false,
-            targetPlayerId: msg.playerId,
-            message: { type: 'error', message: 'Already joined with different wager' },
-          },
-        ],
-      };
+      return reject('Already joined with different wager');
     }
     if (existing.id === connectionId) {
-      return { state, messages: [] }; // Same connection — no-op
+      return { state, messages: [], joined: false }; // Same connection — no-op
     }
     const updatedPlayer = { ...existing, id: connectionId };
     const updatedPlayers = new Map(state.players);
@@ -116,10 +125,13 @@ export function handleJoin(
       // Reconnect during RUNNING/STARTING: update connection ID silently.
       // All clients already know this player is in the round; re-broadcasting playerJoined
       // would cause the reconnecting client to double-deduct their balance.
-      return { state: updatedState, messages: [] };
+      // joined: false — no playerJoined broadcast; connection ID updated silently.
+      // Callers use gameState.players to determine player presence, not this flag.
+      return { state: updatedState, messages: [], joined: false };
     }
     return {
       state: updatedState,
+      joined: true,
       messages: [
         {
           broadcast: true,
@@ -137,94 +149,31 @@ export function handleJoin(
   }
 
   if (state.phase !== 'WAITING') {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Cannot join during ${state.phase} phase` },
-        },
-      ],
-    };
+    return reject(`Cannot join during ${state.phase} phase`);
   }
 
   if (!msg.playerId || msg.playerId.length > MAX_PLAYER_ID_LENGTH) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId || 'unknown',
-          message: { type: 'error', message: 'Invalid playerId' },
-        },
-      ],
-    };
+    return reject('Invalid playerId');
   }
 
   if (state.players.size >= MAX_PLAYERS_PER_ROUND) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'Room full' },
-        },
-      ],
-    };
+    return reject('Room full');
   }
 
   if (!Number.isFinite(msg.wager) || msg.wager <= 0) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'Wager must be a positive number' },
-        },
-      ],
-    };
+    return reject('Wager must be a positive number');
   }
 
   if (msg.wager < MIN_WAGER) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Minimum wager is $${MIN_WAGER.toFixed(2)}` },
-        },
-      ],
-    };
+    return reject(`Minimum wager is $${MIN_WAGER.toFixed(2)}`);
   }
 
   if (msg.wager > MAX_WAGER) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: `Maximum wager is $${MAX_WAGER.toFixed(2)}` },
-        },
-      ],
-    };
+    return reject(`Maximum wager is $${MAX_WAGER.toFixed(2)}`);
   }
 
   if (msg.autoCashout != null && (!Number.isFinite(msg.autoCashout) || msg.autoCashout <= 1.0)) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: msg.playerId,
-          message: { type: 'error', message: 'autoCashout must be greater than 1.0' },
-        },
-      ],
-    };
+    return reject('autoCashout must be greater than 1.0');
   }
 
   const name = msg.name?.trim() || msg.playerId.slice(0, 8);
@@ -244,6 +193,7 @@ export function handleJoin(
 
   return {
     state: { ...state, players: newPlayers },
+    joined: true,
     messages: [
       {
         broadcast: true,
@@ -270,62 +220,32 @@ export function handleCashout(
   state: GameState,
   playerId: string,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: GameState; messages: OutboundMessage[]; cashedOut: boolean } {
+  const reject = (message: string) => ({
+    state,
+    messages: [{ broadcast: false, message: { type: 'error' as const, message } }],
+    cashedOut: false as const,
+  });
   if (state.phase !== 'RUNNING') {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: `Cannot cashout during ${state.phase} phase` },
-        },
-      ],
-    };
+    return reject(`Cannot cashout during ${state.phase} phase`);
   }
 
+  // phase === 'RUNNING' guarantees roundStartTime and crashPoint are non-null
+  const s = state as RunningGameState;
   const player = state.players.get(playerId);
   if (!player) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Not in current round' },
-        },
-      ],
-    };
+    return reject('Not in current round');
   }
 
   if (player.cashedOut) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Already cashed out' },
-        },
-      ],
-    };
+    return reject('Already cashed out');
   }
 
-  const elapsed = nowMs - (state.roundStartTime ?? nowMs);
+  const elapsed = nowMs - s.roundStartTime;
   const multiplier = multiplierAtTime(elapsed);
 
-  // Must be strictly less than crash point
-  if (state.crashPoint !== null && multiplier >= state.crashPoint) {
-    return {
-      state,
-      messages: [
-        {
-          broadcast: false,
-          targetPlayerId: playerId,
-          message: { type: 'error', message: 'Round has already crashed' },
-        },
-      ],
-    };
+  if (multiplier >= s.crashPoint) {
+    return reject('Round has already crashed');
   }
 
   const payout = Math.floor(player.wager * multiplier * 100) / 100;
@@ -340,12 +260,14 @@ export function handleCashout(
 
   return {
     state: { ...state, players: newPlayers },
+    cashedOut: true,
     messages: [
       {
         broadcast: true,
         message: {
           type: 'playerCashedOut',
           id: player.id,
+          playerId,
           multiplier,
           payout,
         },
@@ -364,19 +286,19 @@ export function handleCashout(
  * @see docs/game-state-machine.md §3.6 (multiplier curve)
  */
 export function handleTick(
-  state: GameState,
+  state: RunningGameState,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[]; shouldCrash: boolean } {
-  if (state.phase !== 'RUNNING' || state.roundStartTime === null || state.crashPoint === null) {
-    return { state, messages: [], shouldCrash: false };
-  }
-
+): {
+  state: RunningGameState;
+  messages: OutboundMessage[];
+  shouldCrash: boolean;
+  autoCashoutsOccurred: boolean;
+} {
   const elapsed = nowMs - state.roundStartTime;
   const currentMultiplier = multiplierAtTime(elapsed);
   const messages: OutboundMessage[] = [];
   const newPlayers = new Map(state.players);
 
-  // Process auto-cashouts
   for (const [pid, player] of newPlayers) {
     if (player.cashedOut || player.autoCashout === null) continue;
     if (currentMultiplier >= player.autoCashout) {
@@ -394,6 +316,7 @@ export function handleTick(
         message: {
           type: 'playerCashedOut',
           id: player.id,
+          playerId: pid,
           multiplier: autoCashoutMultiplier,
           payout,
         },
@@ -402,6 +325,7 @@ export function handleTick(
   }
 
   const shouldCrash = currentMultiplier >= state.crashPoint;
+  const autoCashoutsOccurred = messages.length > 0;
 
   messages.push({
     broadcast: true,
@@ -409,28 +333,26 @@ export function handleTick(
   });
 
   return {
-    state: { ...state, players: newPlayers },
+    state: { ...state, players: newPlayers } as RunningGameState,
     messages,
     shouldCrash,
+    autoCashoutsOccurred,
   };
 }
 
 /**
  * Transitions the game to CRASHED phase. Marks all non-cashed-out players as
- * lost (payout = 0) and builds the `crashed` broadcast message that reveals
- * the provably-fair ingredients (`roundSeed`, `drandRound`, `drandRandomness`).
+ * lost (payout = 0) and broadcasts a `state{phase:'CRASHED'}` message that reveals
+ * the provably-fair ingredients (`chainSeed` stored as `roundSeed` in history,
+ * `drandRound`, `drandRandomness`).
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED transition)
  */
 export function handleCrash(
-  state: GameState,
-  chainSeed: string,
-  drandRound: number,
-  drandRandomness: string,
+  state: RunningGameState,
   nowMs: number,
 ): { state: GameState; messages: OutboundMessage[] } {
-  const elapsed = state.roundStartTime !== null ? nowMs - state.roundStartTime : 0;
-  const crashPoint = state.crashPoint ?? 1.0;
+  const { crashPoint, chainSeed, drandRound, drandRandomness } = state;
 
   // Mark all non-cashed-out players as lost
   const newPlayers = new Map(state.players);
@@ -440,9 +362,6 @@ export function handleCrash(
     }
   }
 
-  const playerSnapshots = Array.from(newPlayers.values()).map(playerToSnapshot);
-
-  // Build history entry
   const historyEntry: HistoryEntry = {
     roundId: state.roundId,
     crashPoint,
@@ -458,32 +377,13 @@ export function handleCrash(
     ...state,
     phase: 'CRASHED',
     players: newPlayers,
-    chainSeed,
-    drandRound,
-    drandRandomness,
     history: newHistory,
   };
 
   return {
     state: newState,
     messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: 'CRASHED',
-          roundId: state.roundId,
-          countdown: state.countdown,
-          multiplier: 1.0,
-          elapsed,
-          crashPoint,
-          players: playerSnapshots,
-          chainCommitment: state.chainCommitment,
-          drandRound,
-          drandRandomness,
-          history: newHistory,
-        },
-      },
+      { broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState, nowMs) } },
     ],
   };
 }
@@ -492,34 +392,45 @@ export function handleCrash(
  * Transitions the game from STARTING to RUNNING after a successful drand fetch.
  * Sets `crashPoint`, `chainSeed`, `drandRound`, `drandRandomness`, and updates
  * `chainCommitment` to `SHA-256(chainSeed)` for the next round's commitment.
- * Returns no messages — the state broadcast is sent by `CrashGame.startRound()`.
+ * Broadcasts a `state{phase:'RUNNING'}` message — `crashPoint` is deliberately
+ * omitted (null) from the broadcast to prevent client foreknowledge.
  *
  * @see docs/provably-fair.md §2.4
  */
+export interface RoundIngredients {
+  crashPoint: number;
+  chainSeed: string;
+  drandRound: number;
+  drandRandomness: string;
+  nextChainCommitment: string;
+}
+
 export function handleStartingComplete(
   state: GameState,
-  crashPoint: number,
-  chainSeed: string,
-  drandRound: number,
-  drandRandomness: string,
-  nextChainCommitment: string,
+  ingredients: RoundIngredients,
   nowMs: number,
-): { state: GameState; messages: OutboundMessage[] } {
+): { state: RunningGameState; messages: OutboundMessage[] } {
+  const { crashPoint, chainSeed, drandRound, drandRandomness, nextChainCommitment } = ingredients;
   const crashTime = computeCrashTimeMs(crashPoint);
 
+  const newState: RunningGameState = {
+    ...state,
+    phase: 'RUNNING',
+    crashPoint,
+    crashTimeMs: crashTime,
+    roundStartTime: nowMs,
+    chainSeed,
+    drandRound,
+    drandRandomness,
+    chainCommitment: nextChainCommitment,
+  };
+
+  const snapshot = buildStateSnapshot(newState, nowMs);
+  const stateMsg: ServerMessage = { type: 'state', ...snapshot };
+
   return {
-    state: {
-      ...state,
-      phase: 'RUNNING',
-      crashPoint,
-      crashTimeMs: crashTime,
-      roundStartTime: nowMs,
-      chainSeed,
-      drandRound,
-      drandRandomness,
-      chainCommitment: nextChainCommitment,
-    },
-    messages: [],
+    state: newState,
+    messages: [{ broadcast: true, message: stateMsg }],
   };
 }
 
@@ -530,15 +441,18 @@ export function handleStartingComplete(
  *
  * @see docs/game-state-machine.md §3.1 (WAITING phase)
  */
-export function handleCountdownTick(
-  state: GameState,
-  nowMs: number,
-): { state: GameState; messages: OutboundMessage[]; shouldStartRound: boolean } {
+export function handleCountdownTick(state: GameState): {
+  state: GameState;
+  messages: OutboundMessage[];
+  shouldStartRound: boolean;
+} {
+  // Guard: unreachable from normal call path — crash-game.ts onAlarm only calls
+  // handleCountdownTick inside `if (phase === 'WAITING')`. Present for defensive testability.
   if (state.phase !== 'WAITING') {
     return { state, messages: [], shouldStartRound: false };
   }
 
-  const newCountdown = Math.max(0, state.countdown - 1000);
+  const newCountdown = Math.max(0, state.countdown - COUNTDOWN_TICK_MS);
   const shouldStartRound = newCountdown <= 0;
 
   const newState: GameState = {
@@ -549,25 +463,7 @@ export function handleCountdownTick(
 
   return {
     state: newState,
-    messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: newState.phase,
-          roundId: newState.roundId,
-          countdown: newCountdown,
-          multiplier: 1.0,
-          elapsed: 0,
-          crashPoint: null,
-          players: getPlayers(newState),
-          chainCommitment: newState.chainCommitment,
-          drandRound: null,
-          drandRandomness: null,
-          history: newState.history,
-        },
-      },
-    ],
+    messages: [{ broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState) } }],
     shouldStartRound,
   };
 }
@@ -579,11 +475,10 @@ export function handleCountdownTick(
  *
  * @see docs/game-state-machine.md §3.1 (CRASHED → WAITING transition)
  */
-export function transitionToWaiting(
-  state: GameState,
-  nextChainCommitment: string,
-  _nowMs: number,
-): { state: GameState; messages: OutboundMessage[] } {
+export function handleCrashExpired(state: GameState): {
+  state: GameState;
+  messages: OutboundMessage[];
+} {
   const newState: GameState = {
     ...state,
     phase: 'WAITING',
@@ -596,30 +491,11 @@ export function transitionToWaiting(
     chainSeed: null,
     drandRound: null,
     drandRandomness: null,
-    chainCommitment: nextChainCommitment,
   };
 
   return {
     state: newState,
-    messages: [
-      {
-        broadcast: true,
-        message: {
-          type: 'state',
-          phase: 'WAITING',
-          roundId: newState.roundId,
-          countdown: WAITING_DURATION_MS,
-          multiplier: 1.0,
-          elapsed: 0,
-          crashPoint: null,
-          players: [],
-          chainCommitment: nextChainCommitment,
-          drandRound: null,
-          drandRandomness: null,
-          history: newState.history,
-        },
-      },
-    ],
+    messages: [{ broadcast: true, message: { type: 'state', ...buildStateSnapshot(newState) } }],
   };
 }
 
@@ -632,8 +508,9 @@ export function transitionToWaiting(
  */
 export function buildStateSnapshot(
   state: GameState,
+  nowMs: number = Date.now(),
 ): Omit<ServerMessage & { type: 'state' }, 'type'> {
-  const elapsed = state.roundStartTime !== null ? Date.now() - state.roundStartTime : 0;
+  const elapsed = state.roundStartTime !== null ? nowMs - state.roundStartTime : 0;
   const multiplier =
     state.phase === 'RUNNING' && state.roundStartTime !== null ? multiplierAtTime(elapsed) : 1.0;
 
@@ -644,11 +521,10 @@ export function buildStateSnapshot(
     multiplier,
     elapsed,
     crashPoint: state.phase === 'CRASHED' ? state.crashPoint : null,
-    players: getPlayers(state),
+    players: getPlayerSnapshots(state),
     chainCommitment: state.chainCommitment,
     drandRound: state.phase === 'CRASHED' ? state.drandRound : null,
     drandRandomness: state.phase === 'CRASHED' ? state.drandRandomness : null,
     history: state.history,
-    serverVersion: '1.0.0',
   };
 }

@@ -62,7 +62,7 @@ describe('VerifyModal component', () => {
         drandRound: 100,
         drandRandomness: 'abc',
       });
-      await Promise.resolve();
+      await tick();
       await tick();
       expect(screen.getByText(/✓ Verified/)).toBeInTheDocument();
       expect(screen.getByText(/2\.37x/)).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('VerifyModal component', () => {
         drandRound: 100,
         drandRandomness: 'abc',
       });
-      await Promise.resolve();
+      await tick();
       await tick();
       expect(screen.getByText(/✗ Chain link invalid/)).toBeInTheDocument();
     });
@@ -109,7 +109,7 @@ describe('VerifyModal component', () => {
         drandRound: 100,
         drandRandomness: 'abc',
       });
-      await Promise.resolve();
+      await tick();
       await tick();
       expect(screen.getByText(/✗ Crash point mismatch/)).toBeInTheDocument();
       const mismatchEl = screen.getByText(/Computed:.*vs Displayed:/);

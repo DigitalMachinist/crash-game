@@ -11,6 +11,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Big Ideas
 
+- Ensure that we use the message receipt time at the edge to check for whether join/cashout messages are valid and on-time to count
 - Make this into a hacking game where the multiplier starts when the hacker says "I'm in!" and then as the multiplier increases you see bash terminal commands or maybe sftp/telnet commands to explore folder structures (ideally more or less real syntax), searching rapidly through folders recursively downloading files, quickly flashing folders and paths as they stream down and off the screen. Cashout becomes "logging out" or "bailing out" or "disconnecting" and the crash becomes being "traced" or "located" or "caught" complete with big DOS/Evangelion-ass danger/error UI and maybe an "FBI! Open up!". Lean heavily into hacking themes, "Hackers" the movie from the 90s, TUI but with visual effects. Sound and stuff would be excellent. That also implies having to offer the user sound options or at least mutes for sound and music (if there's music).
 - Remember the player's name between rounds
 - Remember the player's most recent bet between rounds
@@ -169,11 +170,11 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/socket.ts:15-46`
   - Add explicit cleanup; return handle from `connect()`; implement singleton pattern or connection guard.
 
-- [ ] **[High-24]** Dual dispatch pattern (stores + CustomEvents) creates implicit sync contracts
+- [x] **[High-24]** Dual dispatch pattern (stores + CustomEvents) creates implicit sync contracts
   - File: `src/client/messageHandler.ts:32-109`, `src/client/App.svelte:46-92`
   - Adopt store-only pattern with derived stores; eliminate CustomEvents for game state, or create typed event factories.
 
-- [ ] **[High-25]** CustomEvent handlers cast without null-safety checks
+- [x] **[High-25]** CustomEvent handlers cast without null-safety checks
   - File: `src/client/App.svelte:46-61`, `src/client/App.svelte:63-92`
   - Create typed event factory that validates detail on dispatch; add null checks in handlers.
 
@@ -185,15 +186,15 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
 
 ### Medium — Code Quality (Svelte 5 Migration)
 
-- [ ] **[Medium-18]** Components use old Svelte 4 `export let` syntax (not Svelte 5 idioms)
+- [x] **[Medium-18]** Components use old Svelte 4 `export let` syntax (not Svelte 5 idioms)
   - File: `src/client/VerifyModal.svelte`, `src/client/History.svelte`, `src/client/BetForm.svelte`
   - Convert to `let { entry, onClose } = $props()` pattern.
 
-- [ ] **[Medium-19]** Components use old `$:` reactive declarations instead of `$derived()`
+- [x] **[Medium-19]** Components use old `$:` reactive declarations instead of `$derived()`
   - File: `src/client/BetForm.svelte:11-14`, `src/client/GameStatus.svelte:4-5`
   - Convert `$:` computed values to `$derived()` rune.
 
-- [ ] **[Medium-20]** CashoutButton timeout hardcoded (button re-enables too early if server slow)
+- [x] **[Medium-20]** CashoutButton timeout hardcoded (button re-enables too early if server slow)
   - File: `src/client/CashoutButton.svelte:18-20`
   - Use server ACK event to reset loading state instead of 2000ms timeout.
 
@@ -201,7 +202,7 @@ Issues are ordered by severity (Critical > High > Medium > Low) and by ID within
   - File: `src/client/stores.ts:19`
   - Remove the `as Phase` assertion — type is already `Phase` after the nullish coalescing operator.
 
-- [ ] **[Medium-22]** Unknown message types silently ignored with no logging
+- [x] **[Medium-22]** Unknown message types silently ignored with no logging
   - File: `src/server/crash-game.ts:206-214`
   - Add exhaustive type check; emit error message for unknown types; log in development.
   - NOTE: Overlaps with Medium-13 (IMPLEMENT LATER). **Implement together as one PR** covering both `onMessage()` and alarm handler unknown-type paths.

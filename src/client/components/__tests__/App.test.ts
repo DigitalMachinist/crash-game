@@ -22,15 +22,16 @@ vi.mock('../../lib/balance', () => ({
   getBalance: vi.fn().mockReturnValue(100),
   applyCashout: vi.fn(),
   addHistoryEntry: vi.fn(),
-  hasPendingResult: vi.fn().mockReturnValue(false),
+  isRoundRecorded: vi.fn().mockReturnValue(false),
+  applyPendingPayout: vi.fn().mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 }),
+  applyRoundResult: vi.fn(),
 }));
 
 import {
-  addHistoryEntry,
-  applyCashout,
+  applyPendingPayout,
+  applyRoundResult,
   getBalance,
   getOrCreatePlayerId,
-  hasPendingResult,
 } from '../../lib/balance';
 import { connect, disconnect } from '../../lib/socket';
 
@@ -64,7 +65,8 @@ beforeEach(() => {
   lastPendingPayout.set(null);
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
-  vi.mocked(hasPendingResult).mockReturnValue(false);
+  vi.mocked(applyPendingPayout).mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 });
+  vi.mocked(applyRoundResult).mockReturnValue(undefined);
 });
 
 describe('App component', () => {
@@ -145,7 +147,7 @@ describe('App component', () => {
       expect(screen.getByText('Auto-cashout: +120.00 (2.40x)')).toBeTruthy();
     });
 
-    it('calls applyCashout and addHistoryEntry when lastPendingPayout store is set', async () => {
+    it('calls applyPendingPayout when lastPendingPayout store is set', async () => {
       render(App);
       lastPendingPayout.set({
         type: 'pendingPayout',
@@ -156,9 +158,9 @@ describe('App component', () => {
         crashPoint: 3.0,
       });
       await tick();
-      expect(applyCashout).toHaveBeenCalledWith(120);
-      expect(addHistoryEntry).toHaveBeenCalledWith(
+      expect(applyPendingPayout).toHaveBeenCalledWith(
         expect.objectContaining({
+          type: 'pendingPayout',
           roundId: 1,
           wager: 50,
           payout: 120,
@@ -168,8 +170,8 @@ describe('App component', () => {
       );
     });
 
-    it('hasPendingResult guard prevents double-apply of pendingPayout', async () => {
-      vi.mocked(hasPendingResult).mockReturnValue(true);
+    it('does not show toast when applyPendingPayout returns null (already recorded)', async () => {
+      vi.mocked(applyPendingPayout).mockReturnValue(null);
       render(App);
       lastPendingPayout.set({
         type: 'pendingPayout',
@@ -180,8 +182,7 @@ describe('App component', () => {
         crashPoint: 3.0,
       });
       await tick();
-      expect(applyCashout).not.toHaveBeenCalled();
-      expect(addHistoryEntry).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Auto-cashout:/)).toBeNull();
     });
   });
 
@@ -195,125 +196,27 @@ describe('App component', () => {
       return makeGameState('CRASHED', roundId, { crashPoint: 2.0, players });
     }
 
-    it('calls applyCashout for player who cashed out', async () => {
+    it('calls applyRoundResult with the snapshot and current playerId', async () => {
       render(App);
-      lastCrashResult.set(
-        makeCrashedSnapshot(5, [
-          {
-            id: 'conn1',
-            playerId: 'test-player-id',
-            name: 'Player 1',
-            wager: 100,
-            cashedOut: true,
-            cashoutMultiplier: 2.0,
-            payout: 200,
-            autoCashout: null,
-          },
-        ]),
-      );
-      await tick();
-      expect(applyCashout).toHaveBeenCalledWith(200);
-    });
-
-    it('calls addHistoryEntry with payout:200 for player who cashed out', async () => {
-      render(App);
-      lastCrashResult.set(
-        makeCrashedSnapshot(5, [
-          {
-            id: 'conn1',
-            playerId: 'test-player-id',
-            name: 'Player 1',
-            wager: 100,
-            cashedOut: true,
-            cashoutMultiplier: 2.0,
-            payout: 200,
-            autoCashout: null,
-          },
-        ]),
-      );
-      await tick();
-      expect(addHistoryEntry).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roundId: 5,
+      const snapshot = makeCrashedSnapshot(5, [
+        {
+          id: 'conn1',
+          playerId: 'test-player-id',
+          name: 'Player 1',
           wager: 100,
-          payout: 200,
+          cashedOut: true,
           cashoutMultiplier: 2.0,
-          crashPoint: 2.0,
-        }),
-      );
-    });
-
-    it('does NOT call applyCashout for player who did not cash out', async () => {
-      render(App);
-      lastCrashResult.set(
-        makeCrashedSnapshot(5, [
-          {
-            id: 'conn1',
-            playerId: 'test-player-id',
-            name: 'Player 1',
-            wager: 100,
-            cashedOut: false,
-            cashoutMultiplier: null,
-            payout: null,
-            autoCashout: null,
-          },
-        ]),
-      );
+          payout: 200,
+          autoCashout: null,
+        },
+      ]);
+      lastCrashResult.set(snapshot);
       await tick();
-      expect(applyCashout).not.toHaveBeenCalled();
+      expect(applyRoundResult).toHaveBeenCalledWith(snapshot, 'test-player-id');
     });
 
-    it('calls addHistoryEntry with payout:0 for player who did not cash out', async () => {
-      render(App);
-      lastCrashResult.set(
-        makeCrashedSnapshot(5, [
-          {
-            id: 'conn1',
-            playerId: 'test-player-id',
-            name: 'Player 1',
-            wager: 100,
-            cashedOut: false,
-            cashoutMultiplier: null,
-            payout: null,
-            autoCashout: null,
-          },
-        ]),
-      );
-      await tick();
-      expect(addHistoryEntry).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roundId: 5,
-          wager: 100,
-          payout: 0,
-          cashoutMultiplier: null,
-          crashPoint: 2.0,
-        }),
-      );
-    });
-
-    it('does nothing when myPlayerId is not in crashed players list', async () => {
-      render(App);
-      lastCrashResult.set(
-        makeCrashedSnapshot(5, [
-          {
-            id: 'conn2',
-            playerId: 'other-player',
-            name: 'Other',
-            wager: 100,
-            cashedOut: true,
-            cashoutMultiplier: 2.0,
-            payout: 200,
-            autoCashout: null,
-          },
-        ]),
-      );
-      await tick();
-      expect(applyCashout).not.toHaveBeenCalled();
-      expect(addHistoryEntry).not.toHaveBeenCalled();
-    });
-
-    it('hasPendingResult guard prevents double-apply when lastCrashResult is set', async () => {
-      vi.mocked(hasPendingResult).mockReturnValue(true);
+    it('updates balance store after applyRoundResult', async () => {
+      vi.mocked(getBalance).mockReturnValue(200);
       render(App);
       lastCrashResult.set(
         makeCrashedSnapshot(5, [
@@ -330,8 +233,7 @@ describe('App component', () => {
         ]),
       );
       await tick();
-      expect(applyCashout).not.toHaveBeenCalled();
-      expect(addHistoryEntry).not.toHaveBeenCalled();
+      expect(get(balance)).toBe(200);
     });
   });
 

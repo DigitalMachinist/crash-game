@@ -89,10 +89,10 @@ describe('connect()', () => {
     expect(get(multiplierAnimating)).toBe(false);
   });
 
-  it('creates socket with correct room and party params (via getRawSocket)', async () => {
-    const { getRawSocket } = await import('../socket');
+  it('creates socket with correct room and party params (via getSocket)', async () => {
+    const { getSocket } = await import('../socket');
     connect();
-    const s = getRawSocket();
+    const s = getSocket();
     // Socket was created — verify it's not null
     expect(s).not.toBeNull();
   });
@@ -133,12 +133,12 @@ describe('disconnect()', () => {
     expect(events).toEqual(['close', 'message', 'open']);
   });
 
-  it('[High-23] getRawSocket() returns null after disconnect', async () => {
-    const { getRawSocket } = await import('../socket');
+  it('[High-23] getSocket() returns null after disconnect', async () => {
+    const { getSocket } = await import('../socket');
     connect();
-    expect(getRawSocket()).not.toBeNull();
+    expect(getSocket()).not.toBeNull();
     disconnect();
-    expect(getRawSocket()).toBeNull();
+    expect(getSocket()).toBeNull();
   });
 });
 
@@ -152,11 +152,11 @@ describe('[High-23] singleton guard', () => {
 
 describe('[High-23] cleanup return value', () => {
   it('connect() returns a function that disconnects', async () => {
-    const { getRawSocket } = await import('../socket');
+    const { getSocket } = await import('../socket');
     const cleanup = connect();
     expect(typeof cleanup).toBe('function');
     cleanup();
-    expect(getRawSocket()).toBeNull();
+    expect(getSocket()).toBeNull();
     expect(get(connectionStatus)).toBe('disconnected');
   });
 });

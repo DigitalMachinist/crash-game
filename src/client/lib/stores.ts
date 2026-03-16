@@ -1,7 +1,7 @@
 /**
  * Svelte stores for reactive game state.
  *
- * Writable stores are updated by `messageHandler.ts`. Derived stores:
+ * Writable stores are updated by `message-handler.ts`. Derived stores:
  * - `phase`       — current `Phase` derived from `gameState`
  * - `countdown`   — ms remaining in WAITING
  * - `playersList` — memoized `Object.values($players)` array; only produces a
@@ -12,7 +12,7 @@
  *
  * @see docs/project-architecture.md §1.3
  */
-import { derived, get, writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import type {
   GameStateSnapshot,
   HistoryEntry,
@@ -35,25 +35,34 @@ export const connectionStatus = writable<
 >('connecting');
 
 /**
- * Set by messageHandler when a state{phase:'CRASHED'} message arrives.
+ * Set by message-handler when a state{phase:'CRASHED'} message arrives.
  * App.svelte watches this store and applies round-result accounting.
  * Reset to null after consumption to avoid re-triggering the effect.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastCrashResult = writable<GameStateSnapshot | null>(null);
 
 /**
- * Set by messageHandler when a pendingPayout message arrives.
+ * Set by message-handler when a pendingPayout message arrives.
  * App.svelte watches this store and credits disconnected auto-cashout payouts.
  * Reset to null after consumption to avoid re-triggering the effect.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastPendingPayout = writable<Extract<ServerMessage, { type: 'pendingPayout' }> | null>(
   null,
 );
 
 /**
- * Set by messageHandler when an error message arrives from the server.
+ * Set by message-handler when an error message arrives from the server.
  * BetForm.svelte watches this store to surface server-side validation errors.
  * Reset to null after consumption.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastError = writable<string | null>(null);
 
@@ -108,5 +117,3 @@ export const isInRound = derived(
   ([$phase, $players, $id]) =>
     ($phase === 'RUNNING' || $phase === 'STARTING') && $id in $players && !$players[$id]?.cashedOut,
 );
-
-export { get };

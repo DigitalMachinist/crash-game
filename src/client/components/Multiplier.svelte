@@ -3,17 +3,19 @@ import { displayMultiplier, multiplierAnimating, phase } from '../lib/stores';
 
 // Throttled accessible label: only announce at 0.5x thresholds to avoid
 // overwhelming screen readers with rapid 100ms updates during play.
-$: accessibleMultiplier = Math.floor($displayMultiplier * 2) / 2;
-$: accessibleLabel =
+const accessibleMultiplier = $derived(Math.floor($displayMultiplier * 2) / 2);
+const accessibleLabel = $derived(
   $phase === 'STARTING'
     ? 'Round starting'
     : $phase === 'CRASHED'
       ? `Crashed at ${$displayMultiplier.toFixed(2)}x`
-      : `${accessibleMultiplier.toFixed(1)}x`;
+      : `${accessibleMultiplier.toFixed(1)}x`,
+);
 </script>
 
 <div class="multiplier-container" aria-live="off" class:crashed-container={$phase === 'CRASHED'}>
   {#if $phase === 'STARTING'}
+    <!-- STARTING suppresses the multiplier number entirely; other phases show it with conditional styling -->
     <div class="multiplier starting">STARTING...</div>
   {:else}
     {#if $phase === 'CRASHED'}
