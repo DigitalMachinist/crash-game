@@ -31,7 +31,7 @@ jobs:
         run: npm run typecheck:server
 
       - name: Test
-        run: npm run test
+        run: npm run test:all
 
       - name: Lint and format check
         run: npm run check
