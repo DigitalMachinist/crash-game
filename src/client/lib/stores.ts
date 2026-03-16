@@ -38,6 +38,9 @@ export const connectionStatus = writable<
  * Set by message-handler when a state{phase:'CRASHED'} message arrives.
  * App.svelte watches this store and applies round-result accounting.
  * Reset to null after consumption to avoid re-triggering the effect.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastCrashResult = writable<GameStateSnapshot | null>(null);
 
@@ -45,6 +48,9 @@ export const lastCrashResult = writable<GameStateSnapshot | null>(null);
  * Set by message-handler when a pendingPayout message arrives.
  * App.svelte watches this store and credits disconnected auto-cashout payouts.
  * Reset to null after consumption to avoid re-triggering the effect.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastPendingPayout = writable<Extract<ServerMessage, { type: 'pendingPayout' }> | null>(
   null,
@@ -54,6 +60,9 @@ export const lastPendingPayout = writable<Extract<ServerMessage, { type: 'pendin
  * Set by message-handler when an error message arrives from the server.
  * BetForm.svelte watches this store to surface server-side validation errors.
  * Reset to null after consumption.
+ *
+ * Single-consumer contract: only one component may subscribe and reset this
+ * store. If a second consumer subscribes, both must coordinate reset logic.
  */
 export const lastError = writable<string | null>(null);
 

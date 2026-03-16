@@ -15,7 +15,6 @@
  */
 import { onDestroy, onMount } from 'svelte';
 import { get } from 'svelte/store';
-import type { GameStateSnapshot, ServerMessage } from '../types';
 import BetForm from './components/BetForm.svelte';
 import CashoutButton from './components/CashoutButton.svelte';
 import ConnectionStatus from './components/ConnectionStatus.svelte';
@@ -25,11 +24,10 @@ import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
 import PlayerList from './components/PlayerList.svelte';
 import {
-  addHistoryEntry,
-  applyCashout,
+  applyPendingPayout,
+  applyRoundResult,
   getBalance,
   getOrCreatePlayerId,
-  isRoundRecorded,
 } from './lib/balance';
 import { connect, disconnect } from './lib/socket';
 import { balance, lastCrashResult, lastPendingPayout, myPlayerId } from './lib/stores';
@@ -46,57 +44,11 @@ function showToast(msg: string) {
   }, 4000);
 }
 
-function applyPendingPayout(detail: Extract<ServerMessage, { type: 'pendingPayout' }>) {
-  // Guard against double-applying
-  if (isRoundRecorded(detail.roundId)) return;
-  applyCashout(detail.payout);
-  addHistoryEntry({
-    roundId: detail.roundId,
-    wager: detail.wager,
-    payout: detail.payout,
-    cashoutMultiplier: detail.cashoutMultiplier,
-    crashPoint: detail.crashPoint,
-    timestamp: Date.now(),
-  });
-  balance.set(getBalance());
-  showToast(`Auto-cashout: +${detail.payout.toFixed(2)} (${detail.cashoutMultiplier.toFixed(2)}x)`);
-}
-
-function applyRoundResult(snapshot: GameStateSnapshot) {
-  if (snapshot.crashPoint === null) return;
-  const id = get(myPlayerId);
-  if (!id) return;
-  const myPlayer = snapshot.players.find((p) => p.playerId === id);
-  if (!myPlayer) return;
-  if (isRoundRecorded(snapshot.roundId)) return;
-  if (myPlayer.cashedOut && myPlayer.payout !== null) {
-    applyCashout(myPlayer.payout);
-    addHistoryEntry({
-      roundId: snapshot.roundId,
-      wager: myPlayer.wager,
-      payout: myPlayer.payout,
-      cashoutMultiplier: myPlayer.cashoutMultiplier,
-      crashPoint: snapshot.crashPoint,
-      timestamp: Date.now(),
-    });
-    balance.set(getBalance());
-  } else {
-    // cashedOut=false: wager already deducted at join — just record the loss
-    addHistoryEntry({
-      roundId: snapshot.roundId,
-      wager: myPlayer.wager,
-      payout: 0,
-      cashoutMultiplier: null,
-      crashPoint: snapshot.crashPoint,
-      timestamp: Date.now(),
-    });
-  }
-}
-
 $effect(() => {
   const result = $lastCrashResult;
   if (result) {
-    applyRoundResult(result);
+    applyRoundResult(result, get(myPlayerId));
+    balance.set(getBalance());
     lastCrashResult.set(null);
   }
 });
@@ -104,7 +56,13 @@ $effect(() => {
 $effect(() => {
   const payout = $lastPendingPayout;
   if (payout) {
-    applyPendingPayout(payout);
+    const result = applyPendingPayout(payout);
+    if (result) {
+      balance.set(getBalance());
+      showToast(
+        `Auto-cashout: +${result.payout.toFixed(2)} (${result.cashoutMultiplier.toFixed(2)}x)`,
+      );
+    }
     lastPendingPayout.set(null);
   }
 });

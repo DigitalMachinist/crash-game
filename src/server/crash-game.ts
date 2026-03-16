@@ -165,18 +165,8 @@ export class CrashGame extends Server<Env> {
     const msg = parsed;
 
     if (msg.type === 'join') {
-      // Check for pending payout before processing join
-      const pending = this.pendingPayouts.get(msg.playerId);
-      if (pending) {
-        this.pendingPayouts.delete(msg.playerId);
-        conn.send(
-          JSON.stringify({
-            type: 'pendingPayout',
-            ...pending,
-          } satisfies ServerMessage),
-        );
-        await this.persistState();
-      }
+      // Deliver any stored payout before processing the join (pre-join hook)
+      await this.deliverPendingPayout(conn, msg.playerId);
 
       const result = handleJoin(
         this.gameState,
@@ -462,7 +452,60 @@ export class CrashGame extends Server<Env> {
       connectionMap.set(conn.id, conn);
     }
 
-    // Store pending payouts for auto-cashed-out players who are disconnected
+    this.storePendingPayouts(crashedState, connectionMap);
+
+    this.broadcastMessages(result.messages);
+
+    await this.persistState();
+    await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
+  }
+
+  private async beginNextRound(): Promise<void> {
+    const result = handleCrashExpired(this.gameState);
+    this.gameState = result.state;
+    this.invalidateSnapshot();
+
+    this.broadcastMessages(result.messages);
+
+    await this.persistState();
+    await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
+  }
+
+  /**
+   * If the player has a stored pending payout (from an auto-cashout while
+   * disconnected), sends the `pendingPayout` message and removes the entry.
+   * Called as a pre-join hook so the player receives their payout before the
+   * join response is processed.
+   */
+  private async deliverPendingPayout(conn: Connection, playerId: string): Promise<void> {
+    const pending = this.pendingPayouts.get(playerId);
+    if (!pending) return;
+    this.pendingPayouts.delete(playerId);
+    conn.send(
+      JSON.stringify({
+        type: 'pendingPayout',
+        ...pending,
+      } satisfies ServerMessage),
+    );
+    await this.persistState();
+  }
+
+  /**
+   * Iterates all cashed-out players in the just-crashed state and stores a
+   * pending payout for every player who is no longer connected. The
+   * `connectionMap` (built once from `this.getConnections()`) enables O(1)
+   * per-player lookups, keeping the overall loop O(n) rather than O(n²).
+   *
+   * The stored payouts are delivered on the player's next `join` message via
+   * `deliverPendingPayout`. Oldest entries are evicted when the map is at
+   * capacity. [High-10]
+   *
+   * @see docs/game-state-machine.md §3.5 (disconnect semantics)
+   */
+  private storePendingPayouts(
+    crashedState: RunningGameState,
+    connectionMap: Map<string, Connection>,
+  ): void {
     for (const [, player] of crashedState.players) {
       if (player.cashedOut && player.payout !== null && player.cashoutMultiplier !== null) {
         // O(1) lookup instead of O(n) scan per player
@@ -486,22 +529,6 @@ export class CrashGame extends Server<Env> {
         }
       }
     }
-
-    this.broadcastMessages(result.messages);
-
-    await this.persistState();
-    await this.ctx.storage.setAlarm(now + CRASHED_DISPLAY_MS);
-  }
-
-  private async beginNextRound(): Promise<void> {
-    const result = handleCrashExpired(this.gameState);
-    this.gameState = result.state;
-    this.invalidateSnapshot();
-
-    this.broadcastMessages(result.messages);
-
-    await this.persistState();
-    await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_TICK_MS);
   }
 
   /**

@@ -12,7 +12,7 @@
  */
 
 import { CLIENT_HISTORY_LIMIT } from '../../config';
-import type { RoundResult } from '../../types';
+import type { GameStateSnapshot, RoundResult, ServerMessage } from '../../types';
 
 const BALANCE_KEY = 'crashBalance';
 const HISTORY_KEY = 'crashHistory';
@@ -121,4 +121,75 @@ export function getHistory(): RoundResult[] {
 
 export function isRoundRecorded(roundId: number): boolean {
   return getHistory().some((r) => r.roundId === roundId);
+}
+
+/**
+ * Applies accounting for a pending payout (auto-cashout delivered after reconnect).
+ * Guards against double-application via `isRoundRecorded()`.
+ *
+ * Returns `{ payout, cashoutMultiplier }` when the payout was applied so the
+ * caller (App.svelte) can display a toast notification, or `null` if the round
+ * was already recorded and no action was taken.
+ *
+ * Does NOT update the Svelte `balance` store — the caller is responsible for
+ * calling `balance.set(getBalance())` after this function returns a non-null result.
+ *
+ * @see docs/game-state-machine.md §3.8
+ */
+export function applyPendingPayout(
+  detail: Extract<ServerMessage, { type: 'pendingPayout' }>,
+): { payout: number; cashoutMultiplier: number } | null {
+  if (isRoundRecorded(detail.roundId)) return null;
+  applyCashout(detail.payout);
+  addHistoryEntry({
+    roundId: detail.roundId,
+    wager: detail.wager,
+    payout: detail.payout,
+    cashoutMultiplier: detail.cashoutMultiplier,
+    crashPoint: detail.crashPoint,
+    timestamp: Date.now(),
+  });
+  return { payout: detail.payout, cashoutMultiplier: detail.cashoutMultiplier };
+}
+
+/**
+ * Applies accounting for a completed round result for the identified player.
+ * Guards against double-application via `isRoundRecorded()`.
+ *
+ * `playerId` is passed as a parameter so this function does not need to import
+ * Svelte stores — the caller (App.svelte) reads `myPlayerId` from the store and
+ * passes it here.
+ *
+ * Does NOT update the Svelte `balance` store — the caller is responsible for
+ * calling `balance.set(getBalance())` after this function returns.
+ *
+ * @see docs/game-state-machine.md §3.8
+ */
+export function applyRoundResult(snapshot: GameStateSnapshot, playerId: string): void {
+  if (snapshot.crashPoint === null) return;
+  if (!playerId) return;
+  const myPlayer = snapshot.players.find((p) => p.playerId === playerId);
+  if (!myPlayer) return;
+  if (isRoundRecorded(snapshot.roundId)) return;
+  if (myPlayer.cashedOut && myPlayer.payout !== null) {
+    applyCashout(myPlayer.payout);
+    addHistoryEntry({
+      roundId: snapshot.roundId,
+      wager: myPlayer.wager,
+      payout: myPlayer.payout,
+      cashoutMultiplier: myPlayer.cashoutMultiplier,
+      crashPoint: snapshot.crashPoint,
+      timestamp: Date.now(),
+    });
+  } else {
+    // cashedOut=false: wager already deducted at join — just record the loss
+    addHistoryEntry({
+      roundId: snapshot.roundId,
+      wager: myPlayer.wager,
+      payout: 0,
+      cashoutMultiplier: null,
+      crashPoint: snapshot.crashPoint,
+      timestamp: Date.now(),
+    });
+  }
 }

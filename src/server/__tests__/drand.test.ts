@@ -84,6 +84,23 @@ describe('fetchDrandBeacon', () => {
     expect(result).toEqual(mockBeacon);
   });
 
+  it('primary URL success: fetch is called exactly once (no fallback attempted)', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockBeacon,
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await fetchDrandBeacon(42);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${DRAND_BASE_URL}/public/42`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(result).toEqual(mockBeacon);
+  });
+
   it('falls back to /public/latest when primary returns non-200 status', async () => {
     vi.stubGlobal(
       'fetch',
@@ -95,6 +112,29 @@ describe('fetchDrandBeacon', () => {
 
     const result = await fetchDrandBeacon(100);
 
+    expect(result).toEqual(mockBeacon);
+  });
+
+  it('fallback URL success: returns beacon from /public/latest when primary fails', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockBeacon });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await fetchDrandBeacon(77);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      `${DRAND_BASE_URL}/public/77`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      `${DRAND_BASE_URL}/public/latest`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     expect(result).toEqual(mockBeacon);
   });
 
