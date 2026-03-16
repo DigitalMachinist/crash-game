@@ -101,7 +101,7 @@ flowchart TD
 
 **`game-state.ts`** contains all pure (no I/O) state transition functions: `handleJoin`, `handleCashout`, `handleTick`, `handleCrash`, `handleStartingComplete`, `handleCountdownTick`, `handleCrashExpired`, `buildStateSnapshot`. Each returns `{ state, messages }` (plus optional flags); `CrashGame` then broadcasts/sends the returned messages.
 
-**`PendingPayout` interface** is defined locally in `crash-game.ts` (not exported via `types.ts`), keyed by stable `playerId` UUID.
+**`PendingPayout` interface** is defined and exported from `validation.ts` (not via `types.ts`), keyed by stable `playerId` UUID.
 
 ---
 
