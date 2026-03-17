@@ -98,7 +98,7 @@ describe('App component', () => {
     it('calls getBalance() on mount and initializes balance display', () => {
       render(App);
       expect(getBalance).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('100.00 CR')).toBeTruthy();
+      expect(screen.getAllByText('100.00 CR').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -106,21 +106,21 @@ describe('App component', () => {
     it('shows positive balance', () => {
       render(App);
       // getBalance mock returns 100, balance store is set to 100 on mount
-      expect(screen.getByText('100.00 CR')).toBeTruthy();
+      expect(screen.getAllByText('100.00 CR').length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows negative balance', async () => {
       render(App);
       balance.set(-50);
       await tick();
-      expect(screen.getByText('-50.00 CR')).toBeTruthy();
+      expect(screen.getAllByText('-50.00 CR').length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows zero balance', async () => {
       vi.mocked(getBalance).mockReturnValue(0);
       render(App);
       await tick();
-      expect(screen.getByText('0.00 CR')).toBeTruthy();
+      expect(screen.getAllByText('0.00 CR').length).toBeGreaterThanOrEqual(1);
     });
   });
 

@@ -24,6 +24,7 @@ import Multiplier from './components/Multiplier.svelte';
 import NameModal from './components/NameModal.svelte';
 import PlayerList from './components/PlayerList.svelte';
 import TargetInfo from './components/TargetInfo.svelte';
+import TerminalDisplay from './components/TerminalDisplay.svelte';
 import {
   applyPendingPayout,
   applyRoundResult,
@@ -33,10 +34,12 @@ import {
   setPlayerName as persistPlayerName,
 } from './lib/balance';
 import { sendSetName } from './lib/commands';
+import { getPrepLines } from './lib/prep-terminal';
 import { connect, disconnect } from './lib/socket';
 import {
   balance,
   connectionStatus,
+  countdown,
   gameState,
   lastCrashResult,
   lastPendingPayout,
@@ -44,6 +47,7 @@ import {
   myPlayerName,
   phase,
   roundTarget,
+  terminalLines,
 } from './lib/stores';
 
 let pendingPayoutToast: string | null = $state(null);
@@ -87,6 +91,14 @@ $effect(() => {
 $effect(() => {
   if ($connectionStatus === 'connected' && $myPlayerName) {
     sendSetName($myPlayerName);
+  }
+});
+
+// Prep terminal: emit countdown-synced lines during WAITING phase.
+$effect(() => {
+  if ($phase === 'WAITING') {
+    const sec = Math.ceil($countdown / 1000);
+    terminalLines.set(getPrepLines(sec, $roundTarget));
   }
 });
 
@@ -165,7 +177,9 @@ onDestroy(() => {
           <TargetInfo target={$roundTarget} />
           <BetForm />
         </div>
-        <!-- Prep terminal added in Wave 5 -->
+        <div class="prep-terminal">
+          <TerminalDisplay lines={$terminalLines} dim={true} maxHeight="120px" threatLevel="GHOST" />
+        </div>
       </div>
     {:else}
       <div class="game-area">
@@ -481,6 +495,12 @@ onDestroy(() => {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     align-items: start;
+  }
+
+  /* ─── Prep terminal ─── */
+  .prep-terminal {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-card);
   }
 
   /* ─── Game area ─── */
