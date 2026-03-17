@@ -19,11 +19,11 @@ import BetForm from './components/BetForm.svelte';
 import CashoutButton from './components/CashoutButton.svelte';
 import ConnectionStatus from './components/ConnectionStatus.svelte';
 import FairnessModal from './components/FairnessModal.svelte';
-import GameStatus from './components/GameStatus.svelte';
 import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
 import NameModal from './components/NameModal.svelte';
 import PlayerList from './components/PlayerList.svelte';
+import TargetInfo from './components/TargetInfo.svelte';
 import {
   applyPendingPayout,
   applyRoundResult,
@@ -37,10 +37,13 @@ import { connect, disconnect } from './lib/socket';
 import {
   balance,
   connectionStatus,
+  gameState,
   lastCrashResult,
   lastPendingPayout,
   myPlayerId,
   myPlayerName,
+  phase,
+  roundTarget,
 } from './lib/stores';
 
 let pendingPayoutToast: string | null = $state(null);
@@ -116,22 +119,30 @@ onDestroy(() => {
 </script>
 
 <div class="app">
-  <header>
-    <h1>Crash</h1>
+  <header class="header-bar">
+    <div class="header-left">
+      <span class="brand">[crashOS]</span>
+      {#if $myPlayerName}
+        <span class="sep">@</span>
+        <button class="name-btn" onclick={() => (nameModalOpen = true)}>{$myPlayerName}</button>
+      {:else}
+        <button class="name-btn" onclick={() => (nameModalOpen = true)}>set handle</button>
+      {/if}
+      <span class="rnd">RND #{$gameState?.roundId ?? '—'}</span>
+      {#if $roundTarget}
+        <span class="tgt-label">TGT:</span>
+        <span class="tgt-value">{$roundTarget.org}</span>
+        <span class="tgt-label">HOST:</span>
+        <span class="tgt-value">{$roundTarget.hostname}</span>
+      {/if}
+    </div>
     <div class="header-right">
-      <button class="name-btn" onclick={() => (nameModalOpen = true)}>
-        {$myPlayerName || 'Anonymous'} ✎
-      </button>
-      <button class="fairness-btn" onclick={() => (fairnessModalOpen = true)}>Fairness</button>
+      <button class="fairness-btn" onclick={() => (fairnessModalOpen = true)}>⊕ PROVABLY FAIR</button>
       <ConnectionStatus />
-      <div
-        class="balance-display"
-        aria-label="Balance: {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}"
-      >
-        Balance: <span class:positive={$balance >= 0} class:negative={$balance < 0}>
-          {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}
-        </span>
-      </div>
+      <span class="wallet-label">WALLET:</span>
+      <span class="wallet-value" aria-label="Balance: {$balance.toFixed(2)} credits">
+        {$balance.toFixed(2)} CR
+      </span>
     </div>
   </header>
 
@@ -147,16 +158,28 @@ onDestroy(() => {
     <div class="toast" role="status" aria-live="polite" aria-atomic="true">{pendingPayoutToast}</div>
   {/if}
 
-  <main>
-    <section class="game-section">
-      <GameStatus />
-      <Multiplier />
-      <BetForm />
-      <CashoutButton />
-    </section>
+  <main class="app-main" class:running={$phase === 'RUNNING' || $phase === 'CRASHED'}>
+    {#if $phase === 'WAITING' || $phase === 'STARTING'}
+      <div class="lobby-area">
+        <div class="lobby-panels">
+          <TargetInfo target={$roundTarget} />
+          <BetForm />
+        </div>
+        <!-- Prep terminal added in Wave 5 -->
+      </div>
+    {:else}
+      <div class="game-area">
+        <Multiplier />
+        <!-- ThreatMeter (Wave 7) -->
+        <!-- TerminalDisplay (Wave 6) -->
+        <CashoutButton />
+        <!-- ObserverBanner (Wave 7) -->
+      </div>
+    {/if}
 
     <aside class="sidebar">
       <PlayerList />
+      <!-- ThreatPanel (Wave 7/8) -->
       <History />
     </aside>
   </main>
@@ -327,57 +350,96 @@ onDestroy(() => {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
   }
 
-  header {
+  /* ─── Header bar ─── */
+  .header-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--color-border);
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--threat-border, var(--color-border));
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: var(--color-primary);
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    color: var(--threat-color, var(--color-primary));
+    font-weight: 700;
+  }
+
+  .sep {
+    color: var(--threat-dim, var(--color-primary-dim));
+  }
+
+  .rnd {
+    color: var(--threat-dim, var(--color-primary-dim));
+  }
+
+  .tgt-label {
+    color: var(--threat-dim, var(--color-primary-dim));
+  }
+
+  .tgt-value {
+    color: var(--color-primary-mid);
   }
 
   .header-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
-  .balance-display {
-    font-size: 1rem;
-    color: var(--color-primary-dim);
+  .wallet-label {
+    color: var(--color-success-dim);
   }
 
-  .name-btn,
-  .fairness-btn {
+  .wallet-value {
+    color: var(--color-success);
+    font-weight: 700;
+  }
+
+  .name-btn {
     background: transparent;
-    border: 1px solid var(--color-border);
-    color: var(--color-primary-dim);
-    padding: 0.3rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
+    border: none;
+    color: var(--threat-dim, var(--color-primary-dim));
+    padding: 0;
+    font-size: 11px;
     cursor: pointer;
     font-family: 'Fira Code', monospace;
   }
 
-  .name-btn:hover,
-  .fairness-btn:hover {
-    background: var(--color-bg-card);
-    color: var(--color-primary);
-    border-color: var(--color-primary-mid);
+  .name-btn:hover {
+    color: var(--threat-color, var(--color-primary));
   }
 
-  .positive { color: var(--color-success); }
-  .negative { color: var(--color-critical); }
+  .fairness-btn {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-primary-dim);
+    padding: 0.2rem 0.5rem;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: 'Fira Code', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .fairness-btn:hover {
+    border-color: var(--color-primary-mid);
+    color: var(--color-primary);
+  }
 
   .toast {
     position: fixed;
@@ -394,30 +456,51 @@ onDestroy(() => {
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
   }
 
-  main {
+  /* ─── Main layout ─── */
+  .app-main {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 180px;
     gap: 1.5rem;
     padding: 1.5rem 0;
     flex: 1;
   }
 
-  .game-section {
+  .app-main.running {
+    grid-template-columns: 1fr 200px;
+  }
+
+  /* ─── Lobby layout ─── */
+  .lobby-area {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
+  .lobby-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* ─── Game area ─── */
+  .game-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* ─── Sidebar ─── */
   .sidebar {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     border-left: 1px solid var(--color-border);
-    padding-left: 1.5rem;
+    padding-left: 1rem;
   }
 
   @media (max-width: 700px) {
-    main {
+    .app-main {
       grid-template-columns: 1fr;
     }
     .sidebar {
@@ -425,6 +508,9 @@ onDestroy(() => {
       padding-left: 0;
       border-top: 1px solid var(--color-border);
       padding-top: 1rem;
+    }
+    .lobby-panels {
+      grid-template-columns: 1fr;
     }
   }
 </style>

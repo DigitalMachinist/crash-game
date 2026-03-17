@@ -98,29 +98,29 @@ describe('App component', () => {
     it('calls getBalance() on mount and initializes balance display', () => {
       render(App);
       expect(getBalance).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('+100.00')).toBeTruthy();
+      expect(screen.getByText('100.00 CR')).toBeTruthy();
     });
   });
 
   describe('balance display', () => {
-    it('shows positive balance with + prefix', () => {
+    it('shows positive balance', () => {
       render(App);
       // getBalance mock returns 100, balance store is set to 100 on mount
-      expect(screen.getByText('+100.00')).toBeTruthy();
+      expect(screen.getByText('100.00 CR')).toBeTruthy();
     });
 
-    it('shows negative balance without + prefix', async () => {
+    it('shows negative balance', async () => {
       render(App);
       balance.set(-50);
       await tick();
-      expect(screen.getByText('-50.00')).toBeTruthy();
+      expect(screen.getByText('-50.00 CR')).toBeTruthy();
     });
 
-    it('shows zero balance with + prefix', async () => {
+    it('shows zero balance', async () => {
       vi.mocked(getBalance).mockReturnValue(0);
       render(App);
       await tick();
-      expect(screen.getByText('+0.00')).toBeTruthy();
+      expect(screen.getByText('0.00 CR')).toBeTruthy();
     });
   });
 
@@ -244,14 +244,14 @@ describe('App component', () => {
   });
 
   describe('DOM structure', () => {
-    it('renders the app title', () => {
+    it('renders the app brand', () => {
       render(App);
-      expect(screen.getByRole('heading', { name: 'Crash' })).toBeTruthy();
+      expect(screen.getByText('[crashOS]')).toBeTruthy();
     });
 
-    it('renders balance label', () => {
+    it('renders wallet label', () => {
       render(App);
-      expect(screen.getAllByText(/Balance:/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/WALLET:/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('does not show toast initially', () => {
@@ -295,11 +295,11 @@ describe('App component', () => {
   });
 
   describe('balance display aria-label', () => {
-    it('balance display has aria-label with positive balance', () => {
+    it('balance display has aria-label with balance', () => {
       render(App);
       const balanceEl = document.querySelector('[aria-label^="Balance:"]');
       expect(balanceEl).not.toBeNull();
-      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: +100.00');
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: 100.00 credits');
     });
 
     it('balance display aria-label updates when balance goes negative', async () => {
@@ -307,7 +307,7 @@ describe('App component', () => {
       balance.set(-50);
       await tick();
       const balanceEl = document.querySelector('[aria-label^="Balance:"]');
-      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00');
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00 credits');
     });
   });
 });
