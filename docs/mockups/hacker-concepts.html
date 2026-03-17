@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hack Game — Visual Concepts</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&family=VT323&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --fg: #e0e0e0;
+    --nav-bg: #111;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ===== NAV ===== */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg);
+    border-bottom: 1px solid #333;
+    padding: 0.5rem 1rem;
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  nav a {
+    color: #888;
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #333;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  nav a:hover, nav a.active {
+    color: #0f0;
+    border-color: #0f0;
+    background: rgba(0,255,0,0.05);
+  }
+
+  /* ===== SECTIONS ===== */
+  section {
+    min-height: 100vh;
+    padding: 2rem;
+    border-bottom: 2px solid #222;
+  }
+  section h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.05em;
+  }
+  section .subtitle {
+    color: #666;
+    font-size: 0.8rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ===== CONCEPT GRID ===== */
+  .concept-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .concept-card {
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .concept-card .card-label {
+    padding: 0.4rem 0.75rem;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .concept-card .card-body {
+    padding: 1rem;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ===== PALETTE: GREEN PHOSPHOR ===== */
+  .pal-green {
+    --term-bg: #0a0a0a;
+    --term-fg: #00ff41;
+    --term-dim: #00802a;
+    --term-bright: #80ff90;
+    --term-warn: #ffb000;
+    --term-danger: #ff0040;
+    --term-info: #00d4ff;
+    --term-glow: rgba(0,255,65,0.5);
+    background: var(--term-bg);
+    color: var(--term-fg);
+  }
+
+  /* ===== PALETTE: AMBER CRT ===== */
+  .pal-amber {
+    --term-bg: #0a0800;
+    --term-fg: #ffb000;
+    --term-dim: #806000;
+    --term-bright: #ffd060;
+    --term-warn: #ff6600;
+    --term-danger: #ff0000;
+    --term-info: #ffd700;
+    --term-glow: rgba(255,176,0,0.5);
+    background: var(--term-bg);
+    color: var(--term-fg);
+  }
+
+  /* ===== PALETTE: CYAN CYBERPUNK ===== */
+  .pal-cyan {
+    --term-bg: #0a0a1a;
+    --term-fg: #00f0ff;
+    --term-dim: #007088;
+    --term-bright: #80ffff;
+    --term-warn: #ff00ff;
+    --term-danger: #ff0040;
+    --term-info: #00ff88;
+    --term-glow: rgba(0,240,255,0.5);
+    background: var(--term-bg);
+    color: var(--term-fg);
+  }
+
+  /* ===== PALETTE: EVA HYBRID ===== */
+  .pal-eva {
+    --term-bg: #0a0a0a;
+    --term-fg: #00ff41;
+    --term-dim: #00802a;
+    --term-bright: #ffffff;
+    --term-warn: #ffb000;
+    --term-danger: #cc0000;
+    --term-info: #00d4ff;
+    --term-glow: rgba(0,255,65,0.5);
+    --eva-red: #cc0000;
+    --eva-orange: #ff6a00;
+    --eva-border: #cc0000;
+    background: var(--term-bg);
+    color: var(--term-fg);
+  }
+
+  /* ===== TERMINAL TEXT ===== */
+  .term {
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre;
+    overflow-x: hidden;
+  }
+  .term .success { color: var(--term-fg); }
+  .term .info { color: var(--term-info); }
+  .term .warn { color: var(--term-warn); }
+  .term .danger { color: var(--term-danger); }
+  .term .dim { color: var(--term-dim); }
+  .term .bright { color: var(--term-bright); }
+
+  /* ===== GLOW VARIANTS ===== */
+  .glow-light .term {
+    text-shadow: 0 0 4px var(--term-glow);
+  }
+  .glow-heavy .term {
+    text-shadow:
+      0 0 5px var(--term-glow),
+      0 0 10px var(--term-glow),
+      0 0 20px rgba(0,255,65,0.2);
+  }
+
+  /* ===== CRT SCANLINES ===== */
+  .crt-lines::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15),
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ===== CRT VIGNETTE ===== */
+  .crt-vignette::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 50%,
+      rgba(0,0,0,0.5) 100%
+    );
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  /* ===== CRT FLICKER ===== */
+  @keyframes crt-flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.85; }
+    94% { opacity: 1; }
+    97.5% { opacity: 0.92; }
+    98% { opacity: 1; }
+  }
+  .crt-flicker {
+    animation: crt-flicker 4s infinite;
+  }
+
+  /* ===== CHROMATIC ABERRATION ===== */
+  .chromatic .term {
+    text-shadow:
+      -1px 0 rgba(255,0,0,0.4),
+      1px 0 rgba(0,255,255,0.4);
+  }
+
+  /* ===== MULTIPLIER DISPLAY ===== */
+  .multiplier-display {
+    font-size: 3.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    padding: 1rem 0;
+    letter-spacing: 0.02em;
+  }
+  .multiplier-display.glow-green {
+    color: #00ff41;
+    text-shadow: 0 0 10px rgba(0,255,65,0.6), 0 0 30px rgba(0,255,65,0.3);
+  }
+  .multiplier-display.glow-amber {
+    color: #ffb000;
+    text-shadow: 0 0 10px rgba(255,176,0,0.6), 0 0 30px rgba(255,176,0,0.3);
+  }
+  .multiplier-display.glow-red {
+    color: #ff0040;
+    text-shadow: 0 0 10px rgba(255,0,64,0.6), 0 0 30px rgba(255,0,64,0.3);
+  }
+  .multiplier-display.glow-cyan {
+    color: #00f0ff;
+    text-shadow: 0 0 10px rgba(0,240,255,0.6), 0 0 30px rgba(0,240,255,0.3);
+  }
+
+  /* ===== THREAT METER ===== */
+  .threat-meter {
+    font-size: 12px;
+    padding: 0.5rem 0;
+    letter-spacing: 0.05em;
+  }
+  .threat-meter .bar {
+    display: inline-block;
+    letter-spacing: -0.05em;
+  }
+  .threat-meter.level-ghost { color: #00ff41; }
+  .threat-meter.level-ghost .label { color: #00802a; }
+  .threat-meter.level-low { color: #00ff41; }
+  .threat-meter.level-elevated { color: #ffb000; }
+  .threat-meter.level-high { color: #ff6600; }
+  .threat-meter.level-severe { color: #ff0040; }
+  .threat-meter.level-critical { color: #ff0000; }
+  @keyframes threat-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .threat-meter.level-critical .bar { animation: threat-pulse 0.6s infinite; }
+
+  /* ===== DISCONNECT BUTTON ===== */
+  .btn-disconnect {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.6rem 2rem;
+    cursor: pointer;
+    border: 2px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+  }
+  .btn-disconnect.style-green {
+    background: transparent;
+    color: #00ff41;
+    border-color: #00ff41;
+  }
+  .btn-disconnect.style-green:hover {
+    background: rgba(0,255,65,0.1);
+    box-shadow: 0 0 15px rgba(0,255,65,0.3);
+  }
+  .btn-disconnect.style-red {
+    background: #cc0000;
+    color: #fff;
+    border-color: #ff0040;
+  }
+  .btn-disconnect.style-red:hover {
+    background: #ff0040;
+    box-shadow: 0 0 20px rgba(255,0,64,0.5);
+  }
+  .btn-disconnect.style-amber {
+    background: transparent;
+    color: #ffb000;
+    border-color: #ffb000;
+  }
+  .btn-disconnect.style-amber:hover {
+    background: rgba(255,176,0,0.1);
+    box-shadow: 0 0 15px rgba(255,176,0,0.3);
+  }
+  .btn-disconnect.style-outline-danger {
+    background: transparent;
+    color: #ff0040;
+    border-color: #ff0040;
+    box-shadow: inset 0 0 20px rgba(255,0,64,0.1);
+  }
+  .btn-disconnect.style-outline-danger:hover {
+    background: rgba(255,0,64,0.15);
+    box-shadow: 0 0 20px rgba(255,0,64,0.4), inset 0 0 20px rgba(255,0,64,0.15);
+  }
+
+  /* ===== GAME LAYOUT MOCK ===== */
+  .game-mock {
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 900px;
+  }
+  .game-mock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    font-size: 11px;
+    border-bottom: 1px solid;
+  }
+  .game-mock-body {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    min-height: 400px;
+  }
+  .game-mock-main {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid;
+  }
+  .game-mock-sidebar {
+    padding: 0.75rem;
+    font-size: 12px;
+  }
+  .game-mock-footer {
+    padding: 0.75rem;
+    border-top: 1px solid;
+    text-align: center;
+  }
+
+  /* ===== EVA WARNING OVERLAY ===== */
+  .eva-warning-frame {
+    position: relative;
+    overflow: hidden;
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  /* Hazard stripes */
+  .hazard-stripes-top, .hazard-stripes-bottom {
+    position: absolute;
+    left: 0; right: 0;
+    height: 24px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #ffb000,
+      #ffb000 10px,
+      #000 10px,
+      #000 20px
+    );
+    z-index: 5;
+  }
+  .hazard-stripes-top { top: 0; }
+  .hazard-stripes-bottom { bottom: 0; }
+
+  .eva-warning-text {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 3rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+    z-index: 4;
+  }
+
+  .eva-sub-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-align: center;
+    margin-top: 0.75rem;
+    z-index: 4;
+  }
+
+  .eva-border-frame {
+    position: absolute;
+    inset: 28px;
+    border: 2px solid;
+    z-index: 3;
+  }
+
+  @keyframes eva-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .eva-flash { animation: eva-flash 0.8s infinite; }
+
+  /* ===== CRASH SCREEN CONCEPTS ===== */
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-4px, -2px); }
+    20% { transform: translate(3px, 2px); }
+    30% { transform: translate(-2px, 3px); }
+    40% { transform: translate(2px, -1px); }
+    50% { transform: translate(-1px, 1px); }
+  }
+  .shaking { animation: screen-shake 0.4s ease-out; }
+
+  @keyframes glitch-clip-1 {
+    0%, 100% { clip-path: inset(0 0 90% 0); transform: translate(0); }
+    20% { clip-path: inset(20% 0 60% 0); transform: translate(-4px, 0); }
+    40% { clip-path: inset(50% 0 20% 0); transform: translate(3px, 0); }
+    60% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 0); }
+    80% { clip-path: inset(70% 0 5% 0); transform: translate(5px, 0); }
+  }
+  @keyframes glitch-clip-2 {
+    0%, 100% { clip-path: inset(90% 0 0 0); transform: translate(0); }
+    25% { clip-path: inset(60% 0 20% 0); transform: translate(3px, 0); }
+    50% { clip-path: inset(30% 0 40% 0); transform: translate(-5px, 0); }
+    75% { clip-path: inset(75% 0 10% 0); transform: translate(2px, 0); }
+  }
+  .glitch-text {
+    position: relative;
+  }
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .glitch-text::before {
+    color: #ff0040;
+    animation: glitch-clip-1 0.4s infinite linear alternate;
+    text-shadow: -2px 0 #ff0040;
+  }
+  .glitch-text::after {
+    color: #00f0ff;
+    animation: glitch-clip-2 0.4s infinite linear alternate-reverse;
+    text-shadow: 2px 0 #00f0ff;
+  }
+
+  /* ===== FULL-WIDTH CONCEPT ===== */
+  .full-concept {
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .full-concept .card-label {
+    padding: 0.4rem 0.75rem;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ===== SECTION-SPECIFIC ===== */
+  .font-comparison {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .font-card {
+    border: 1px solid #333;
+    padding: 1rem;
+    background: #0a0a0a;
+  }
+  .font-card .font-name {
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    font-family: system-ui;
+  }
+
+  /* ===== BOX DRAWING / TUI FRAME ===== */
+  .tui-box {
+    border: 1px solid;
+    position: relative;
+  }
+  .tui-box .tui-title {
+    position: absolute;
+    top: -0.6em;
+    left: 1em;
+    padding: 0 0.5em;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar {
+    font-size: 13px;
+    letter-spacing: -0.02em;
+  }
+
+  /* ===== SCROLLING TERMINAL ANIMATION ===== */
+  @keyframes terminal-scroll {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+  .scrolling-terminal {
+    overflow: hidden;
+    height: 200px;
+    position: relative;
+  }
+  .scrolling-terminal .scroll-content {
+    animation: terminal-scroll 15s linear infinite;
+  }
+
+  /* ===== TRACE BAR ===== */
+  @keyframes trace-fill {
+    0% { width: 60%; }
+    100% { width: 100%; }
+  }
+  .trace-bar-fill {
+    height: 100%;
+    animation: trace-fill 3s ease-in infinite;
+  }
+
+  /* ===== LOBBY ANSI ART ===== */
+  .ansi-art {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    line-height: 1.1;
+    text-align: center;
+    white-space: pre;
+  }
+
+  /* ===== DANGER BG TRANSITION ===== */
+  .danger-bg-1 { background: #0a0a0a; }
+  .danger-bg-2 { background: #0f0a00; }
+  .danger-bg-3 { background: #1a0800; }
+  .danger-bg-4 { background: #1a0000; }
+  @keyframes danger-pulse-bg {
+    0%, 100% { background: #1a0000; }
+    50% { background: #2a0000; }
+  }
+  .danger-bg-5 { animation: danger-pulse-bg 1s infinite; }
+
+  /* ===== BORDER GLOW ===== */
+  .border-glow-green { border-color: #00ff41; box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+  .border-glow-amber { border-color: #ffb000; box-shadow: 0 0 10px rgba(255,176,0,0.2); }
+  .border-glow-red { border-color: #ff0040; box-shadow: 0 0 10px rgba(255,0,64,0.3); }
+  @keyframes border-pulse-red {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,0,64,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,0,64,0.6); }
+  }
+  .border-glow-critical { border-color: #ff0000; animation: border-pulse-red 0.8s infinite; }
+
+  /* ===== RED FLASH OVERLAY ===== */
+  @keyframes red-flash {
+    0% { opacity: 0.4; }
+    100% { opacity: 0; }
+  }
+  .red-flash-overlay {
+    position: absolute;
+    inset: 0;
+    background: #ff0040;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .red-flash-overlay.active {
+    animation: red-flash 0.5s ease-out;
+  }
+
+  /* ===== DARK SECTION DIVIDERS ===== */
+  .section-divider {
+    text-align: center;
+    padding: 1rem;
+    color: #333;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  /* ===== CONCEPT E: BBS STYLE ===== */
+  .bbs-header {
+    text-align: center;
+    padding: 1rem;
+    border-bottom: 1px solid;
+  }
+
+  /* Horizontal tearing effect */
+  @keyframes h-tear {
+    0%, 100% { clip-path: inset(0); transform: translateX(0); }
+    15% { clip-path: inset(30% 0 60% 0); transform: translateX(8px); }
+    30% { clip-path: inset(0); transform: translateX(0); }
+    45% { clip-path: inset(65% 0 25% 0); transform: translateX(-6px); }
+    60% { clip-path: inset(0); transform: translateX(0); }
+    80% { clip-path: inset(10% 0 80% 0); transform: translateX(4px); }
+  }
+  .h-tearing {
+    animation: h-tear 0.3s infinite;
+  }
+
+  /* VHS band */
+  @keyframes vhs-band {
+    0% { top: -10%; }
+    100% { top: 110%; }
+  }
+  .vhs-band {
+    position: absolute;
+    left: 0; right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    z-index: 15;
+    animation: vhs-band 2s linear infinite;
+    pointer-events: none;
+  }
+
+  /* ===== INTERACTIVE TOGGLE PANEL ===== */
+  .toggle-panel {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .toggle-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 0.3rem 0.6rem;
+    background: #1a1a1a;
+    color: #888;
+    border: 1px solid #333;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .toggle-btn:hover { color: #ccc; border-color: #555; }
+  .toggle-btn.on { color: #00ff41; border-color: #00ff41; background: rgba(0,255,65,0.08); }
+</style>
+</head>
+<body>
+
+<nav id="topnav">
+  <a href="#palettes">01 Palettes</a>
+  <a href="#typography">02 Typography</a>
+  <a href="#crt-effects">03 CRT Effects</a>
+  <a href="#multiplier">04 Multiplier</a>
+  <a href="#threat">05 Threat Meter</a>
+  <a href="#escalation">06 Danger Escalation</a>
+  <a href="#running">07 Running Phase</a>
+  <a href="#crash-eva">08 Crash: Eva</a>
+  <a href="#crash-glitch">09 Crash: Glitch</a>
+  <a href="#crash-ascii">10 Crash: Terminal</a>
+  <a href="#cashout">11 Cashout</a>
+  <a href="#lobby">12 Lobby</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: PALETTE COMPARISON -->
+<!-- ============================================================ -->
+<section id="palettes">
+  <h2>01 — Terminal Palettes</h2>
+  <p class="subtitle">Same terminal output, four different color treatments</p>
+
+  <div class="concept-row">
+    <!-- GREEN PHOSPHOR -->
+    <div class="concept-card">
+      <div class="card-label">A: Green Phosphor — Classic hacker, Matrix, Mr. Robot</div>
+      <div class="card-body pal-green glow-light">
+        <div class="term"><span class="dim">[*] Scanning target 198.51.100.42...</span>
+<span class="info">[*] Enumerating services on port range 1-65535</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">[-] Port 3306 filtered — firewall detected</span>
+
+<span class="info">$ ssh admin@198.51.100.42</span>
+<span class="success">[+] Authentication successful</span>
+admin@srv-prod-web-03:~$ <span class="bright">ls -la /opt/.secrets/</span>
+<span class="warn">[!] Permission denied</span>
+
+<span class="info">[*] Attempting privilege escalation...</span>
+<span class="success">[+] CVE-2024-1086 — nf_tables use-after-free</span>
+<span class="success">[+] ██ ROOT ACCESS GRANTED ██</span>
+
+root@srv-prod-web-03:~# <span class="bright">cat /opt/.secrets/api_keys.json</span>
+<span class="warn">{</span>
+<span class="warn">  "stripe_live": "sk_live_51HG4dK2eZvKYlo2..."</span>
+<span class="warn">  "aws_root": "AKIAI44QH8DHBEXAMPLE"</span>
+<span class="warn">}</span>
+
+<span class="info">[EXFIL]</span> api_keys.json <span class="success">[████████████████████████░]  96%</span></div>
+      </div>
+    </div>
+
+    <!-- AMBER CRT -->
+    <div class="concept-card">
+      <div class="card-label">B: Amber CRT — Warm retro, DOS era, institutional</div>
+      <div class="card-body pal-amber glow-light">
+        <div class="term"><span class="dim">[*] Scanning target 198.51.100.42...</span>
+<span class="info">[*] Enumerating services on port range 1-65535</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">[-] Port 3306 filtered — firewall detected</span>
+
+<span class="info">$ ssh admin@198.51.100.42</span>
+<span class="success">[+] Authentication successful</span>
+admin@srv-prod-web-03:~$ <span class="bright">ls -la /opt/.secrets/</span>
+<span class="warn">[!] Permission denied</span>
+
+<span class="info">[*] Attempting privilege escalation...</span>
+<span class="success">[+] CVE-2024-1086 — nf_tables use-after-free</span>
+<span class="success">[+] ██ ROOT ACCESS GRANTED ██</span>
+
+root@srv-prod-web-03:~# <span class="bright">cat /opt/.secrets/api_keys.json</span>
+<span class="warn">{</span>
+<span class="warn">  "stripe_live": "sk_live_51HG4dK2eZvKYlo2..."</span>
+<span class="warn">  "aws_root": "AKIAI44QH8DHBEXAMPLE"</span>
+<span class="warn">}</span>
+
+<span class="info">[EXFIL]</span> api_keys.json <span class="success">[████████████████████████░]  96%</span></div>
+      </div>
+    </div>
+
+    <!-- CYAN CYBERPUNK -->
+    <div class="concept-card">
+      <div class="card-label">C: Cyan Cyberpunk — Neon, Watch Dogs, futuristic</div>
+      <div class="card-body pal-cyan glow-light">
+        <div class="term"><span class="dim">[*] Scanning target 198.51.100.42...</span>
+<span class="info">[*] Enumerating services on port range 1-65535</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">[-] Port 3306 filtered — firewall detected</span>
+
+<span class="info">$ ssh admin@198.51.100.42</span>
+<span class="success">[+] Authentication successful</span>
+admin@srv-prod-web-03:~$ <span class="bright">ls -la /opt/.secrets/</span>
+<span class="warn">[!] Permission denied</span>
+
+<span class="info">[*] Attempting privilege escalation...</span>
+<span class="success">[+] CVE-2024-1086 — nf_tables use-after-free</span>
+<span class="success">[+] ██ ROOT ACCESS GRANTED ██</span>
+
+root@srv-prod-web-03:~# <span class="bright">cat /opt/.secrets/api_keys.json</span>
+<span class="warn">{</span>
+<span class="warn">  "stripe_live": "sk_live_51HG4dK2eZvKYlo2..."</span>
+<span class="warn">  "aws_root": "AKIAI44QH8DHBEXAMPLE"</span>
+<span class="warn">}</span>
+
+<span class="info">[EXFIL]</span> api_keys.json <span class="success">[████████████████████████░]  96%</span></div>
+      </div>
+    </div>
+
+    <!-- GREEN WITH COLORED SYNTAX -->
+    <div class="concept-card">
+      <div class="card-label">D: Green Base + Colored Status — Best of both worlds</div>
+      <div class="card-body pal-eva glow-light">
+        <div class="term"><span class="dim">[*] Scanning target 198.51.100.42...</span>
+<span class="info">[*] Enumerating services on port range 1-65535</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">[-] Port 3306 filtered — firewall detected</span>
+
+<span class="info">$ ssh admin@198.51.100.42</span>
+<span class="success">[+] Authentication successful</span>
+<span style="color:#00ff41">admin@srv-prod-web-03:~$</span> <span class="bright">ls -la /opt/.secrets/</span>
+<span class="warn">[!] Permission denied</span>
+
+<span class="info">[*] Attempting privilege escalation...</span>
+<span class="success">[+] CVE-2024-1086 — nf_tables use-after-free</span>
+<span style="color:#00ff41;text-shadow:0 0 8px rgba(0,255,65,0.8)">[+] ██ ROOT ACCESS GRANTED ██</span>
+
+<span style="color:#00ff41">root@srv-prod-web-03:~#</span> <span class="bright">cat /opt/.secrets/api_keys.json</span>
+<span class="warn">{</span>
+<span class="warn">  "stripe_live": "sk_live_51HG4dK2eZvKYlo2..."</span>
+<span class="warn">  "aws_root": "AKIAI44QH8DHBEXAMPLE"</span>
+<span class="warn">}</span>
+
+<span style="color:#ffcc00">[EXFIL]</span> api_keys.json <span class="success">[████████████████████████░]  96%</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: TYPOGRAPHY -->
+<!-- ============================================================ -->
+<section id="typography">
+  <h2>02 — Typography Comparison</h2>
+  <p class="subtitle">Monospace fonts at terminal size (13px) and display size (48px)</p>
+
+  <div class="font-comparison">
+    <div class="font-card" style="font-family: 'JetBrains Mono', monospace;">
+      <div class="font-name">JetBrains Mono — Clean, modern, excellent readability</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:48px; font-weight:700; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:13px;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+    <div class="font-card" style="font-family: 'Fira Code', monospace;">
+      <div class="font-name">Fira Code — Compact, great ligatures</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:48px; font-weight:700; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:13px;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+    <div class="font-card" style="font-family: 'VT323', monospace;">
+      <div class="font-name">VT323 — Authentic CRT, pixelated, retro</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:56px; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:16px;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+    <div class="font-card" style="font-family: 'Share Tech Mono', monospace;">
+      <div class="font-name">Share Tech Mono — Technical, narrow, data-dense</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:48px; font-weight:400; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:13px;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+    <div class="font-card" style="font-family: 'Space Mono', monospace;">
+      <div class="font-name">Space Mono — Quirky, bold personality</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:48px; font-weight:700; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:13px;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">Mixed: VT323 display + JetBrains Mono terminal</div>
+      <div style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+        <div style="font-size:56px; font-family:'VT323',monospace; margin-bottom:0.5rem;">4.72x</div>
+        <div style="font-size:13px; font-family:'JetBrains Mono',monospace;">root@gibson:~# cat /etc/shadow<br>[+] 847,291 records extracted<br>[EXFIL] [████████░░░░] 64% 48.3MB/s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Eva-Style Warning Typography — Space Mono Bold + Wide Letter Spacing</div>
+    <div style="background:#0a0a0a; padding:2rem; text-align:center;">
+      <div style="font-family:'Space Mono',monospace; font-weight:700; color:#cc0000; text-shadow: 0 0 20px rgba(204,0,0,0.6); letter-spacing:0.3em; font-size:2.5rem; margin-bottom:1rem;">
+        W A R N I N G
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; color:#ff6a00; letter-spacing:0.15em; font-size:0.9rem;">
+        TRACE COMPLETE — ORIGIN IDENTIFIED
+      </div>
+      <div style="font-family:'VT323',monospace; color:#cc0000; font-size:1.5rem; margin-top:1rem; letter-spacing:0.1em;">
+        FBI CYBER DIVISION — CASE #2026-CF-84721
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: CRT EFFECTS -->
+<!-- ============================================================ -->
+<section id="crt-effects">
+  <h2>03 — CRT Effects Lab</h2>
+  <p class="subtitle">Toggle effects on and off to see how they compose</p>
+
+  <div class="toggle-panel" id="crt-toggles">
+    <button class="toggle-btn on" data-effect="scanlines" onclick="toggleCRT(this)">Scanlines</button>
+    <button class="toggle-btn on" data-effect="glow" onclick="toggleCRT(this)">Phosphor Glow</button>
+    <button class="toggle-btn" data-effect="vignette" onclick="toggleCRT(this)">Vignette</button>
+    <button class="toggle-btn" data-effect="flicker" onclick="toggleCRT(this)">Flicker</button>
+    <button class="toggle-btn" data-effect="chromatic" onclick="toggleCRT(this)">Chromatic Aberration</button>
+    <button class="toggle-btn" data-effect="vhs" onclick="toggleCRT(this)">VHS Band</button>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Interactive CRT Effect Compositor</div>
+    <div id="crt-demo" class="card-body pal-green crt-lines glow-heavy" style="min-height:350px; position:relative;">
+      <div class="vhs-band" id="crt-vhs" style="display:none;"></div>
+      <div class="term" style="position:relative; z-index:1;">
+<span class="info">[*] Scanning target 198.51.100.42...</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">[-] Port 3306 filtered — firewall</span>
+
+<span class="info">$ ssh admin@198.51.100.42</span>
+<span class="success">[+] Authentication successful</span>
+admin@srv-prod-web-03:~$ <span class="bright">id</span>
+uid=1001(admin) gid=1001(admin) groups=27(sudo)
+
+admin@srv-prod-web-03:~$ <span class="bright">ls -la /opt/</span>
+drwxr-xr-x  8 root     root     4096 Mar 12 08:42 .
+drwxr-xr-x  4 www-data www-data 4096 Mar 11 22:17 app/
+drwxr-x---  2 root     root     4096 Mar 10 03:00 backups/
+drwx------  2 root     root     4096 Jan 15 09:22 .secrets/
+
+<span class="info">[*] Checking for SUID binaries...</span>
+<span class="success">[+] /usr/bin/vim — GTFOBins exploit available</span>
+<span class="info">[*] sudo vim -c ':!/bin/bash'</span>
+<span style="color:#00ff41;text-shadow:0 0 10px rgba(0,255,65,0.8)">[+] ██ ROOT ACCESS GRANTED ██</span>
+
+root@srv-prod-web-03:~# <span class="bright">cat /opt/.secrets/master.key</span>
+<span class="warn">-----BEGIN RSA PRIVATE KEY-----</span>
+<span class="warn">MIIEpAIBAAKCAQEA3Z5v8nR4YK2qR3QMZP4j8K1n</span>
+<span class="warn">[EXFILTRATING... ████████████████████ 100%]</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: MULTIPLIER DISPLAY -->
+<!-- ============================================================ -->
+<section id="multiplier">
+  <h2>04 — Multiplier Display Concepts</h2>
+  <p class="subtitle">The big number — different treatments at different danger levels</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Low danger — 1.47x — Calm green glow</div>
+      <div class="card-body danger-bg-1" style="text-align:center; padding-top:2rem;">
+        <div style="color:#00802a; font-size:11px; letter-spacing:0.15em; text-transform:uppercase;">Live Hack</div>
+        <div class="multiplier-display glow-green" style="font-family:'JetBrains Mono',monospace;">1.47x</div>
+        <div class="threat-meter level-ghost">
+          THREAT: <span class="bar">░░░░░░░░░░░░░░░░░░░░</span> <span class="label">GHOST</span>
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Medium danger — 4.72x — Warming amber</div>
+      <div class="card-body danger-bg-2" style="text-align:center; padding-top:2rem;">
+        <div style="color:#806000; font-size:11px; letter-spacing:0.15em; text-transform:uppercase;">Live Hack</div>
+        <div class="multiplier-display glow-amber" style="font-family:'JetBrains Mono',monospace;">4.72x</div>
+        <div class="threat-meter level-elevated">
+          THREAT: <span class="bar">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">High danger — 14.38x — Red warnings</div>
+      <div class="card-body danger-bg-3" style="text-align:center; padding-top:2rem;">
+        <div style="color:#ff0040; font-size:11px; letter-spacing:0.15em; text-transform:uppercase;">Live Hack — IDS Alert Active</div>
+        <div class="multiplier-display glow-red" style="font-family:'JetBrains Mono',monospace;">14.38x</div>
+        <div class="threat-meter level-severe">
+          THREAT: <span class="bar">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░</span> SEVERE
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Critical — 47.21x — Full crisis, pulsing</div>
+      <div class="card-body danger-bg-5" style="text-align:center; padding-top:2rem; border: 1px solid #ff0000; box-shadow: inset 0 0 30px rgba(255,0,0,0.1);">
+        <div style="color:#ff0000; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; animation: eva-flash 0.6s infinite;">!! CRITICAL — TRACE AT 87% !!</div>
+        <div class="multiplier-display glow-red glitch-text" data-text="47.21x" style="font-family:'JetBrains Mono',monospace;">47.21x</div>
+        <div class="threat-meter level-critical">
+          THREAT: <span class="bar">████████████████████</span> !! CRITICAL
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VT323 variant -->
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">VT323 font variant — Retro CRT feel</div>
+      <div class="card-body danger-bg-1" style="text-align:center; padding-top:2rem;">
+        <div style="color:#00802a; font-size:13px; letter-spacing:0.15em; font-family:'VT323',monospace;">LIVE HACK</div>
+        <div class="multiplier-display glow-green" style="font-family:'VT323',monospace; font-size:5rem;">1.47x</div>
+        <div class="threat-meter level-ghost" style="font-family:'VT323',monospace; font-size:16px;">
+          THREAT: <span class="bar">░░░░░░░░░░░░░░░░░░░░</span> <span class="label">GHOST</span>
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">VT323 critical variant</div>
+      <div class="card-body danger-bg-5" style="text-align:center; padding-top:2rem; border: 1px solid #ff0000;">
+        <div style="color:#ff0000; font-size:16px; letter-spacing:0.1em; font-family:'VT323',monospace; animation: eva-flash 0.6s infinite;">!! CRITICAL — TRACE AT 87% !!</div>
+        <div class="multiplier-display glow-red" style="font-family:'VT323',monospace; font-size:5rem; text-shadow: 0 0 15px rgba(255,0,64,0.8), 0 0 40px rgba(255,0,64,0.4), -2px 0 #ff0040, 2px 0 #00f0ff;">47.21x</div>
+        <div class="threat-meter level-critical" style="font-family:'VT323',monospace; font-size:16px;">
+          THREAT: <span class="bar">████████████████████</span> !! CRITICAL
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: THREAT METER -->
+<!-- ============================================================ -->
+<section id="threat">
+  <h2>05 — Threat Meter Concepts</h2>
+  <p class="subtitle">The secondary tension device alongside the multiplier</p>
+
+  <div class="full-concept">
+    <div class="card-label">Concept A: Horizontal bar with Unicode blocks</div>
+    <div style="background:#0a0a0a; padding:1.5rem; font-size:13px; font-family:'JetBrains Mono',monospace;">
+      <div style="margin-bottom:0.75rem; color:#00ff41;">THREAT: <span style="letter-spacing:-0.05em">░░░░░░░░░░░░░░░░░░░░</span>  GHOST        <span style="color:#00802a">// 1.00x - 1.50x</span></div>
+      <div style="margin-bottom:0.75rem; color:#00ff41;">THREAT: <span style="letter-spacing:-0.05em">▓▓▓▓░░░░░░░░░░░░░░░░</span>  LOW          <span style="color:#00802a">// 1.50x - 2.50x</span></div>
+      <div style="margin-bottom:0.75rem; color:#ffb000;">THREAT: <span style="letter-spacing:-0.05em">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span>  ELEVATED     <span style="color:#806000">// 2.50x - 5.00x</span></div>
+      <div style="margin-bottom:0.75rem; color:#ff6600;">THREAT: <span style="letter-spacing:-0.05em">▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░</span>  HIGH         <span style="color:#803300">// 5.00x - 10.0x</span></div>
+      <div style="margin-bottom:0.75rem; color:#ff0040;">THREAT: <span style="letter-spacing:-0.05em">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░</span>  SEVERE       <span style="color:#800020">// 10.0x - 25.0x</span></div>
+      <div style="color:#ff0000; animation: eva-flash 0.6s infinite;">THREAT: <span style="letter-spacing:-0.05em">████████████████████</span>  !! CRITICAL  <span style="color:#800000">// 25.0x+</span></div>
+    </div>
+  </div>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Concept B: Trace Progress Counter</div>
+      <div style="background:#1a0000; padding:1.5rem; font-family:'JetBrains Mono',monospace;">
+        <div style="color:#ff0040; font-size:12px; letter-spacing:0.1em; margin-bottom:0.5rem;">REVERSE TRACE IN PROGRESS</div>
+        <div style="background:#200000; border:1px solid #400000; height:20px; border-radius:2px; overflow:hidden; margin-bottom:0.5rem;">
+          <div style="width:67%; height:100%; background: linear-gradient(90deg, #cc0000, #ff0040); box-shadow: 0 0 10px rgba(255,0,64,0.5);"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#ff0040;">67% — Hop 4 of 6 compromised</span>
+          <span style="color:#800020;">ETA: ~12s</span>
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Concept C: Eva-style status panel</div>
+      <div style="background:#0a0a0a; padding:1.5rem; font-family:'Space Mono',monospace; border:2px solid #cc0000; position:relative;">
+        <div style="position:absolute;top:-0.6em;left:1em;background:#0a0a0a;padding:0 0.5em;color:#cc0000;font-size:11px;letter-spacing:0.15em;">THREAT ASSESSMENT</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:12px; margin-top:0.5rem;">
+          <div style="color:#cc0000;">STATUS:</div><div style="color:#ff0040; font-weight:700;">SEVERE</div>
+          <div style="color:#cc0000;">TRACE:</div><div style="color:#ff6a00;">67%</div>
+          <div style="color:#cc0000;">PROXIES:</div><div style="color:#ff6a00;">2 of 6 remaining</div>
+          <div style="color:#cc0000;">IDS:</div><div style="color:#ff0000; animation: eva-flash 0.8s infinite;">ACTIVE — 3 ALERTS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: DANGER ESCALATION -->
+<!-- ============================================================ -->
+<section id="escalation">
+  <h2>06 — Danger Escalation Progression</h2>
+  <p class="subtitle">How the entire screen transforms as the multiplier climbs</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">1.2x — Ghost — Pure green, calm</div>
+      <div class="card-body pal-green glow-light border-glow-green" style="border-width:1px;">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div class="multiplier-display glow-green" style="font-size:2.5rem;">1.20x</div>
+        </div>
+        <div class="term" style="font-size:12px;"><span class="info">[*] Scanning target 198.51.100.42...</span>
+<span class="success">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span class="success">[+] Port 443 open — nginx/1.24.0</span>
+<span class="dim">admin@srv:~$ whoami</span>
+<span class="success">admin</span></div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">3.8x — Elevated — Amber creeping in</div>
+      <div class="card-body border-glow-amber" style="background:#0f0a00; color:#00ff41; border-width:1px;">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div class="multiplier-display glow-amber" style="font-size:2.5rem;">3.80x</div>
+        </div>
+        <div class="term" style="font-size:12px;"><span style="color:#00ff41">[+] ROOT ACCESS GRANTED</span>
+<span style="color:#ffb000">[*] Dumping database: production_core</span>
+<span style="color:#ffcc00">[EXFIL] users.csv [██████████░░░░] 68%</span>
+<span style="color:#ffb000">[*] 847,291 records and counting...</span>
+<span style="color:#ffb000">[!] IDS Alert Level: 1</span></div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">12.5x — Severe — Red dominant, warnings</div>
+      <div class="card-body border-glow-red" style="background:#1a0800; color:#00ff41; border-width:1px;">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div class="multiplier-display glow-red" style="font-size:2.5rem;">12.50x</div>
+        </div>
+        <div class="term" style="font-size:12px;"><span style="color:#ff0040">[!] ALERT: Reverse trace initiated</span>
+<span style="color:#ff6600">[!] Proxy node 6 compromised</span>
+<span style="color:#ff0040">[!] SOC ALERT: Priority CRITICAL</span>
+<span style="color:#ffcc00">[EXFIL] model_weights.bin [████░░░░] 41%</span>
+<span style="color:#ff0000">[TRACE] ██████████████░░░░░░ 55%</span></div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">38.7x — Critical — Full crisis, pulsing borders</div>
+      <div class="card-body border-glow-critical" style="background:#1a0000; color:#ff0040; border-width:2px; animation: danger-pulse-bg 1s infinite;">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div class="multiplier-display glow-red glitch-text" data-text="38.70x" style="font-size:2.5rem;">38.70x</div>
+        </div>
+        <div class="term" style="font-size:12px;"><span style="color:#ff0000">[!] ██ FBI CYBER DIVISION — TRACKING ██</span>
+<span style="color:#ff0000">[!] NSA TAO — ENGAGED</span>
+<span style="color:#ff3333">[!] PROXY NODE 2 BURNED — LAST NODE</span>
+<span style="color:#cc0000">[!] P4CKET L0SS: ██%... ░░%... ▓▓%</span>
+<span style="color:#ff0000;animation:eva-flash 0.6s infinite">[TRACE] ████████████████████░ 92%</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 7: RUNNING PHASE LAYOUT -->
+<!-- ============================================================ -->
+<section id="running">
+  <h2>07 — Running Phase — Full Layout Mock</h2>
+  <p class="subtitle">Complete game screen during an active hack at ~4x</p>
+
+  <div class="game-mock pal-green glow-light" style="border-color:#00802a;">
+    <div class="game-mock-header" style="background:#0d0d0d; border-color:#00802a; color:#00ff41;">
+      <div><span style="color:#00802a">[</span>crashOS<span style="color:#00802a">@</span>rogue-7xK9<span style="color:#00802a">]</span></div>
+      <div style="display:flex; gap:1.5rem; color:#00802a; font-size:11px;">
+        <span>LATENCY: <span style="color:#00ff41">34ms</span></span>
+        <span>PROXIES: <span style="color:#00ff41">6</span></span>
+        <span>TARGET: <span style="color:#ffb000">GIBSON FINANCIAL</span></span>
+        <span>WALLET: <span style="color:#00ff41">1,247.50 CR</span></span>
+      </div>
+    </div>
+    <div class="game-mock-body">
+      <div class="game-mock-main" style="border-color:#00802a;">
+        <div style="text-align:center; margin-bottom:0.5rem;">
+          <div style="color:#00802a; font-size:10px; letter-spacing:0.15em;">LIVE HACK — ROUND #4817</div>
+          <div class="multiplier-display glow-amber" style="font-size:3rem; font-family:'JetBrains Mono',monospace;">4.12x</div>
+          <div class="threat-meter level-elevated" style="font-size:11px;">
+            THREAT: <span class="bar">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED &nbsp; TRACE: 8%
+          </div>
+        </div>
+        <div style="flex:1; overflow:hidden; border-top:1px solid #00802a; padding-top:0.5rem;">
+          <div class="term" style="font-size:12px;"><span class="success">[+] ROOT ACCESS GRANTED</span>
+root@srv-prod-web-03:~# <span class="bright">ls /opt/.secrets/</span>
+master.key  vpn-gateway.ovpn  credentials.kdbx  api_keys.json
+root@srv-prod-web-03:~# <span class="bright">cat api_keys.json</span>
+<span class="warn">{</span>
+<span class="warn">  "stripe_live": "sk_live_51HG4dK2eZvKYlo2..."</span>
+<span class="warn">  "aws_root": "AKIAI44QH8DHBEXAMPLE"</span>
+<span class="warn">}</span>
+<span class="info">[*] Pivoting to db-primary-01.megacorp.internal...</span>
+<span class="success">[+] SSH key accepted — lateral movement successful</span>
+<span style="color:#ffcc00">[EXFIL] credentials.kdbx [██████████████░░] 72% 48.3MB/s</span>
+<span class="info">[*] Running hashcat against rockyou.txt...</span></div>
+        </div>
+        <div style="text-align:center; padding-top:0.75rem; border-top:1px solid #00802a; margin-top:0.5rem;">
+          <button class="btn-disconnect style-green">[ DISCONNECT ]</button>
+          <div style="color:#00802a; font-size:11px; margin-top:0.3rem;">Cash out: 412.00 CR</div>
+        </div>
+      </div>
+      <div class="game-mock-sidebar" style="color:#00ff41;">
+        <div style="color:#00802a; font-size:10px; letter-spacing:0.15em; margin-bottom:0.5rem; text-transform:uppercase;">Operators</div>
+        <div style="font-size:11px; line-height:1.8;">
+          <div><span style="color:#00ff41;">ac1dburn</span> <span style="color:#00802a">100CR</span> <span style="color:#00802a">—</span></div>
+          <div><span style="color:#00ff41;">zer0cool</span> <span style="color:#00802a">50CR</span> <span style="color:#ffb000">DC 2.41x</span></div>
+          <div><span style="color:#00ff41;">ph4nt0m</span> <span style="color:#00802a">200CR</span> <span style="color:#00802a">—</span></div>
+          <div><span style="color:#00ff41;">gh0st_404</span> <span style="color:#00802a">25CR</span> <span style="color:#00802a">—</span></div>
+          <div><span style="color:#00ff41;">r00tk1t</span> <span style="color:#00802a">75CR</span> <span style="color:#ffb000">DC 3.80x</span></div>
+        </div>
+
+        <div style="color:#00802a; font-size:10px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem; text-transform:uppercase;">Recent Ops</div>
+        <div style="font-size:11px; line-height:1.6;">
+          <div><span style="color:#00802a">#4816</span> <span style="color:#ff0040">TRACED</span> <span style="color:#ff0040">2.41x</span></div>
+          <div><span style="color:#00802a">#4815</span> <span style="color:#ffb000">TRACED</span> <span style="color:#ffb000">14.72x</span></div>
+          <div><span style="color:#00802a">#4814</span> <span style="color:#ff0040">TRACED</span> <span style="color:#ff0040">1.08x</span></div>
+          <div><span style="color:#00802a">#4813</span> <span style="color:#00ff41">TRACED</span> <span style="color:#00ff41">8.44x</span></div>
+          <div><span style="color:#00802a">#4812</span> <span style="color:#ff0040">TRACED</span> <span style="color:#ff0040">1.92x</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 8: CRASH — EVA STYLE -->
+<!-- ============================================================ -->
+<section id="crash-eva">
+  <h2>08 — Crash Screen: Evangelion Style</h2>
+  <p class="subtitle">WARNING overlay with hazard stripes, bold typography, institutional menace</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Variant A: Full Eva — Hazard stripes + red flash</div>
+      <div class="card-body eva-warning-frame" style="background:#0a0000;">
+        <div class="hazard-stripes-top"></div>
+        <div class="hazard-stripes-bottom"></div>
+        <div class="eva-border-frame" style="border-color:#cc0000;"></div>
+
+        <div class="eva-warning-text" style="color:#cc0000; text-shadow: 0 0 30px rgba(204,0,0,0.6);">
+          T R A C E D
+        </div>
+        <div class="eva-sub-text" style="color:#ff6a00;">
+          ORIGIN IDENTIFIED — ALL SESSIONS TERMINATED
+        </div>
+        <div style="margin-top:1.5rem; text-align:center; z-index:4;">
+          <div style="color:#cc0000; font-size:11px; letter-spacing:0.1em; line-height:2;">
+            FBI CYBER DIVISION — CASE #2026-CF-84721<br>
+            <span style="color:#ff0040;">CRASHED @ 4.72x</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Variant B: Minimal Eva — Red border, clean type</div>
+      <div class="card-body" style="background:#0a0a0a; border:2px solid #cc0000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-family:'Space Mono',monospace; font-weight:700; color:#cc0000; text-shadow: 0 0 20px rgba(204,0,0,0.5); letter-spacing:0.25em; font-size:2rem;">
+          TRACE COMPLETE
+        </div>
+        <div style="width:60%; height:1px; background:#cc0000; margin:1rem 0; box-shadow: 0 0 10px rgba(204,0,0,0.5);"></div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#ff6a00; font-size:12px; letter-spacing:0.1em; text-align:center; line-height:2;">
+          LOCATION IDENTIFIED<br>
+          FBI CYBER DIVISION — CASE #2026-CF-84721<br>
+          EVIDENCE SECURED: 14 FILES, 3 SESSIONS<br>
+        </div>
+        <div style="margin-top:1rem; font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:700; color:#ff0040; text-shadow: 0 0 10px rgba(255,0,64,0.5);">
+          CRASHED @ 4.72x
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Variant C: Japanese text accent + status readout (Nerv-inspired)</div>
+    <div style="background:#0a0000; min-height:350px; display:flex; position:relative; overflow:hidden;">
+      <div class="hazard-stripes-top" style="height:16px;"></div>
+      <div class="hazard-stripes-bottom" style="height:16px;"></div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem;">
+        <div style="font-family:'Space Mono',monospace; color:#cc0000; font-size:0.7rem; letter-spacing:0.3em; margin-bottom:0.25rem; opacity:0.6;">警告 — 追跡完了</div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; color:#cc0000; text-shadow: 0 0 30px rgba(204,0,0,0.6); letter-spacing:0.3em; font-size:3rem;">
+          W A R N I N G
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#ff6a00; letter-spacing:0.15em; font-size:0.85rem; margin-top:0.75rem;">
+          TRACE COMPLETE — OPERATOR COMPROMISED
+        </div>
+      </div>
+      <div style="width:250px; border-left:2px solid #cc0000; padding:1rem; display:flex; flex-direction:column; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px;">
+        <div style="color:#cc0000; letter-spacing:0.1em; margin-bottom:1rem; font-size:10px;">STATUS READOUT</div>
+        <div style="color:#ff6a00; line-height:2;">
+          TRACE: <span style="color:#ff0000;">100%</span><br>
+          PROXIES: <span style="color:#ff0000;">0 / 6</span><br>
+          COVER: <span style="color:#ff0000;">BLOWN</span><br>
+          AGENCY: <span style="color:#ff0040;">FBI-CD</span><br>
+          CASE: <span style="color:#ff0040;">#84721</span>
+        </div>
+        <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid #400000;">
+          <div style="color:#ff0040; font-size:1.1rem; font-weight:700;">CRASHED @ 4.72x</div>
+          <div style="color:#800020; font-size:10px; margin-top:0.25rem;">ALL FUNDS SEIZED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 9: CRASH — GLITCH STYLE -->
+<!-- ============================================================ -->
+<section id="crash-glitch">
+  <h2>09 — Crash Screen: Glitch Destruction</h2>
+  <p class="subtitle">Signal-level corruption, VHS tearing, chromatic aberration</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Variant A: Chromatic glitch text + static</div>
+      <div class="card-body" style="background:#0a0a0a; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
+        <div class="vhs-band"></div>
+        <div class="glitch-text" data-text="CONNECTION" style="font-family:'Space Mono',monospace; font-weight:700; font-size:2rem; color:#fff; letter-spacing:0.15em;">CONNECTION</div>
+        <div class="glitch-text" data-text="TERMINATED" style="font-family:'Space Mono',monospace; font-weight:700; font-size:2rem; color:#ff0040; letter-spacing:0.15em; margin-top:0.25rem;">TERMINATED</div>
+        <div style="margin-top:1.5rem; font-family:'JetBrains Mono',monospace; font-size:11px; color:#666; line-height:2;">
+          <span style="color:#ff0040;">*** TRACED BY REMOTE HOST ***</span><br>
+          <span style="color:#ff6600;">CASE #2026-CF-84721 — FBI CYBER DIVISION</span>
+        </div>
+        <div style="margin-top:1rem; font-size:1.5rem; font-weight:700; color:#ff0040; font-family:'JetBrains Mono',monospace; text-shadow: -2px 0 #ff0040, 2px 0 #00f0ff;">
+          4.72x
+        </div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Variant B: Corrupted terminal output</div>
+      <div class="card-body pal-green" style="position:relative;">
+        <div class="vhs-band"></div>
+        <div class="term" style="font-size:12px;">
+<span style="color:#ff0000">[TRACE] █████████████████████████ 100%</span>
+<span style="color:#ff0000">[!] ██ TRACE COMPLETE ██</span>
+<span style="color:#ff0000">[!] ORIGIN IDENTIFIED</span>
+<span style="color:#ff6600">[!] FBI CYBER DIVISION — CASE #2026-CF-84721</span>
+<span style="color:#cc0000">> DEPLOYING COUNTER-MEASURES...</span>
+<span style="color:#cc0000">> TERMINATING ALL ACTIVE SESSIONS...</span>
+
+<span style="color:#ff0000">[ERR] segfault at 0x00007ff█████████</span>
+<span style="color:#800000">[ERR] tun0: li██ is not re░dy</span>
+<span style="color:#660000">[!] C0NNECTION INTEGR1TY FA█LING</span>
+<span style="color:#440000">[!] ▒▒▒ KERN▓L PAN██ — NOT SYNCING ▒▒▒</span>
+
+<span style="color:#ff0040; font-size:14px; font-weight:700;">
+███████████████████████████████████████████████
+██                                           ██
+██  *** CONNECTION TERMINATED BY REMOTE ***  ██
+██                                           ██
+███████████████████████████████████████████████</span>
+
+<span style="color:#ff0040; text-align:center; display:block; font-size:16px; font-weight:700; margin-top:0.5rem;">CRASHED @ 4.72x</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 10: CRASH — ASCII TERMINAL STYLE -->
+<!-- ============================================================ -->
+<section id="crash-ascii">
+  <h2>10 — Crash Screen: Pure Terminal</h2>
+  <p class="subtitle">The crash happens in the terminal itself — no overlay, just devastating output</p>
+
+  <div class="full-concept">
+    <div class="card-label">The terminal just... stops. Then the trace completes in-stream.</div>
+    <div class="card-body pal-green glow-light crt-lines" style="min-height:auto; position:relative;">
+      <div class="term" style="font-size:13px;">
+<span class="info">[*] Exfil throughput: 48.3 MB/s sustained</span>
+<span style="color:#ffcc00">[EXFIL] model_weights.bin [████████████████░░░░] 78% 47.1MB/s</span>
+<span style="color:#ff6600">[!] Packet loss: 12%... 28%... 41%...</span>
+<span style="color:#ff0040">[!] DNS tunnel degrading</span>
+<span style="color:#ff0040">[TRACE] ████████████████████████░ 96%</span>
+<span style="color:#ff0000">[!] ██████████████████████████████████████</span>
+<span style="color:#ff0000">[!] ██  T R A C E   A T   9 8 %        ██</span>
+<span style="color:#ff0000">[!] ██████████████████████████████████████</span>
+<span style="color:#ff0000">[TRACE] █████████████████████████ 100%</span>
+<span style="color:#ff0000">
+[!] ████████████████████████████████████████
+[!] ██                                    ██
+[!] ██   T R A C E   C O M P L E T E     ██
+[!] ██                                    ██
+[!] ████████████████████████████████████████</span>
+<span style="color:#ff6600">
+> LOCATION IDENTIFIED
+> ISP: ████████ COMMUNICATIONS
+> FBI CYBER DIVISION — CASE #2026-CF-84721
+> EVIDENCE: 14 FILES, 3 SESSIONS, 2.4GB
+> DEPLOYING COUNTER-MEASURES...
+> SCRUBBING EXFILTRATION CHANNELS...</span>
+<span style="color:#cc0000">
+*** ALL FUNDS SEIZED ***</span>
+<span style="color:#ff0040; font-weight:700;">
+*** CONNECTION TERMINATED BY REMOTE HOST ***
+
+                   CRASHED @ 4.72x</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 11: CASHOUT -->
+<!-- ============================================================ -->
+<section id="cashout">
+  <h2>11 — Cashout: Clean Disconnect</h2>
+  <p class="subtitle">The satisfying escape — you got out just in time</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Concept A: Terminal cleanup sequence</div>
+      <div class="card-body pal-green glow-light" style="display:flex; flex-direction:column; justify-content:center;">
+        <div class="term" style="font-size:13px;"><span class="info">[*] Initiating clean disconnect protocol...</span>
+<span class="success">[+] Wiping session artifacts... [OK]</span>
+<span class="success">[+] Removing SSH keys... [OK]</span>
+<span class="success">[+] Zeroing bash_history... [OK]</span>
+<span class="success">[+] Clearing auth.log entries... [OK]</span>
+<span class="success">[+] Terminating reverse tunnels... [OK]</span>
+<span class="success">[+] Burning proxy chain... [OK]</span>
+
+<span style="color:#00ff41; text-shadow: 0 0 10px rgba(0,255,65,0.8); font-weight:700;">[+] ██ CLEAN EXIT ██ — NO TRACE LEFT BEHIND</span>
+
+<span style="color:#00802a">> Session duration: 38.4s</span>
+<span style="color:#00802a">> DISCONNECTED</span>
+
+<span style="color:#00ff41; font-size:1.5rem; font-weight:700; text-shadow: 0 0 15px rgba(0,255,65,0.6); display:block; text-align:center; margin-top:1rem;">+472.00 CR</span></div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Concept B: Clean centered display</div>
+      <div class="card-body" style="background:#0a0a0a; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-family:'JetBrains Mono',monospace; color:#00ff41; font-size:11px; letter-spacing:0.15em; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+          CONNECTION TERMINATED
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#00802a; font-size:11px; letter-spacing:0.1em; margin-top:0.25rem;">
+          TRACES CLEARED — YOU WERE NEVER HERE
+        </div>
+        <div style="width:40%; height:1px; background:#00802a; margin:1.5rem 0; box-shadow: 0 0 5px rgba(0,255,65,0.3);"></div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#00ff41; font-size:3rem; font-weight:700; text-shadow: 0 0 20px rgba(0,255,65,0.5), 0 0 40px rgba(0,255,65,0.2);">
+          +472.00 CR
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#00802a; font-size:11px; margin-top:0.5rem;">
+          CASHED OUT @ 4.72x
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Concept C: High-threat frantic disconnect</div>
+      <div class="card-body" style="background:#1a0800;">
+        <div class="term" style="font-size:13px;"><span style="color:#ff6600">[!] EMERGENCY DISCONNECT — NO TIME FOR CLEANUP</span>
+<span style="color:#ff0040">[!] Sessions killed.</span>
+<span style="color:#ff0040">[!] Logs... PARTIALLY WIPED. GOOD ENOUGH.</span>
+<span style="color:#ff0000">[!] GET OUT GET OUT GET OUT</span>
+<span style="color:#ff6600">
+> CONNECTION SEVERED</span>
+<span style="color:#ffb000">
+> Escaped at THREAT LEVEL: SEVERE</span>
+<span style="color:#00802a">
+> Traces: Mostly cleared (2 partial artifacts)</span>
+
+<span style="color:#00ff41; font-size:1.5rem; font-weight:700; text-shadow: 0 0 15px rgba(0,255,65,0.6); display:block; text-align:center; margin-top:1rem;">+1,472.00 CR</span>
+<span style="color:#00802a; display:block; text-align:center; font-size:11px;">BARELY MADE IT — CASHED OUT @ 14.72x</span></div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Disconnect button concepts at different threat levels</div>
+      <div class="card-body" style="background:#0a0a0a; display:flex; flex-direction:column; gap:1.5rem; align-items:center; justify-content:center;">
+        <div>
+          <div style="color:#00802a; font-size:10px; margin-bottom:0.3rem; text-align:center;">LOW THREAT</div>
+          <button class="btn-disconnect style-green">[ DISCONNECT ]</button>
+        </div>
+        <div>
+          <div style="color:#806000; font-size:10px; margin-bottom:0.3rem; text-align:center;">ELEVATED THREAT</div>
+          <button class="btn-disconnect style-amber">[ DISCONNECT ]</button>
+        </div>
+        <div>
+          <div style="color:#800020; font-size:10px; margin-bottom:0.3rem; text-align:center;">SEVERE / CRITICAL THREAT</div>
+          <button class="btn-disconnect style-red">!! BAIL OUT !!</button>
+        </div>
+        <div>
+          <div style="color:#800020; font-size:10px; margin-bottom:0.3rem; text-align:center;">ALTERNATIVE: Outline danger</div>
+          <button class="btn-disconnect style-outline-danger">[ EMERGENCY DISCONNECT ]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 12: LOBBY -->
+<!-- ============================================================ -->
+<section id="lobby">
+  <h2>12 — Lobby / Waiting Phase</h2>
+  <p class="subtitle">Target acquisition, resource allocation, preparatory terminal activity</p>
+
+  <div class="full-concept">
+    <div class="card-label">Concept A: Target briefing panel + preparatory terminal</div>
+    <div class="game-mock pal-green glow-light" style="border-color:#00802a;">
+      <div class="game-mock-header" style="background:#0d0d0d; border-color:#00802a; color:#00ff41;">
+        <div><span style="color:#00802a">[</span>crashOS<span style="color:#00802a">@</span>rogue-7xK9<span style="color:#00802a">]</span></div>
+        <div style="display:flex; gap:1.5rem; color:#00802a; font-size:11px;">
+          <span>WALLET: <span style="color:#00ff41">1,247.50 CR</span></span>
+        </div>
+      </div>
+      <div class="game-mock-body">
+        <div class="game-mock-main" style="border-color:#00802a;">
+          <!-- Target Info -->
+          <div style="border:1px solid #00802a; padding:1rem; margin-bottom:1rem; position:relative;">
+            <div style="position:absolute;top:-0.6em;left:1em;background:#0a0a0a;padding:0 0.5em;color:#00802a;font-size:10px;letter-spacing:0.15em;">INCOMING OPERATION — ROUND #4818</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; font-size:12px; margin-top:0.25rem;">
+              <div style="color:#00802a;">TARGET:</div><div style="color:#00ff41; font-weight:700;">ELLINGSON MINERAL CORP</div>
+              <div style="color:#00802a;">IP:</div><div style="color:#00ff41;">198.51.100.██</div>
+              <div style="color:#00802a;">SECURITY:</div><div style="color:#ffb000;">████████░░ HARDENED</div>
+              <div style="color:#00802a;">PAYOUT:</div><div style="color:#00ff41;">VARIABLE</div>
+            </div>
+          </div>
+
+          <!-- Bet Input -->
+          <div style="border:1px solid #00802a; padding:1rem; margin-bottom:1rem; position:relative;">
+            <div style="position:absolute;top:-0.6em;left:1em;background:#0a0a0a;padding:0 0.5em;color:#00802a;font-size:10px;letter-spacing:0.15em;">ALLOCATE RESOURCES</div>
+            <div style="font-size:12px; margin-top:0.25rem; margin-bottom:0.5rem; color:#00802a;">> ENTER AMOUNT [CR]:</div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div style="flex:1; border:1px solid #00802a; padding:0.4rem 0.6rem; color:#00ff41; font-size:14px; background:#050505;">100<span style="animation:eva-flash 1s infinite;">█</span></div>
+            </div>
+            <div style="display:flex; gap:0.4rem; margin-top:0.5rem;">
+              <button class="toggle-btn" style="color:#00ff41; border-color:#00802a;">10</button>
+              <button class="toggle-btn" style="color:#00ff41; border-color:#00802a;">25</button>
+              <button class="toggle-btn on" style="color:#00ff41; border-color:#00ff41;">100</button>
+              <button class="toggle-btn" style="color:#00ff41; border-color:#00802a;">500</button>
+              <button class="toggle-btn" style="color:#00ff41; border-color:#00802a;">ALL</button>
+            </div>
+            <div style="margin-top:0.75rem; text-align:center;">
+              <button class="btn-disconnect style-green" style="font-size:0.85rem; padding:0.5rem 1.5rem;">[ INITIATE BREACH ]</button>
+            </div>
+            <div style="color:#00802a; font-size:10px; text-align:center; margin-top:0.4rem;">BREACH WINDOW OPENS IN <span style="color:#00ff41;">7s</span></div>
+          </div>
+
+          <!-- Preparatory Terminal -->
+          <div style="flex:1; border-top:1px solid #00802a; padding-top:0.5rem;">
+            <div class="term" style="font-size:11px; color:#00802a;"><span style="color:#00802a">[00:09]</span> Initializing proxy chain...
+<span style="color:#00802a">[00:08]</span> <span style="color:#00ff41">> route add via tor-exit-DE</span>
+<span style="color:#00802a">[00:07]</span> <span style="color:#00ff41">> route add via tor-exit-JP</span>
+<span style="color:#00802a">[00:06]</span> Proxy chain established. 6 bounces.
+<span style="color:#00802a">[00:05]</span> Loading exploit kit... <span style="color:#00ff41">[████████████████████] 100%</span>
+<span style="color:#00802a">[00:04]</span> Scanning target ports...
+<span style="color:#00802a">[00:03]</span> Vulnerability identified. Payload staged.</div>
+          </div>
+        </div>
+        <div class="game-mock-sidebar" style="color:#00ff41;">
+          <div style="color:#00802a; font-size:10px; letter-spacing:0.15em; margin-bottom:0.5rem; text-transform:uppercase;">Operators</div>
+          <div style="font-size:11px; line-height:1.8;">
+            <div><span style="color:#00ff41;">ac1dburn</span> <span style="color:#00802a">100CR READY</span></div>
+            <div><span style="color:#00ff41;">zer0cool</span> <span style="color:#00802a">— NOT IN</span></div>
+            <div><span style="color:#00ff41;">ph4nt0m</span> <span style="color:#00802a">200CR READY</span></div>
+            <div><span style="color:#00ff41;">gh0st_404</span> <span style="color:#00802a">— NOT IN</span></div>
+          </div>
+
+          <div style="color:#00802a; font-size:10px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem; text-transform:uppercase;">Recent Ops</div>
+          <div style="font-size:11px; line-height:1.6;">
+            <div><span style="color:#00802a">#4817</span> <span style="color:#ffb000">TRACED 4.72x</span></div>
+            <div><span style="color:#00802a">#4816</span> <span style="color:#ff0040">TRACED 2.41x</span></div>
+            <div><span style="color:#00802a">#4815</span> <span style="color:#ffb000">TRACED 14.72x</span></div>
+          </div>
+
+          <div style="color:#00802a; font-size:10px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem; text-transform:uppercase; border-top:1px solid #00802a; padding-top:0.75rem;">
+            Quote
+          </div>
+          <div style="font-size:11px; color:#00802a; font-style:italic;">
+            "Hack the Planet!"<br>
+            <span style="font-size:10px;">— Dade Murphy, 1995</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANSI Art Header Concept -->
+  <div class="full-concept">
+    <div class="card-label">Concept B: BBS-style ANSI art header (could appear above the game)</div>
+    <div style="background:#0a0a0a; padding:1.5rem; text-align:center;">
+      <div class="ansi-art" style="color:#00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.4);">
+ ██████╗██████╗  █████╗ ███████╗██╗  ██╗     ██████╗ ███████╗
+██╔════╝██╔══██╗██╔══██╗██╔════╝██║  ██║    ██╔═══██╗██╔════╝
+██║     ██████╔╝███████║███████╗███████║    ██║   ██║███████╗
+██║     ██╔══██╗██╔══██║╚════██║██╔══██║    ██║   ██║╚════██║
+╚██████╗██║  ██║██║  ██║███████║██║  ██║    ╚██████╔╝███████║
+ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝     ╚═════╝ ╚══════╝</div>
+      <div style="font-family:'VT323',monospace; color:#00802a; font-size:18px; margin-top:0.5rem; letter-spacing:0.1em;">
+        [ BREACH SIMULATOR v2.0.26 ]
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Concept C: Gradient ANSI-inspired header (nod to demoscene moodboard)</div>
+    <div style="background:#0a0a0a; padding:1.5rem; text-align:center;">
+      <div class="ansi-art" style="font-size:18px; line-height:1.15;"><span style="color:#ff0040;">▄████▄ ▄▄▄▄   ▄▄▄      ▄████▄ ██   ██</span>
+<span style="color:#ff6600;">██     ██  ██ ██ ██ ▄████████ ██▄▄▄██</span>
+<span style="color:#ffb000;">██     █████  █████  ▀████████ ██▀▀▀██</span>
+<span style="color:#00ff41;">▀████▀ ██  ██ ██ ██     ▀████▀ ██   ██</span></div>
+      <div style="font-family:'Share Tech Mono',monospace; font-size:12px; margin-top:0.75rem;">
+        <span style="color:#ff0040;">O</span><span style="color:#ff6600;">P</span><span style="color:#ffb000;">E</span><span style="color:#00ff41;">R</span><span style="color:#00d4ff;">A</span><span style="color:#ab47bc;">T</span><span style="color:#ff0040;">I</span><span style="color:#ff6600;">O</span><span style="color:#ffb000;">N</span><span style="color:#666;">:</span>
+        <span style="color:#888;"> BREACH SIMULATOR</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="padding:3rem; text-align:center; color:#333; font-size:12px;">
+  — END OF CONCEPTS —
+</div>
+
+<script>
+  // CRT effect toggles
+  function toggleCRT(btn) {
+    const effect = btn.dataset.effect;
+    const demo = document.getElementById('crt-demo');
+    btn.classList.toggle('on');
+    const isOn = btn.classList.contains('on');
+
+    switch(effect) {
+      case 'scanlines':
+        demo.classList.toggle('crt-lines', isOn);
+        break;
+      case 'glow':
+        demo.classList.toggle('glow-heavy', isOn);
+        if (!isOn) demo.classList.remove('glow-light');
+        break;
+      case 'vignette':
+        demo.classList.toggle('crt-vignette', isOn);
+        break;
+      case 'flicker':
+        demo.classList.toggle('crt-flicker', isOn);
+        break;
+      case 'chromatic':
+        demo.classList.toggle('chromatic', isOn);
+        if (isOn) { demo.classList.remove('glow-heavy'); demo.classList.add('glow-light'); }
+        break;
+      case 'vhs':
+        document.getElementById('crt-vhs').style.display = isOn ? 'block' : 'none';
+        break;
+    }
+  }
+
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section');
+  const navLinks = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hack Game — Refined Concepts v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 1000;
+    background: #111; border-bottom: 1px solid #333;
+    padding: 0.5rem 1rem; display: flex; gap: 0.25rem; flex-wrap: wrap;
+  }
+  nav a {
+    color: #888; text-decoration: none;
+    padding: 0.4rem 0.8rem; border: 1px solid #333; border-radius: 3px;
+    font-size: 11px; font-family: 'Fira Code', monospace; transition: all 0.15s;
+  }
+  nav a:hover, nav a.active { color: #ffb000; border-color: #ffb000; background: rgba(255,176,0,0.05); }
+
+  section {
+    min-height: 100vh; padding: 2rem; border-bottom: 2px solid #222;
+  }
+  section h2 {
+    font-family: 'Space Mono', monospace; font-size: 1.2rem; color: #fff;
+    margin-bottom: 0.25rem; letter-spacing: 0.05em;
+  }
+  .subtitle { color: #666; font-size: 0.8rem; margin-bottom: 2rem; }
+
+  .concept-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 1.5rem; margin-bottom: 2rem;
+  }
+  .concept-card {
+    border: 1px solid #333; border-radius: 4px; overflow: hidden;
+  }
+  .card-label {
+    padding: 0.4rem 0.75rem; background: #1a1a1a; border-bottom: 1px solid #333;
+    font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .card-body {
+    padding: 1rem; min-height: 300px; position: relative; overflow: hidden;
+  }
+  .full-concept {
+    border: 1px solid #333; border-radius: 4px; overflow: hidden; margin-bottom: 2rem; position: relative;
+  }
+
+  .term {
+    font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.45;
+    white-space: pre; overflow-x: hidden;
+  }
+
+  /* ===== PALETTE: AMBER PRIMARY ===== */
+  .pal-amber {
+    --p: #ffb000; --p-dim: #805800; --p-bright: #ffd060;
+    --ok: #00cc66; --ok-dim: #006633;
+    --warn: #ff6600; --danger: #ff0040; --critical: #ff0000;
+    --info: #cc8800;
+    --glow: rgba(255,176,0,0.5);
+    --bg: #0a0800;
+    background: var(--bg); color: var(--p);
+  }
+  .pal-amber .term { text-shadow: 0 0 4px var(--glow); }
+
+  /* ===== PALETTE: GREEN PRIMARY ===== */
+  .pal-green {
+    --p: #00ff41; --p-dim: #00802a; --p-bright: #80ff90;
+    --ok: #00ff41; --ok-dim: #00802a;
+    --warn: #ffb000; --danger: #ff0040; --critical: #ff0000;
+    --info: #00d4ff;
+    --glow: rgba(0,255,65,0.5);
+    --bg: #0a0a0a;
+    background: var(--bg); color: var(--p);
+  }
+  .pal-green .term { text-shadow: 0 0 4px var(--glow); }
+
+  /* ===== PALETTE: AMBER→RED HYBRID ===== */
+  .pal-amber-red {
+    --p: #ffb000; --p-dim: #805800; --p-bright: #ffd060;
+    --ok: #ffb000; --ok-dim: #805800;
+    --warn: #ff6600; --danger: #ff0040; --critical: #ff0000;
+    --info: #cc8800;
+    --glow: rgba(255,100,0,0.4);
+    --bg: #120800;
+    background: var(--bg); color: var(--p);
+  }
+  .pal-amber-red .term { text-shadow: 0 0 4px var(--glow); }
+
+  /* ===== SCANLINES ===== */
+  .crt-lines::after {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.12), rgba(0,0,0,0.12) 1px, transparent 1px, transparent 2px);
+    pointer-events: none; z-index: 10;
+  }
+
+  /* ===== FLICKER: More erratic, less color impact ===== */
+  @keyframes flicker-subtle {
+    0% { opacity: 1; }
+    7% { opacity: 0.97; }
+    12% { opacity: 1; }
+    27% { opacity: 0.98; }
+    32% { opacity: 1; }
+    58% { opacity: 0.96; }
+    59% { opacity: 1; }
+    73% { opacity: 0.97; }
+    74% { opacity: 1; }
+    89% { opacity: 0.95; }
+    91% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  @keyframes flicker-danger {
+    0% { opacity: 1; }
+    3% { opacity: 0.94; }
+    5% { opacity: 1; }
+    14% { opacity: 0.96; }
+    15% { opacity: 1; }
+    31% { opacity: 0.93; }
+    33% { opacity: 1; }
+    47% { opacity: 0.95; }
+    48% { opacity: 1; }
+    62% { opacity: 0.91; }
+    64% { opacity: 1; }
+    78% { opacity: 0.94; }
+    79% { opacity: 1; }
+    93% { opacity: 0.92; }
+    95% { opacity: 1; }
+  }
+  .flicker-low { animation: flicker-subtle 3s infinite; }
+  .flicker-high { animation: flicker-danger 1.5s infinite; }
+
+  /* ===== VHS BAND: Reduced opacity ===== */
+  @keyframes vhs-sweep { 0% { top: -5%; } 100% { top: 105%; } }
+  .vhs-band {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: rgba(255,255,255,0.03); z-index: 15;
+    animation: vhs-sweep 3s linear infinite; pointer-events: none;
+  }
+  .vhs-band-2 {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: rgba(255,255,255,0.025); z-index: 15;
+    animation: vhs-sweep 4.7s linear infinite; animation-delay: -1.3s; pointer-events: none;
+  }
+
+  /* ===== IMPROVED CRITICAL GLITCH ===== */
+  @keyframes glitch-erratic-1 {
+    0% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    5% { clip-path: inset(15% 0 70% 0); transform: translate(-8px, 0); }
+    7% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    15% { clip-path: inset(60% 0 25% 0); transform: translate(12px, 0); }
+    17% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    28% { clip-path: inset(40% 0 45% 0); transform: translate(-15px, 0); }
+    30% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    42% { clip-path: inset(80% 0 8% 0); transform: translate(6px, 0); }
+    43% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    55% { clip-path: inset(5% 0 85% 0); transform: translate(-20px, 0); }
+    56% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    68% { clip-path: inset(50% 0 35% 0); transform: translate(10px, 0); }
+    70% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    82% { clip-path: inset(25% 0 60% 0); transform: translate(-7px, 0); }
+    84% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    93% { clip-path: inset(70% 0 15% 0); transform: translate(18px, 0); }
+    95% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+    100% { clip-path: inset(0 0 95% 0); transform: translate(0,0); }
+  }
+  @keyframes glitch-erratic-2 {
+    0% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    8% { clip-path: inset(70% 0 15% 0); transform: translate(14px, 0); }
+    10% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    22% { clip-path: inset(10% 0 78% 0); transform: translate(-11px, 0); }
+    24% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    35% { clip-path: inset(45% 0 40% 0); transform: translate(22px, 0); }
+    37% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    50% { clip-path: inset(85% 0 3% 0); transform: translate(-9px, 0); }
+    52% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    65% { clip-path: inset(20% 0 65% 0); transform: translate(16px, 0); }
+    67% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    78% { clip-path: inset(55% 0 30% 0); transform: translate(-18px, 0); }
+    80% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    90% { clip-path: inset(35% 0 50% 0); transform: translate(8px, 0); }
+    92% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+    100% { clip-path: inset(95% 0 0 0); transform: translate(0,0); }
+  }
+  @keyframes glitch-base-jitter {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-2px, 0); }
+    20% { transform: translate(1px, 0); }
+    40% { transform: translate(-1px, 0); }
+    60% { transform: translate(3px, 0); }
+    80% { transform: translate(-1px, 0); }
+  }
+  .glitch-v2 {
+    position: relative;
+    animation: glitch-base-jitter 0.15s infinite;
+  }
+  .glitch-v2::before,
+  .glitch-v2::after {
+    content: attr(data-text);
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    background: inherit;
+  }
+  .glitch-v2::before {
+    color: #ff0040;
+    animation: glitch-erratic-1 0.8s infinite;
+    text-shadow: -2px 0 #ff0040;
+  }
+  .glitch-v2::after {
+    color: #ff6600;
+    animation: glitch-erratic-2 0.65s infinite;
+    text-shadow: 2px 0 #ff6600;
+  }
+
+  /* ===== MULTIPLIER ===== */
+  .mult {
+    font-family: 'Fira Code', monospace; font-weight: 700;
+    font-variant-numeric: tabular-nums; text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .mult-lg { font-size: 3.5rem; }
+  .mult-xl { font-size: 4rem; }
+
+  /* ===== THREAT METER ===== */
+  .tm { font-size: 12px; letter-spacing: 0.03em; }
+  @keyframes threat-blink {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  /* ===== BUTTON STYLES ===== */
+  .btn {
+    font-family: 'Fira Code', monospace; font-weight: 700; font-size: 0.9rem;
+    padding: 0.5rem 1.5rem; cursor: pointer; border: 2px solid;
+    letter-spacing: 0.08em; transition: all 0.15s; text-transform: uppercase;
+    background: transparent;
+  }
+
+  /* ===== EVA ELEMENTS ===== */
+  .hazard-top, .hazard-bot {
+    position: absolute; left: 0; right: 0; height: 20px;
+    background: repeating-linear-gradient(-45deg, #ffb000, #ffb000 8px, #000 8px, #000 16px);
+    z-index: 5;
+  }
+  .hazard-top { top: 0; }
+  .hazard-bot { bottom: 0; }
+  @keyframes eva-pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
+  }
+  .eva-pulse { animation: eva-pulse 0.8s infinite; }
+
+  /* ===== DANGER BG ===== */
+  @keyframes bg-crisis { 0%, 100% { background: #1a0000; } 50% { background: #250000; } }
+
+  /* ===== GAME MOCK ===== */
+  .game-mock { border: 1px solid; border-radius: 4px; overflow: hidden; max-width: 920px; }
+  .gm-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0.75rem; font-size: 11px; border-bottom: 1px solid;
+  }
+  .gm-body { display: grid; grid-template-columns: 1fr 220px; min-height: 420px; }
+  .gm-main { padding: 1rem; display: flex; flex-direction: column; border-right: 1px solid; }
+  .gm-side { padding: 0.75rem; font-size: 11px; }
+
+  /* ===== JAPANESE ACCENT ===== */
+  .jp {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem; letter-spacing: 0.2em; opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#palette-explore">01 Palette Systems</a>
+  <a href="#type-explore">02 Typography</a>
+  <a href="#crt-refined">03 CRT Refined</a>
+  <a href="#critical-glitch">04 Critical Glitch</a>
+  <a href="#threat-refined">05 Threat Indicators</a>
+  <a href="#escalation-v2">06 Escalation Paths</a>
+  <a href="#crash-refined">07 Crash Screens</a>
+  <a href="#cashout-refined">08 Cashout</a>
+  <a href="#lobby-refined">09 Lobby</a>
+  <a href="#running-refined">10 Full Running</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- 01: PALETTE SYSTEMS -->
+<!-- ============================================================ -->
+<section id="palette-explore">
+  <h2>01 — Palette Systems: Amber-First vs Green-First</h2>
+  <p class="subtitle">Exploring whether amber or green is the baseline, and how danger colors layer in</p>
+
+  <div class="full-concept">
+    <div class="card-label">System A: Amber Base — Amber is "normal", orange is "warm", red is "danger"</div>
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); min-height:220px;">
+      <div style="background:#0a0800; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">1.0x — GHOST</div>
+        <div style="color:#ffb000; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(255,176,0,0.4); text-align:center; margin:0.5rem 0;">1.20x</div>
+        <div class="term" style="font-size:11px; color:#ffb000; text-shadow:0 0 3px rgba(255,176,0,0.3);">
+<span style="color:#cc8800">[*] Scanning ports...</span>
+<span style="color:#ffb000">[+] Port 22 open</span>
+<span style="color:#ffb000">[+] Port 443 open</span>
+<span style="color:#805800">$ ssh admin@target</span></div>
+      </div>
+      <div style="background:#0f0800; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">3.8x — ELEVATED</div>
+        <div style="color:#ff8c00; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(255,140,0,0.4); text-align:center; margin:0.5rem 0;">3.80x</div>
+        <div class="term" style="font-size:11px; color:#ffb000; text-shadow:0 0 3px rgba(255,176,0,0.3);">
+<span style="color:#ff8c00">[+] ROOT ACCESS</span>
+<span style="color:#ffcc00">[EXFIL] data [████░░] 38%</span>
+<span style="color:#ff6600">[!] IDS Alert Level 1</span></div>
+      </div>
+      <div style="background:#140500; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#803000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">12.5x — SEVERE</div>
+        <div style="color:#ff4400; font-size:2rem; font-weight:700; text-shadow:0 0 10px rgba(255,68,0,0.5); text-align:center; margin:0.5rem 0;">12.50x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,100,0,0.3);">
+<span style="color:#ff4400">[!] Trace initiated</span>
+<span style="color:#ff6600">[!] Proxy 6 burned</span>
+<span style="color:#ff0040">[!] SOC: CRITICAL</span></div>
+      </div>
+      <div style="background:#1a0000; padding:1rem; animation:bg-crisis 1.2s infinite;">
+        <div style="color:#ff0000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem; animation:eva-pulse 0.6s infinite;">38.7x — CRITICAL</div>
+        <div style="color:#ff0040; font-size:2rem; font-weight:700; text-shadow:0 0 12px rgba(255,0,64,0.6); text-align:center; margin:0.5rem 0;">38.70x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,0,0,0.3);">
+<span style="color:#ff0000">[!] FBI — TRACKING</span>
+<span style="color:#ff0040">[!] LAST PROXY</span>
+<span style="color:#ff0000;animation:eva-pulse 0.5s infinite">[!] DISCONNECT NOW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">System B: Green Base → Amber Transition → Red Danger (the hybrid)</div>
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); min-height:220px;">
+      <div style="background:#0a0a0a; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#00802a; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">1.0x — GHOST</div>
+        <div style="color:#00ff41; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(0,255,65,0.4); text-align:center; margin:0.5rem 0;">1.20x</div>
+        <div class="term" style="font-size:11px; color:#00ff41; text-shadow:0 0 3px rgba(0,255,65,0.3);">
+<span style="color:#00802a">[*] Scanning ports...</span>
+<span style="color:#00ff41">[+] Port 22 open</span>
+<span style="color:#00ff41">[+] Port 443 open</span>
+<span style="color:#00802a">$ ssh admin@target</span></div>
+      </div>
+      <div style="background:#0a0800; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">3.8x — ELEVATED</div>
+        <div style="color:#ffb000; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(255,176,0,0.4); text-align:center; margin:0.5rem 0;">3.80x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,176,0,0.3);">
+<span style="color:#00ff41">[+] ROOT ACCESS</span>
+<span style="color:#ffcc00">[EXFIL] data [████░░] 38%</span>
+<span style="color:#ffb000">[!] IDS Alert Level 1</span></div>
+      </div>
+      <div style="background:#140500; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#803000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">12.5x — SEVERE</div>
+        <div style="color:#ff4400; font-size:2rem; font-weight:700; text-shadow:0 0 10px rgba(255,68,0,0.5); text-align:center; margin:0.5rem 0;">12.50x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,100,0,0.3);">
+<span style="color:#ff4400">[!] Trace initiated</span>
+<span style="color:#ff6600">[!] Proxy 6 burned</span>
+<span style="color:#ff0040">[!] SOC: CRITICAL</span></div>
+      </div>
+      <div style="background:#1a0000; padding:1rem; animation:bg-crisis 1.2s infinite;">
+        <div style="color:#ff0000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem; animation:eva-pulse 0.6s infinite;">38.7x — CRITICAL</div>
+        <div style="color:#ff0040; font-size:2rem; font-weight:700; text-shadow:0 0 12px rgba(255,0,64,0.6); text-align:center; margin:0.5rem 0;">38.70x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,0,0,0.3);">
+<span style="color:#ff0000">[!] FBI — TRACKING</span>
+<span style="color:#ff0040">[!] LAST PROXY</span>
+<span style="color:#ff0000;animation:eva-pulse 0.5s infinite">[!] DISCONNECT NOW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">System C: Amber Base + Green for "Success/OK" indicators (amber is neutral, green is positive)</div>
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); min-height:220px;">
+      <div style="background:#0a0800; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">1.0x — GHOST</div>
+        <div style="color:#ffb000; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(255,176,0,0.4); text-align:center; margin:0.5rem 0;">1.20x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,176,0,0.3);">
+<span style="color:#cc8800">[*] Scanning ports...</span>
+<span style="color:#00cc66">[+] Port 22 open</span>
+<span style="color:#00cc66">[+] Port 443 open</span>
+<span style="color:#805800">$ ssh admin@target</span></div>
+      </div>
+      <div style="background:#0f0800; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">3.8x — ELEVATED</div>
+        <div style="color:#ff8c00; font-size:2rem; font-weight:700; text-shadow:0 0 8px rgba(255,140,0,0.4); text-align:center; margin:0.5rem 0;">3.80x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,176,0,0.3);">
+<span style="color:#00cc66">[+] ROOT ACCESS</span>
+<span style="color:#ffcc00">[EXFIL] data [████░░] 38%</span>
+<span style="color:#ff6600">[!] IDS Alert Level 1</span></div>
+      </div>
+      <div style="background:#140500; padding:1rem; border-right:1px solid #333;">
+        <div style="color:#803000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem;">12.5x — SEVERE</div>
+        <div style="color:#ff4400; font-size:2rem; font-weight:700; text-shadow:0 0 10px rgba(255,68,0,0.5); text-align:center; margin:0.5rem 0;">12.50x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,100,0,0.3);">
+<span style="color:#ff4400">[!] Trace initiated</span>
+<span style="color:#ff6600">[!] Proxy 6 burned</span>
+<span style="color:#ff0040">[!] SOC: CRITICAL</span></div>
+      </div>
+      <div style="background:#1a0000; padding:1rem; animation:bg-crisis 1.2s infinite;">
+        <div style="color:#ff0000; font-size:10px; letter-spacing:0.1em; margin-bottom:0.5rem; animation:eva-pulse 0.6s infinite;">38.7x — CRITICAL</div>
+        <div style="color:#ff0040; font-size:2rem; font-weight:700; text-shadow:0 0 12px rgba(255,0,64,0.6); text-align:center; margin:0.5rem 0;">38.70x</div>
+        <div class="term" style="font-size:11px; text-shadow:0 0 3px rgba(255,0,0,0.3);">
+<span style="color:#ff0000">[!] FBI — TRACKING</span>
+<span style="color:#ff0040">[!] LAST PROXY</span>
+<span style="color:#ff0000;animation:eva-pulse 0.5s infinite">[!] DISCONNECT NOW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">System D: Amber base with green for "safe" UI chrome — green means "you're ok", amber is the world</div>
+    <div style="background:#0a0800; padding:1.5rem;">
+      <div style="display:flex; justify-content:space-between; font-size:11px; padding-bottom:0.5rem; border-bottom:1px solid #332800; margin-bottom:1rem;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">ROUND #4818</span></span>
+        <span style="color:#00cc66;">● CONNECTED <span style="color:#00cc66">34ms</span> &nbsp; WALLET: <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.15em;">LIVE HACK</div>
+        <div style="color:#ffb000; font-size:3rem; font-weight:700; text-shadow:0 0 10px rgba(255,176,0,0.4); font-family:'Fira Code',monospace;">2.47x</div>
+        <div style="font-size:11px; color:#ffb000;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓░░░░░░░░░░░░░░░░</span> LOW</div>
+      </div>
+      <div class="term" style="margin-top:1rem; font-size:12px; color:#ffb000; text-shadow:0 0 3px rgba(255,176,0,0.3); border-top:1px solid #332800; padding-top:0.5rem;">
+<span style="color:#cc8800">[*] Enumerating /home/admin/...</span>
+<span style="color:#00cc66">[+] Found credentials.xlsx</span>
+<span style="color:#ffcc00">[EXFIL] credentials.xlsx [████████░░░░] 58% 12.3MB/s</span>
+<span style="color:#cc8800">[*] Checking for lateral movement options...</span></div>
+      <div style="text-align:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid #332800;">
+        <button class="btn" style="color:#00cc66; border-color:#00cc66;">[ DISCONNECT ]</button>
+        <div style="color:#006633; font-size:10px; margin-top:0.3rem;">Cash out: 247.00 CR</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 02: TYPOGRAPHY -->
+<!-- ============================================================ -->
+<section id="type-explore">
+  <h2>02 — Fira Code + Space Mono Pairings</h2>
+  <p class="subtitle">Exploring how these two fonts work together across UI elements</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Fira Code everywhere — terminal + display + UI</div>
+      <div class="card-body" style="background:#0a0800; text-align:center;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.15em; font-family:'Fira Code';">LIVE HACK — ROUND #4818</div>
+        <div style="color:#ffb000; font-size:3.5rem; font-weight:700; font-family:'Fira Code'; text-shadow:0 0 10px rgba(255,176,0,0.4);">4.72x</div>
+        <div style="color:#ff6600; font-size:11px; font-family:'Fira Code'; letter-spacing:0.05em; margin-top:0.5rem;">
+          THREAT: ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ ELEVATED
+        </div>
+        <div style="font-family:'Fira Code'; font-weight:700; color:#cc0000; letter-spacing:0.2em; font-size:1.8rem; margin-top:1.5rem; text-shadow:0 0 15px rgba(204,0,0,0.5);">
+          W A R N I N G
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Space Mono headings + Fira Code terminal</div>
+      <div class="card-body" style="background:#0a0800; text-align:center;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.15em; font-family:'Space Mono';">LIVE HACK — ROUND #4818</div>
+        <div style="color:#ffb000; font-size:3.5rem; font-weight:700; font-family:'Fira Code'; text-shadow:0 0 10px rgba(255,176,0,0.4);">4.72x</div>
+        <div style="color:#ff6600; font-size:11px; font-family:'Fira Code'; letter-spacing:0.05em; margin-top:0.5rem;">
+          THREAT: ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ ELEVATED
+        </div>
+        <div style="font-family:'Space Mono'; font-weight:700; color:#cc0000; letter-spacing:0.25em; font-size:1.8rem; margin-top:1.5rem; text-shadow:0 0 15px rgba(204,0,0,0.5);">
+          W A R N I N G
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Space Mono for labels/headings, Fira Code for data/terminal, mixed sizing</div>
+    <div style="background:#0a0800; padding:1.5rem;">
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem;">
+        <div style="border:1px solid #332800; padding:0.75rem;">
+          <div style="font-family:'Space Mono'; color:#805800; font-size:10px; letter-spacing:0.15em;">接続状況</div>
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.1em;">CONNECTION</div>
+          <div style="font-family:'Fira Code'; color:#00cc66; font-size:14px; font-weight:700; margin-top:0.25rem;">● ACTIVE</div>
+          <div style="font-family:'Fira Code'; color:#806000; font-size:11px;">34ms / 6 proxies</div>
+        </div>
+        <div style="border:1px solid #332800; padding:0.75rem;">
+          <div style="font-family:'Space Mono'; color:#805800; font-size:10px; letter-spacing:0.15em;">脅威レベル</div>
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.1em;">THREAT LEVEL</div>
+          <div style="font-family:'Fira Code'; color:#ffb000; font-size:14px; font-weight:700; margin-top:0.25rem;">ELEVATED</div>
+          <div style="font-family:'Fira Code'; color:#806000; font-size:11px;">IDS: 1 alert</div>
+        </div>
+        <div style="border:1px solid #332800; padding:0.75rem;">
+          <div style="font-family:'Space Mono'; color:#805800; font-size:10px; letter-spacing:0.15em;">作戦</div>
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.1em;">OPERATION</div>
+          <div style="font-family:'Fira Code'; color:#ffb000; font-size:14px; font-weight:700; margin-top:0.25rem;">#4818</div>
+          <div style="font-family:'Fira Code'; color:#806000; font-size:11px;">GIBSON FINANCIAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 03: CRT REFINED -->
+<!-- ============================================================ -->
+<section id="crt-refined">
+  <h2>03 — CRT Effects: Refined</h2>
+  <p class="subtitle">Scanlines + glow + improved flicker + subtle VHS bands</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Low threat: gentle flicker, subtle VHS</div>
+      <div class="card-body pal-amber crt-lines flicker-low" style="position:relative;">
+        <div class="vhs-band"></div>
+        <div class="term" style="font-size:12px;">
+<span style="color:#cc8800">[*] Scanning target 198.51.100.42...</span>
+<span style="color:#00cc66">[+] Port 22 open — OpenSSH 8.9p1</span>
+<span style="color:#00cc66">[+] Port 443 open — nginx/1.24.0</span>
+<span style="color:#805800">[-] Port 3306 filtered</span>
+
+<span style="color:#cc8800">$ ssh admin@198.51.100.42</span>
+<span style="color:#00cc66">[+] Authentication successful</span>
+<span style="color:#ffb000">admin@srv-prod-web-03:~$</span> <span style="color:#ffd060">id</span>
+uid=1001(admin) gid=1001(admin)
+
+<span style="color:#ffb000">admin@srv-prod-web-03:~$</span> <span style="color:#ffd060">ls -la /opt/</span>
+drwxr-xr-x  8 root root 4096 Mar 12 08:42 .
+drwxr-xr-x  4 www  www  4096 Mar 11 22:17 app/
+drwxr-x---  2 root root 4096 Mar 10 03:00 backups/
+drwx------  2 root root 4096 Jan 15 09:22 .secrets/</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">High threat: erratic flicker, double VHS bands</div>
+      <div class="card-body crt-lines flicker-high" style="background:#140500; color:#ff6600; position:relative;">
+        <div class="vhs-band"></div>
+        <div class="vhs-band-2"></div>
+        <div class="term" style="font-size:12px; text-shadow:0 0 4px rgba(255,100,0,0.4);">
+<span style="color:#ff0040">[!] ALERT: Reverse trace initiated</span>
+<span style="color:#ff6600">[!] Proxy node 6 compromised</span>
+<span style="color:#ff0040">[!] Proxy node 5 compromised</span>
+<span style="color:#ff4400">[!] SOC ALERT: Priority CRITICAL</span>
+<span style="color:#ffcc00">[EXFIL] model_weights.bin [████████░░░░] 62%</span>
+<span style="color:#ff0040">[!] Counter-hack detected on port 8080</span>
+<span style="color:#ff6600">[*] Rotating exit tunnel...</span>
+<span style="color:#ff0000;animation:eva-pulse 0.5s infinite">[!] THEY KNOW YOU'RE HERE</span>
+
+<span style="color:#ff0040">[!] Forensic imaging initiated</span>
+<span style="color:#ff0000">[!] ██ MULTIPLE AGENCIES ALERTED ██</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 04: CRITICAL GLITCH -->
+<!-- ============================================================ -->
+<section id="critical-glitch">
+  <h2>04 — Critical Multiplier: Improved Glitch</h2>
+  <p class="subtitle">More erratic, more horizontal displacement, less static</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Improved glitch v2 — Erratic horizontal tears</div>
+      <div class="card-body crt-lines flicker-high" style="background:#1a0000; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; animation:bg-crisis 1.2s infinite; border:2px solid #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.2);">
+        <div class="vhs-band"></div>
+        <div style="color:#ff0000; font-size:10px; letter-spacing:0.15em; font-family:'Space Mono'; animation:eva-pulse 0.5s infinite;">!! CRITICAL — TRACE IMMINENT !!</div>
+        <div class="mult mult-xl glitch-v2" data-text="47.21x" style="color:#ff0040; text-shadow:0 0 15px rgba(255,0,64,0.6); padding:0.5rem 1rem; background:#1a0000;">47.21x</div>
+        <div style="color:#ff0000; font-size:11px; font-family:'Fira Code'; animation:eva-pulse 0.6s infinite; margin-top:0.5rem;">
+          THREAT: <span style="letter-spacing:-0.02em">████████████████████</span> !! CRITICAL
+        </div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Same glitch, amber palette context (if starting amber)</div>
+      <div class="card-body crt-lines flicker-high" style="background:#1a0000; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; animation:bg-crisis 1.2s infinite; border:2px solid #ff0000; box-shadow: 0 0 20px rgba(255,0,0,0.2);">
+        <div class="vhs-band"></div>
+        <div class="jp" style="color:#ff0000; animation:eva-pulse 0.5s infinite;">危険 — 追跡中</div>
+        <div style="color:#ff0000; font-size:10px; letter-spacing:0.15em; font-family:'Space Mono'; animation:eva-pulse 0.5s infinite;">!! CRITICAL !!</div>
+        <div class="mult mult-xl glitch-v2" data-text="47.21x" style="color:#ff0040; text-shadow:0 0 15px rgba(255,0,64,0.6); padding:0.5rem 1rem; background:#1a0000;">47.21x</div>
+        <div style="color:#ff0000; font-size:11px; font-family:'Fira Code'; margin-top:0.5rem;">
+          <span style="animation:eva-pulse 0.6s infinite;">FBI CYBER DIVISION — TRACKING</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 05: THREAT INDICATORS -->
+<!-- ============================================================ -->
+<section id="threat-refined">
+  <h2>05 — Threat Indicators: Vague Danger</h2>
+  <p class="subtitle">No exact percentages — danger should feel unpredictable, not metered</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Concept A: Proxy elimination + IDS alerts (no percentages)</div>
+      <div class="card-body" style="background:#0a0800; font-size:12px;">
+        <div style="color:#805800; font-size:10px; letter-spacing:0.1em; margin-bottom:1rem; font-family:'Space Mono';">THREAT INDICATORS — COMPACT BAR</div>
+
+        <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #1a1200;">
+          <div style="color:#ffb000; margin-bottom:0.25rem;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓░░░░░░░░░░░░░░░░</span> LOW</div>
+          <div style="color:#805800; font-size:10px;">PROXIES: 6/6 active &nbsp; IDS: silent &nbsp; COVER: intact</div>
+        </div>
+
+        <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #1a1200;">
+          <div style="color:#ff8c00; margin-bottom:0.25rem;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED</div>
+          <div style="color:#805800; font-size:10px;">PROXIES: 6/6 active &nbsp; IDS: <span style="color:#ff6600">1 alert</span> &nbsp; COVER: intact</div>
+        </div>
+
+        <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #1a1200;">
+          <div style="color:#ff4400; margin-bottom:0.25rem;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░</span> HIGH</div>
+          <div style="color:#805800; font-size:10px;">PROXIES: <span style="color:#ff6600">4/6 active</span> &nbsp; IDS: <span style="color:#ff0040">3 alerts</span> &nbsp; COVER: <span style="color:#ff6600">degrading</span></div>
+        </div>
+
+        <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #1a1200;">
+          <div style="color:#ff0040; margin-bottom:0.25rem;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░</span> SEVERE</div>
+          <div style="color:#805800; font-size:10px;">PROXIES: <span style="color:#ff0040">2/6 active</span> &nbsp; IDS: <span style="color:#ff0000">5+ alerts</span> &nbsp; COVER: <span style="color:#ff0040">compromised</span></div>
+        </div>
+
+        <div>
+          <div style="color:#ff0000; animation:eva-pulse 0.6s infinite; margin-bottom:0.25rem;">THREAT: <span style="letter-spacing:-0.02em">████████████████████</span> !! CRITICAL</div>
+          <div style="color:#ff0000; font-size:10px; animation:threat-blink 0.8s infinite;">PROXIES: <span>0/6 — EXPOSED</span> &nbsp; IDS: <span>ACTIVE HUNT</span> &nbsp; COVER: <span>BLOWN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Concept B: Eva status panel — vague qualitative indicators</div>
+      <div class="card-body" style="background:#0a0800;">
+        <div style="border:1px solid #cc0000; padding:1rem; position:relative; margin-bottom:1rem;">
+          <div style="position:absolute;top:-0.6em;left:1em;background:#0a0800;padding:0 0.4em;font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:0.15em;">脅威評価 THREAT ASSESSMENT</div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:0.3rem 1rem; font-size:11px; margin-top:0.25rem;">
+            <div style="color:#cc0000;">STATUS</div><div style="color:#ff0040; font-weight:700;">SEVERE</div>
+            <div style="color:#cc0000;">PROXIES</div><div style="color:#ff6600;">2 of 6 remaining</div>
+            <div style="color:#cc0000;">IDS</div><div style="color:#ff0000; animation:eva-pulse 0.8s infinite;">ACTIVE RESPONSE — MULTIPLE ALERTS</div>
+            <div style="color:#cc0000;">COVER</div><div style="color:#ff0040;">COMPROMISED</div>
+            <div style="color:#cc0000;">EXPOSURE</div><div style="color:#ff6600;">SIGNIFICANT</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #332800; padding:1rem; position:relative;">
+          <div style="position:absolute;top:-0.6em;left:1em;background:#0a0800;padding:0 0.4em;font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:0.15em;">脅威評価 THREAT ASSESSMENT</div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:0.3rem 1rem; font-size:11px; margin-top:0.25rem;">
+            <div style="color:#805800;">STATUS</div><div style="color:#ffb000; font-weight:700;">LOW</div>
+            <div style="color:#805800;">PROXIES</div><div style="color:#ffb000;">6 of 6 active</div>
+            <div style="color:#805800;">IDS</div><div style="color:#806000;">SILENT</div>
+            <div style="color:#805800;">COVER</div><div style="color:#00cc66;">INTACT</div>
+            <div style="color:#805800;">EXPOSURE</div><div style="color:#00cc66;">MINIMAL</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 06: ESCALATION PATHS -->
+<!-- ============================================================ -->
+<section id="escalation-v2">
+  <h2>06 — Full Escalation: Amber vs Green Start</h2>
+  <p class="subtitle">Side-by-side comparison of the full danger arc in both palette systems</p>
+
+  <div class="full-concept">
+    <div class="card-label">Amber-first: Full arc from 1x to 40x+</div>
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr);">
+      <div style="background:#0a0800; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#805800; font-size:9px; letter-spacing:0.1em;">GHOST</div>
+        <div style="color:#ffb000; font-size:1.6rem; font-weight:700; text-shadow:0 0 6px rgba(255,176,0,0.3);">1.20x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ffb000">6/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#806000">silent</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ffb000; letter-spacing:-0.02em;">░░░░░░░░░░</div>
+      </div>
+      <div style="background:#0c0900; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#806000; font-size:9px; letter-spacing:0.1em;">ELEVATED</div>
+        <div style="color:#ff8c00; font-size:1.6rem; font-weight:700; text-shadow:0 0 6px rgba(255,140,0,0.3);">3.80x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ffb000">6/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff6600">1 alert</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff8c00; letter-spacing:-0.02em;">▓▓▓▓░░░░░░</div>
+      </div>
+      <div style="background:#100600; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#803000; font-size:9px; letter-spacing:0.1em;">HIGH</div>
+        <div style="color:#ff6600; font-size:1.6rem; font-weight:700; text-shadow:0 0 8px rgba(255,100,0,0.4);">8.20x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff6600">4/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff0040">3 alerts</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff6600; letter-spacing:-0.02em;">▓▓▓▓▓▓░░░░</div>
+      </div>
+      <div style="background:#140400; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#800020; font-size:9px; letter-spacing:0.1em;">SEVERE</div>
+        <div style="color:#ff4400; font-size:1.6rem; font-weight:700; text-shadow:0 0 10px rgba(255,68,0,0.5);">16.40x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff0040">2/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff0000">active hunt</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff0040; letter-spacing:-0.02em;">▓▓▓▓▓▓▓▓░░</div>
+      </div>
+      <div style="background:#1a0000; padding:0.75rem; text-align:center; animation:bg-crisis 1.2s infinite;">
+        <div style="color:#ff0000; font-size:9px; letter-spacing:0.1em; animation:eva-pulse 0.5s infinite;">CRITICAL</div>
+        <div class="glitch-v2" data-text="42.10x" style="color:#ff0040; font-size:1.6rem; font-weight:700; text-shadow:0 0 12px rgba(255,0,64,0.6); background:#1a0000; display:inline-block;">42.10x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff0000">0/6</span></div>
+        <div style="color:#ff0000; font-size:9px; animation:threat-blink 0.6s infinite;">EXPOSED</div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff0000; letter-spacing:-0.02em; animation:eva-pulse 0.6s infinite;">██████████</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Green-first: Full arc from 1x to 40x+ — wider color range but less cohesive with amber CRT feel</div>
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr);">
+      <div style="background:#0a0a0a; padding:0.75rem; border-right:1px solid #1a1a1a; text-align:center;">
+        <div style="color:#00802a; font-size:9px; letter-spacing:0.1em;">GHOST</div>
+        <div style="color:#00ff41; font-size:1.6rem; font-weight:700; text-shadow:0 0 6px rgba(0,255,65,0.3);">1.20x</div>
+        <div style="color:#00802a; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#00ff41">6/6</span></div>
+        <div style="color:#00802a; font-size:9px;">IDS: <span style="color:#00802a">silent</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#00ff41; letter-spacing:-0.02em;">░░░░░░░░░░</div>
+      </div>
+      <div style="background:#0a0800; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#806000; font-size:9px; letter-spacing:0.1em;">ELEVATED</div>
+        <div style="color:#ffb000; font-size:1.6rem; font-weight:700; text-shadow:0 0 6px rgba(255,176,0,0.3);">3.80x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ffb000">6/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff6600">1 alert</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ffb000; letter-spacing:-0.02em;">▓▓▓▓░░░░░░</div>
+      </div>
+      <div style="background:#100600; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#803000; font-size:9px; letter-spacing:0.1em;">HIGH</div>
+        <div style="color:#ff6600; font-size:1.6rem; font-weight:700; text-shadow:0 0 8px rgba(255,100,0,0.4);">8.20x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff6600">4/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff0040">3 alerts</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff6600; letter-spacing:-0.02em;">▓▓▓▓▓▓░░░░</div>
+      </div>
+      <div style="background:#140400; padding:0.75rem; border-right:1px solid #1a1200; text-align:center;">
+        <div style="color:#800020; font-size:9px; letter-spacing:0.1em;">SEVERE</div>
+        <div style="color:#ff4400; font-size:1.6rem; font-weight:700; text-shadow:0 0 10px rgba(255,68,0,0.5);">16.40x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff0040">2/6</span></div>
+        <div style="color:#805800; font-size:9px;">IDS: <span style="color:#ff0000">active hunt</span></div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff0040; letter-spacing:-0.02em;">▓▓▓▓▓▓▓▓░░</div>
+      </div>
+      <div style="background:#1a0000; padding:0.75rem; text-align:center; animation:bg-crisis 1.2s infinite;">
+        <div style="color:#ff0000; font-size:9px; letter-spacing:0.1em; animation:eva-pulse 0.5s infinite;">CRITICAL</div>
+        <div class="glitch-v2" data-text="42.10x" style="color:#ff0040; font-size:1.6rem; font-weight:700; text-shadow:0 0 12px rgba(255,0,64,0.6); background:#1a0000; display:inline-block;">42.10x</div>
+        <div style="color:#805800; font-size:9px; margin-top:0.3rem;">PROXIES: <span style="color:#ff0000">0/6</span></div>
+        <div style="color:#ff0000; font-size:9px; animation:threat-blink 0.6s infinite;">EXPOSED</div>
+        <div style="margin-top:0.5rem; font-size:10px; color:#ff0000; letter-spacing:-0.02em; animation:eva-pulse 0.6s infinite;">██████████</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 07: CRASH SCREENS -->
+<!-- ============================================================ -->
+<section id="crash-refined">
+  <h2>07 — Crash Screen: Building on 08C Direction</h2>
+  <p class="subtitle">Japanese accents, Eva status panel, multiple variants</p>
+
+  <div class="full-concept">
+    <div class="card-label">Variant A: 08C refined — warning + side panel + amber hazard stripes</div>
+    <div style="background:#0a0000; min-height:340px; display:flex; position:relative; overflow:hidden;">
+      <div class="hazard-top" style="height:14px;"></div>
+      <div class="hazard-bot" style="height:14px;"></div>
+      <div class="vhs-band"></div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem;">
+        <div class="jp" style="color:#cc0000;">警告 — 追跡完了</div>
+        <div style="font-family:'Space Mono'; font-weight:700; color:#cc0000; text-shadow: 0 0 25px rgba(204,0,0,0.5); letter-spacing:0.3em; font-size:2.8rem;">
+          TRACED
+        </div>
+        <div style="font-family:'Fira Code'; color:#ff6a00; letter-spacing:0.12em; font-size:0.8rem; margin-top:0.5rem;">
+          OPERATOR COMPROMISED — ALL SESSIONS TERMINATED
+        </div>
+        <div style="margin-top:1.5rem; font-family:'Fira Code'; font-weight:700; font-size:2rem; color:#ff0040; text-shadow:0 0 10px rgba(255,0,64,0.4);">
+          4.72x
+        </div>
+      </div>
+      <div style="width:220px; border-left:2px solid #cc0000; padding:1rem; display:flex; flex-direction:column; justify-content:center; font-family:'Fira Code'; font-size:11px;">
+        <div class="jp" style="color:#cc0000;">状態報告</div>
+        <div style="font-family:'Space Mono'; color:#cc0000; letter-spacing:0.1em; margin-bottom:0.75rem; font-size:9px;">STATUS READOUT</div>
+        <div style="color:#ff6a00; line-height:1.9;">
+          PROXIES: <span style="color:#ff0000">0 / 6</span><br>
+          COVER: <span style="color:#ff0000">BLOWN</span><br>
+          IDS: <span style="color:#ff0040">ACTIVE HUNT</span><br>
+          AGENCY: <span style="color:#ff0040">FBI-CD</span><br>
+          CASE: <span style="color:#ff6a00">#2026-CF-84721</span>
+        </div>
+        <div style="margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid #400000; color:#800020; font-size:10px;">
+          ALL FUNDS SEIZED
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Variant B: Centered single-panel, JP accent, compact</div>
+      <div class="card-body" style="background:#0a0000; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; border:2px solid #cc0000; box-shadow: inset 0 0 40px rgba(204,0,0,0.08);">
+        <div class="vhs-band"></div>
+        <div class="jp" style="color:#cc0000;">追跡完了</div>
+        <div style="font-family:'Space Mono'; font-weight:700; color:#cc0000; text-shadow: 0 0 20px rgba(204,0,0,0.4); letter-spacing:0.25em; font-size:2.2rem;">TRACED</div>
+        <div style="width:50%; height:1px; background:#cc0000; margin:1rem 0; box-shadow:0 0 8px rgba(204,0,0,0.4);"></div>
+        <div style="font-family:'Fira Code'; color:#ff6a00; font-size:11px; letter-spacing:0.08em; text-align:center; line-height:2;">
+          FBI CYBER DIVISION — CASE #2026-CF-84721<br>
+          <span style="color:#805800;">PROXIES: 0/6 &nbsp; COVER: BLOWN &nbsp; IDS: ACTIVE HUNT</span>
+        </div>
+        <div style="margin-top:1rem; font-family:'Fira Code'; font-size:1.8rem; font-weight:700; color:#ff0040; text-shadow:0 0 10px rgba(255,0,64,0.4);">4.72x</div>
+        <div style="color:#800020; font-size:10px; font-family:'Fira Code'; margin-top:0.25rem;">ALL FUNDS SEIZED</div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">Variant C: Low crash — humiliating, minimal</div>
+      <div class="card-body" style="background:#0a0800; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #805800;">
+        <div class="jp" style="color:#805800;">検出</div>
+        <div style="font-family:'Space Mono'; font-weight:700; color:#ff6600; letter-spacing:0.15em; font-size:1.5rem;">DETECTED</div>
+        <div style="width:30%; height:1px; background:#805800; margin:0.75rem 0;"></div>
+        <div style="font-family:'Fira Code'; color:#805800; font-size:11px; text-align:center; line-height:1.8;">
+          YOUR OWN FIREWALL BLOCKED YOU<br>
+          <span style="color:#ff6600;">SCRIPT KIDDIE DETECTED</span>
+        </div>
+        <div style="margin-top:0.75rem; font-family:'Fira Code'; font-size:1.5rem; font-weight:700; color:#ff6600;">1.08x</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Variant D: High crash — respectful, dramatic</div>
+      <div class="card-body" style="background:#0a0000; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; border:2px solid #cc0000;">
+        <div class="hazard-top" style="height:10px;"></div>
+        <div class="hazard-bot" style="height:10px;"></div>
+        <div class="vhs-band"></div>
+        <div class="jp" style="color:#cc0000;">最重要指名手配</div>
+        <div style="font-family:'Space Mono'; font-weight:700; color:#cc0000; text-shadow: 0 0 20px rgba(204,0,0,0.4); letter-spacing:0.2em; font-size:1.4rem; margin-top:0.25rem;">AFTER A 17-MONTH INVESTIGATION</div>
+        <div style="font-family:'Fira Code'; color:#ff6a00; font-size:11px; margin-top:0.5rem; letter-spacing:0.08em;">
+          THE DEPARTMENT OF JUSTICE ANNOUNCES...
+        </div>
+        <div style="width:50%; height:1px; background:#cc0000; margin:1rem 0;"></div>
+        <div style="font-family:'Fira Code'; font-size:2rem; font-weight:700; color:#ff0040; text-shadow:0 0 12px rgba(255,0,64,0.5);">47.21x</div>
+        <div style="font-family:'Fira Code'; color:#800020; font-size:10px; margin-top:0.25rem;">FIVE EYES COALITION — JOINT OPERATION</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="card-label">Variant E: Rotating agency — variety between rounds</div>
+      <div class="card-body" style="background:#0a0000; font-family:'Fira Code'; font-size:12px; display:flex; flex-direction:column; gap:1rem; justify-content:center;">
+        <div style="padding:0.5rem; border-left:3px solid #cc0000;">
+          <span style="color:#cc0000; font-family:'Space Mono'; font-size:10px; letter-spacing:0.1em;">AGENCY:</span>
+          <span style="color:#ff0040; font-weight:700;"> FBI CYBER DIVISION</span><br>
+          <span style="color:#805800; font-size:10px;">FEDERAL WARRANT EXECUTED</span>
+        </div>
+        <div style="padding:0.5rem; border-left:3px solid #cc0000;">
+          <span style="color:#cc0000; font-family:'Space Mono'; font-size:10px; letter-spacing:0.1em;">AGENCY:</span>
+          <span style="color:#ff0040; font-weight:700;"> NSA TAILORED ACCESS OPS</span><br>
+          <span style="color:#805800; font-size:10px;">SIGNAL INTERCEPTED</span>
+        </div>
+        <div style="padding:0.5rem; border-left:3px solid #cc0000;">
+          <span style="color:#cc0000; font-family:'Space Mono'; font-size:10px; letter-spacing:0.1em;">AGENCY:</span>
+          <span style="color:#ff0040; font-weight:700;"> INTERPOL CYBER CRIME</span><br>
+          <span style="color:#805800; font-size:10px;">INTERNATIONAL WARRANT ISSUED</span>
+        </div>
+        <div style="padding:0.5rem; border-left:3px solid #805800;">
+          <span style="color:#805800; font-family:'Space Mono'; font-size:10px; letter-spacing:0.1em;">AGENCY:</span>
+          <span style="color:#ff6600; font-weight:700;"> CORPORATE SECURITY</span><br>
+          <span style="color:#805800; font-size:10px;">INTRUSION QUARANTINED BY TARGET</span>
+        </div>
+        <div style="padding:0.5rem; border-left:3px solid #cc0000;">
+          <span style="color:#cc0000; font-family:'Space Mono'; font-size:10px; letter-spacing:0.1em;">AGENCY:</span>
+          <span style="color:#ff0040; font-weight:700;"> RIVAL HACKER</span><br>
+          <span style="color:#805800; font-size:10px;">YOU'VE BEEN COUNTER-HACKED ☠</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 08: CASHOUT -->
+<!-- ============================================================ -->
+<section id="cashout-refined">
+  <h2>08 — Cashout: Clean Exit Refined</h2>
+  <p class="subtitle">Building on Concept B — centered, clear, with threat-aware messaging</p>
+
+  <div class="concept-row">
+    <div class="concept-card">
+      <div class="card-label">Low threat disconnect — calm, professional</div>
+      <div class="card-body" style="background:#0a0800; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div class="jp" style="color:#00cc66;">切断完了</div>
+        <div style="font-family:'Space Mono'; color:#00cc66; font-size:11px; letter-spacing:0.12em; text-shadow: 0 0 5px rgba(0,204,102,0.3);">
+          CONNECTION TERMINATED
+        </div>
+        <div style="font-family:'Fira Code'; color:#006633; font-size:10px; letter-spacing:0.08em; margin-top:0.25rem;">
+          TRACES CLEARED — YOU WERE NEVER HERE
+        </div>
+        <div style="width:40%; height:1px; background:#006633; margin:1.5rem 0; box-shadow: 0 0 5px rgba(0,204,102,0.2);"></div>
+        <div style="font-family:'Fira Code'; color:#00cc66; font-size:3rem; font-weight:700; text-shadow: 0 0 20px rgba(0,204,102,0.4);">
+          +247.00 CR
+        </div>
+        <div style="font-family:'Fira Code'; color:#006633; font-size:11px; margin-top:0.5rem;">
+          DISCONNECTED @ 2.47x
+        </div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="card-label">High threat disconnect — narrow escape</div>
+      <div class="card-body" style="background:#0a0800; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #805800;">
+        <div class="jp" style="color:#ff6600;">緊急切断</div>
+        <div style="font-family:'Space Mono'; color:#ff6600; font-size:11px; letter-spacing:0.12em;">
+          EMERGENCY DISCONNECT
+        </div>
+        <div style="font-family:'Fira Code'; color:#805800; font-size:10px; letter-spacing:0.08em; margin-top:0.25rem;">
+          COVER: PARTIALLY COMPROMISED — TRACES: MOSTLY CLEARED
+        </div>
+        <div style="width:40%; height:1px; background:#805800; margin:1.5rem 0;"></div>
+        <div style="font-family:'Fira Code'; color:#00cc66; font-size:3rem; font-weight:700; text-shadow: 0 0 20px rgba(0,204,102,0.4);">
+          +1,472.00 CR
+        </div>
+        <div style="font-family:'Fira Code'; color:#ff6600; font-size:11px; margin-top:0.5rem;">
+          BARELY MADE IT — DISCONNECTED @ 14.72x
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-concept">
+    <div class="card-label">Disconnect buttons: threat-aware progression</div>
+    <div style="background:#0a0800; padding:2rem; display:flex; gap:2rem; flex-wrap:wrap; justify-content:center; align-items:end;">
+      <div style="text-align:center;">
+        <div style="color:#805800; font-size:9px; letter-spacing:0.1em; margin-bottom:0.5rem;">LOW / ELEVATED</div>
+        <button class="btn" style="color:#00cc66; border-color:#00cc66;">[ DISCONNECT ]</button>
+        <div style="color:#006633; font-size:10px; margin-top:0.3rem;">Cash out: 247 CR</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:#803000; font-size:9px; letter-spacing:0.1em; margin-bottom:0.5rem;">HIGH / SEVERE</div>
+        <button class="btn" style="color:#ff6600; border-color:#ff6600;">[ DISCONNECT ]</button>
+        <div style="color:#803000; font-size:10px; margin-top:0.3rem;">Cash out: 820 CR</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:#ff0000; font-size:9px; letter-spacing:0.1em; margin-bottom:0.5rem; animation:eva-pulse 0.6s infinite;">CRITICAL</div>
+        <button class="btn" style="color:#ff0040; border-color:#ff0040; background:rgba(255,0,64,0.1); box-shadow:0 0 15px rgba(255,0,64,0.2); animation:eva-pulse 0.8s infinite;">!! BAIL OUT !!</button>
+        <div style="color:#800020; font-size:10px; margin-top:0.3rem;">Cash out: 4,210 CR</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 09: LOBBY -->
+<!-- ============================================================ -->
+<section id="lobby-refined">
+  <h2>09 — Lobby: Target Briefing Refined</h2>
+  <p class="subtitle">No quotes, no security meter — just the briefing and resource allocation</p>
+
+  <div class="full-concept">
+    <div class="card-label">Refined lobby — amber palette, clean target briefing</div>
+    <div style="background:#0a0800; padding:0;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; padding:0.4rem 0.75rem; border-bottom:1px solid #332800; font-size:11px;">
+        <span style="color:#ffb000;">[crashOS<span style="color:#805800">@</span>rogue-7xK9]</span>
+        <span style="color:#00cc66;">● CONNECTED 34ms &nbsp; WALLET: <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; min-height:400px;">
+        <!-- Main -->
+        <div style="padding:1rem; border-right:1px solid #332800;">
+          <!-- Target -->
+          <div style="border:1px solid #332800; padding:0.75rem; margin-bottom:1rem; position:relative;">
+            <div style="position:absolute;top:-0.6em;left:1em;background:#0a0800;padding:0 0.4em;font-size:9px;letter-spacing:0.15em;"><span class="jp" style="color:#805800;">作戦概要</span> <span style="color:#805800; font-family:'Space Mono';">OPERATION BRIEF</span></div>
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:0.3rem 1rem; font-size:12px; margin-top:0.25rem;">
+              <div style="color:#805800;">TARGET</div><div style="color:#ffb000; font-weight:700;">ELLINGSON MINERAL CORP</div>
+              <div style="color:#805800;">ADDR</div><div style="color:#ffb000;">198.51.100.██</div>
+              <div style="color:#805800;">HOST</div><div style="color:#cc8800;">srv-prod-web-03.ellingson.internal</div>
+              <div style="color:#805800;">OS</div><div style="color:#cc8800;">Linux 5.15 (96% confidence)</div>
+              <div style="color:#805800;">ROUND</div><div style="color:#ffb000;">#4818</div>
+            </div>
+          </div>
+
+          <!-- Bet -->
+          <div style="border:1px solid #332800; padding:0.75rem; margin-bottom:1rem; position:relative;">
+            <div style="position:absolute;top:-0.6em;left:1em;background:#0a0800;padding:0 0.4em;font-size:9px;letter-spacing:0.15em;"><span class="jp" style="color:#805800;">資源配分</span> <span style="color:#805800; font-family:'Space Mono';">RESOURCES</span></div>
+            <div style="font-size:11px; color:#805800; margin-top:0.25rem; margin-bottom:0.4rem;">ALLOCATE CREDITS FOR BREACH:</div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div style="flex:1; border:1px solid #332800; padding:0.35rem 0.5rem; color:#ffb000; font-size:14px; background:#080600;">100<span style="animation:eva-pulse 1s infinite;">█</span></div>
+            </div>
+            <div style="display:flex; gap:0.3rem; margin-top:0.5rem;">
+              <button class="btn" style="color:#ffb000; border-color:#332800; font-size:0.7rem; padding:0.25rem 0.5rem;">10</button>
+              <button class="btn" style="color:#ffb000; border-color:#332800; font-size:0.7rem; padding:0.25rem 0.5rem;">25</button>
+              <button class="btn" style="color:#ffb000; border-color:#ffb000; font-size:0.7rem; padding:0.25rem 0.5rem;">100</button>
+              <button class="btn" style="color:#ffb000; border-color:#332800; font-size:0.7rem; padding:0.25rem 0.5rem;">500</button>
+              <button class="btn" style="color:#ffb000; border-color:#332800; font-size:0.7rem; padding:0.25rem 0.5rem;">MAX</button>
+            </div>
+            <div style="text-align:center; margin-top:0.75rem;">
+              <button class="btn" style="color:#ffb000; border-color:#ffb000; font-size:0.85rem;">[ INITIATE BREACH ]</button>
+            </div>
+            <div style="text-align:center; color:#805800; font-size:10px; margin-top:0.3rem;">BREACH WINDOW OPENS IN <span style="color:#ffb000;">7s</span></div>
+          </div>
+
+          <!-- Prep terminal -->
+          <div style="border-top:1px solid #332800; padding-top:0.5rem;">
+            <div class="term" style="font-size:11px; color:#805800; text-shadow:0 0 3px rgba(255,176,0,0.15);">[00:09] Initializing proxy chain...
+[00:08] <span style="color:#00cc66">> route add via tor-exit-DE</span>
+[00:07] <span style="color:#00cc66">> route add via tor-exit-BR</span>
+[00:06] <span style="color:#00cc66">> route add via tor-exit-JP</span>
+[00:05] Proxy chain: 6 bounces active.
+[00:04] Loading exploit kit... <span style="color:#ffb000">[████████████████████] 100%</span>
+[00:03] <span style="color:#cc8800">$ nmap -sS 198.51.100.██</span>
+[00:02] Payload staged. Awaiting operator.</div>
+          </div>
+        </div>
+        <!-- Sidebar -->
+        <div style="padding:0.75rem; font-size:11px;">
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em; margin-bottom:0.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8; color:#ffb000;">
+            <div>ac1dburn <span style="color:#805800">100CR</span> <span style="color:#00cc66">READY</span></div>
+            <div>ph4nt0m <span style="color:#805800">200CR</span> <span style="color:#00cc66">READY</span></div>
+            <div>gh0st_404 <span style="color:#805800">—</span></div>
+            <div>r00tk1t <span style="color:#805800">75CR</span> <span style="color:#00cc66">READY</span></div>
+          </div>
+
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem;"><span class="jp">最近の作戦</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+            <div><span style="color:#805800">#4815</span> <span style="color:#ff6600">14.72x</span></div>
+            <div><span style="color:#805800">#4814</span> <span style="color:#ff0040">1.08x</span></div>
+            <div><span style="color:#805800">#4813</span> <span style="color:#ffb000">8.44x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 10: FULL RUNNING -->
+<!-- ============================================================ -->
+<section id="running-refined">
+  <h2>10 — Full Running Phase: Amber System</h2>
+  <p class="subtitle">Complete layout at ~4x with amber palette, System C (amber + green success)</p>
+
+  <div class="full-concept">
+    <div class="card-label">Running at 4.12x — Elevated threat — amber palette</div>
+    <div style="background:#0a0800; padding:0;">
+      <div style="display:flex; justify-content:space-between; padding:0.4rem 0.75rem; border-bottom:1px solid #332800; font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">ROUND #4818</span> <span style="color:#805800">TARGET:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; WALLET: <span style="font-weight:700">1,147.50 CR</span></span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; min-height:420px;">
+        <div style="padding:1rem; border-right:1px solid #332800; display:flex; flex-direction:column;">
+          <!-- Multiplier + threat -->
+          <div style="text-align:center; margin-bottom:0.75rem;">
+            <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em;"><span class="jp">侵入中</span> LIVE HACK</div>
+            <div style="color:#ff8c00; font-size:3.5rem; font-weight:700; font-family:'Fira Code'; text-shadow:0 0 10px rgba(255,140,0,0.4);">4.12x</div>
+            <div style="font-size:11px; color:#ff8c00;">THREAT: <span style="letter-spacing:-0.02em">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED</div>
+            <div style="font-size:10px; color:#805800; margin-top:0.2rem;">PROXIES: <span style="color:#ffb000">6/6</span> &nbsp; IDS: <span style="color:#ff6600">1 alert</span> &nbsp; COVER: <span style="color:#ffb000">intact</span></div>
+          </div>
+
+          <!-- Terminal -->
+          <div class="crt-lines flicker-low" style="flex:1; border-top:1px solid #332800; padding-top:0.5rem; position:relative; overflow:hidden;">
+            <div class="vhs-band"></div>
+            <div class="term" style="font-size:12px; color:#ffb000; text-shadow:0 0 3px rgba(255,176,0,0.3); position:relative; z-index:1;">
+<span style="color:#00cc66">[+] ROOT ACCESS GRANTED</span>
+root@srv-prod-web-03:~# <span style="color:#ffd060">ls /opt/.secrets/</span>
+master.key  vpn-gateway.ovpn  credentials.kdbx
+root@srv-prod-web-03:~# <span style="color:#ffd060">cat api_keys.json</span>
+<span style="color:#ff8c00">{</span>
+<span style="color:#ff8c00">  "stripe_live": "sk_live_51HG4dK..."</span>
+<span style="color:#ff8c00">  "aws_root": "AKIAI44QH8DHBEX..."</span>
+<span style="color:#ff8c00">}</span>
+<span style="color:#cc8800">[*] Pivoting to db-primary-01...</span>
+<span style="color:#00cc66">[+] SSH key accepted</span>
+<span style="color:#ffcc00">[EXFIL] credentials.kdbx [██████████████░░] 72%</span>
+<span style="color:#cc8800">[*] Running hashcat against rockyou.txt...</span>
+<span style="color:#00cc66">[+] deploy:D3pl0y_M4st3r!</span></div>
+          </div>
+
+          <!-- Disconnect -->
+          <div style="text-align:center; padding-top:0.75rem; border-top:1px solid #332800; margin-top:0.5rem;">
+            <button class="btn" style="color:#00cc66; border-color:#00cc66; font-size:0.85rem;">[ DISCONNECT ]</button>
+            <div style="color:#006633; font-size:10px; margin-top:0.3rem;">Cash out: 412.00 CR</div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div style="padding:0.75rem; font-size:11px;">
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em; margin-bottom:0.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8; color:#ffb000;">
+            <div>ac1dburn <span style="color:#805800">100CR</span></div>
+            <div>zer0cool <span style="color:#805800">50CR</span> <span style="color:#00cc66">DC 2.41x</span></div>
+            <div>ph4nt0m <span style="color:#805800">200CR</span></div>
+            <div>r00tk1t <span style="color:#805800">75CR</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem;"><span class="jp">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800; padding:0.5rem; font-size:10px;">
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:0.2rem 0.5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff8c00; font-weight:700;">ELEVATED</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ffb000">6 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff6600">1 alert</div>
+              <div style="color:#805800">COVER</div><div style="color:#ffb000">intact</div>
+            </div>
+          </div>
+
+          <div style="font-family:'Space Mono'; color:#805800; font-size:9px; letter-spacing:0.15em; margin-top:1.5rem; margin-bottom:0.5rem;"><span class="jp">最近</span> RECENT</div>
+          <div style="line-height:1.6; font-size:10px;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+            <div><span style="color:#805800">#4815</span> <span style="color:#ff6600">14.72x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="padding:3rem; text-align:center; color:#333; font-size:12px;">— END OF v2 CONCEPTS —</div>
+
+<script>
+  const sections = document.querySelectorAll('section');
+  const navLinks = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.2 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
