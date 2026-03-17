@@ -17,7 +17,9 @@ import { onDestroy, onMount } from 'svelte';
 import { get } from 'svelte/store';
 import BetForm from './components/BetForm.svelte';
 import CashoutButton from './components/CashoutButton.svelte';
+import CashoutScreen from './components/CashoutScreen.svelte';
 import ConnectionStatus from './components/ConnectionStatus.svelte';
+import CrashScreen from './components/CrashScreen.svelte';
 import FairnessModal from './components/FairnessModal.svelte';
 import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
@@ -41,6 +43,7 @@ import { getPrepLines } from './lib/prep-terminal';
 import { connect, disconnect } from './lib/socket';
 import {
   balance,
+  cashoutThreatLevel,
   connectionStatus,
   countdown,
   displayMultiplier,
@@ -65,6 +68,14 @@ let fairnessModalOpen = $state(false);
 let nameModalOpen = $state(false);
 let terminalSession: TerminalSession | null = null;
 let hasCashedOutThisRound = $state(false);
+let lastCashoutPayout = $state(0);
+let lastCashoutMultiplier = $state(1.0);
+let wasInRound = $state(false);
+
+// Derived: show cashout screen only for successful cashouts, not after crash
+const showCashoutScreen = $derived(
+  hasCashedOutThisRound && ($phase === 'RUNNING' || $phase === 'CRASHED'),
+);
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -110,13 +121,22 @@ $effect(() => {
 $effect(() => {
   if ($phase === 'WAITING') {
     hasCashedOutThisRound = false;
+    wasInRound = false;
+    lastCashoutPayout = 0;
+    lastCashoutMultiplier = 1.0;
   }
 });
 
 $effect(() => {
   const pid = $myPlayerId;
-  if (pid && $players[pid]?.cashedOut === true) {
-    hasCashedOutThisRound = true;
+  const playerData = $players[pid];
+  if (pid && playerData) {
+    wasInRound = true;
+    if (playerData.cashedOut === true && playerData.cashoutMultiplier !== null) {
+      hasCashedOutThisRound = true;
+      lastCashoutPayout = playerData.payout ?? 0;
+      lastCashoutMultiplier = playerData.cashoutMultiplier;
+    }
   }
 });
 
@@ -228,7 +248,22 @@ onDestroy(() => {
   {/if}
 
   <main class="app-main" class:running={$phase === 'RUNNING' || $phase === 'CRASHED'}>
-    {#if $phase === 'WAITING' || $phase === 'STARTING'}
+    {#if showCashoutScreen}
+      <div class="full-span">
+        <CashoutScreen
+          payout={lastCashoutPayout}
+          cashoutMultiplier={lastCashoutMultiplier}
+          threatLevel={$cashoutThreatLevel ?? 'GHOST'}
+        />
+      </div>
+    {:else if $phase === 'CRASHED'}
+      <div class="full-span">
+        <CrashScreen
+          crashPoint={$gameState?.crashPoint ?? 0}
+          isSpectator={!wasInRound}
+        />
+      </div>
+    {:else if $phase === 'WAITING' || $phase === 'STARTING'}
       <div class="lobby-area">
         <div class="lobby-panels">
           <TargetInfo target={$roundTarget} />
@@ -238,6 +273,10 @@ onDestroy(() => {
           <TerminalDisplay lines={$terminalLines} dim={true} maxHeight="120px" threatLevel="GHOST" />
         </div>
       </div>
+      <aside class="sidebar">
+        <PlayerList />
+        <History />
+      </aside>
     {:else}
       <div class="game-area">
         <div class="multiplier-section">
@@ -257,15 +296,12 @@ onDestroy(() => {
           {/if}
         </div>
       </div>
-    {/if}
-
-    <aside class="sidebar">
-      <PlayerList />
-      {#if $phase === 'RUNNING'}
+      <aside class="sidebar">
+        <PlayerList />
         <ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} />
-      {/if}
-      <History />
-    </aside>
+        <History />
+      </aside>
+    {/if}
   </main>
 </div>
 
@@ -578,6 +614,11 @@ onDestroy(() => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  /* Phase screens span both grid columns */
+  .full-span {
+    grid-column: 1 / -1;
   }
 
   /* ─── Sidebar ─── */
