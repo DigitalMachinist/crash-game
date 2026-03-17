@@ -134,7 +134,7 @@ describe('History component', () => {
       render(History);
       fireEvent.click(screen.getByText('[ verify ]'));
       expect(screen.getByRole('dialog')).toBeTruthy();
-      fireEvent.click(screen.getByText('Close'));
+      fireEvent.click(screen.getByText('[ CLOSE ]'));
       expect(screen.queryByRole('dialog')).toBeNull();
     });
 

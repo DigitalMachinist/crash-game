@@ -31,99 +31,93 @@ describe('ConnectionStatus component', () => {
   });
 
   describe('connected state', () => {
-    it('shows "Connected" label when status is connected', () => {
+    it('shows dash when status is connected and latency is null', () => {
       connectionStatus.set('connected');
       render(ConnectionStatus);
-      expect(screen.getByText('Connected')).toBeTruthy();
+      expect(screen.getByText('—')).toBeTruthy();
     });
 
-    it('does not show "Reconnecting" when status is connected', () => {
+    it('does not show RECONNECTING when status is connected', () => {
       connectionStatus.set('connected');
       render(ConnectionStatus);
-      expect(screen.queryByText('Reconnecting')).toBeNull();
+      expect(screen.queryByText('RECONNECTING')).toBeNull();
     });
 
-    it('does not show "Disconnected" when status is connected', () => {
+    it('does not show OFFLINE when status is connected', () => {
       connectionStatus.set('connected');
       render(ConnectionStatus);
-      expect(screen.queryByText('Disconnected')).toBeNull();
+      expect(screen.queryByText('OFFLINE')).toBeNull();
     });
 
-    it('renders dot element with green color when connected', () => {
+    it('dot has "connected" class when status is connected', () => {
       connectionStatus.set('connected');
       const { container } = render(ConnectionStatus);
       const dot = container.querySelector('.dot');
-      expect(dot).toBeTruthy();
-      const style = (dot as HTMLElement).getAttribute('style') ?? '';
-      // jsdom normalizes hex colors to rgb — #00c853 = rgb(0, 200, 83)
-      expect(style).toContain('rgb(0, 200, 83)');
+      expect(dot?.classList.contains('connected')).toBe(true);
     });
   });
 
   describe('reconnecting state', () => {
-    it('shows "Reconnecting" label when status is reconnecting', () => {
+    it('shows "RECONNECTING" label when status is reconnecting', () => {
       connectionStatus.set('reconnecting');
       render(ConnectionStatus);
-      expect(screen.getByText('Reconnecting')).toBeTruthy();
+      expect(screen.getByText('RECONNECTING')).toBeTruthy();
     });
 
-    it('does not show "Connected" when status is reconnecting', () => {
+    it('does not show "—" when status is reconnecting', () => {
       connectionStatus.set('reconnecting');
       render(ConnectionStatus);
-      expect(screen.queryByText('Connected')).toBeNull();
+      expect(screen.queryByText('—')).toBeNull();
     });
 
-    it('does not show "Disconnected" when status is reconnecting', () => {
+    it('does not show OFFLINE when status is reconnecting', () => {
       connectionStatus.set('reconnecting');
       render(ConnectionStatus);
-      expect(screen.queryByText('Disconnected')).toBeNull();
+      expect(screen.queryByText('OFFLINE')).toBeNull();
     });
 
-    it('renders dot element with yellow color when reconnecting', () => {
+    it('dot has "reconnecting" class when status is reconnecting', () => {
       connectionStatus.set('reconnecting');
       const { container } = render(ConnectionStatus);
       const dot = container.querySelector('.dot');
-      expect(dot).toBeTruthy();
-      const style = (dot as HTMLElement).getAttribute('style') ?? '';
-      expect(style).toContain('gold');
+      expect(dot?.classList.contains('reconnecting')).toBe(true);
     });
   });
 
   describe('disconnected state', () => {
-    it('shows "Disconnected" label when status is disconnected', () => {
+    it('shows "OFFLINE" label when status is disconnected', () => {
       connectionStatus.set('disconnected');
       render(ConnectionStatus);
-      expect(screen.getByText('Disconnected')).toBeTruthy();
+      expect(screen.getByText('OFFLINE')).toBeTruthy();
     });
 
-    it('does not show "Connected" when status is disconnected', () => {
+    it('does not show "—" when status is disconnected', () => {
       connectionStatus.set('disconnected');
       render(ConnectionStatus);
-      expect(screen.queryByText('Connected')).toBeNull();
+      expect(screen.queryByText('—')).toBeNull();
     });
 
-    it('does not show "Reconnecting" when status is disconnected', () => {
+    it('does not show RECONNECTING when status is disconnected', () => {
       connectionStatus.set('disconnected');
       render(ConnectionStatus);
-      expect(screen.queryByText('Reconnecting')).toBeNull();
+      expect(screen.queryByText('RECONNECTING')).toBeNull();
     });
 
-    it('renders dot element with red color when disconnected', () => {
+    it('dot has "offline" class when status is disconnected', () => {
       connectionStatus.set('disconnected');
       const { container } = render(ConnectionStatus);
       const dot = container.querySelector('.dot');
-      expect(dot).toBeTruthy();
-      const style = (dot as HTMLElement).getAttribute('style') ?? '';
-      expect(style).toContain('crimson');
+      expect(dot?.classList.contains('offline')).toBe(true);
     });
   });
 
   describe('latency display', () => {
-    it('does not show latency when latency is null', () => {
+    it('shows "—" when latency is null', () => {
       connectionStatus.set('connected');
       latency.set(null);
       render(ConnectionStatus);
       expect(screen.queryByText(/ms$/)).toBeNull();
+      expect(screen.getByText('—')).toBeTruthy();
     });
 
     it('shows latency when connected and latency is set', async () => {
@@ -142,75 +136,61 @@ describe('ConnectionStatus component', () => {
       expect(screen.queryByText('42ms')).toBeNull();
     });
 
-    it('renders latency in green for low latency (< 100ms)', async () => {
+    it('latency element uses "latency" class when connected', async () => {
       connectionStatus.set('connected');
       const { container } = render(ConnectionStatus);
       latency.set(42);
       await tick();
       const latencyEl = container.querySelector('.latency');
       expect(latencyEl).toBeTruthy();
-      const style = (latencyEl as HTMLElement).getAttribute('style') ?? '';
-      // jsdom normalizes #00c853 to rgb(0, 200, 83)
-      expect(style).toContain('rgb(0, 200, 83)');
+      expect(latencyEl?.textContent).toBe('42ms');
     });
 
-    it('renders latency in gold for medium latency (100-249ms)', async () => {
-      connectionStatus.set('connected');
-      const { container } = render(ConnectionStatus);
-      latency.set(150);
-      await tick();
-      const latencyEl = container.querySelector('.latency');
-      expect(latencyEl).toBeTruthy();
-      const style = (latencyEl as HTMLElement).getAttribute('style') ?? '';
-      expect(style).toContain('gold');
-    });
-
-    it('renders latency in crimson for high latency (>= 250ms)', async () => {
+    it('latency element is always shown when connected (no color variation by ms value)', async () => {
       connectionStatus.set('connected');
       const { container } = render(ConnectionStatus);
       latency.set(300);
       await tick();
       const latencyEl = container.querySelector('.latency');
       expect(latencyEl).toBeTruthy();
-      const style = (latencyEl as HTMLElement).getAttribute('style') ?? '';
-      expect(style).toContain('crimson');
+      expect(latencyEl?.textContent).toBe('300ms');
     });
   });
 
   describe('reactive updates', () => {
-    it('updates label when status changes from connected to reconnecting', async () => {
+    it('updates from dash to RECONNECTING when status changes from connected to reconnecting', async () => {
       connectionStatus.set('connected');
       render(ConnectionStatus);
-      expect(screen.getByText('Connected')).toBeTruthy();
+      expect(screen.getByText('—')).toBeTruthy();
 
       connectionStatus.set('reconnecting');
       await tick();
 
-      expect(screen.queryByText('Connected')).toBeNull();
-      expect(screen.getByText('Reconnecting')).toBeTruthy();
+      expect(screen.queryByText('—')).toBeNull();
+      expect(screen.getByText('RECONNECTING')).toBeTruthy();
     });
 
-    it('updates label when status changes from reconnecting to connected', async () => {
+    it('updates from RECONNECTING to dash when status changes from reconnecting to connected', async () => {
       connectionStatus.set('reconnecting');
       render(ConnectionStatus);
-      expect(screen.getByText('Reconnecting')).toBeTruthy();
+      expect(screen.getByText('RECONNECTING')).toBeTruthy();
 
       connectionStatus.set('connected');
       await tick();
 
-      expect(screen.queryByText('Reconnecting')).toBeNull();
-      expect(screen.getByText('Connected')).toBeTruthy();
+      expect(screen.queryByText('RECONNECTING')).toBeNull();
+      expect(screen.getByText('—')).toBeTruthy();
     });
 
-    it('updates label when status changes to disconnected', async () => {
+    it('updates to OFFLINE when status changes to disconnected', async () => {
       connectionStatus.set('connected');
       render(ConnectionStatus);
 
       connectionStatus.set('disconnected');
       await tick();
 
-      expect(screen.queryByText('Connected')).toBeNull();
-      expect(screen.getByText('Disconnected')).toBeTruthy();
+      expect(screen.queryByText('—')).toBeNull();
+      expect(screen.getByText('OFFLINE')).toBeTruthy();
     });
   });
 });

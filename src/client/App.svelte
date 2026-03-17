@@ -46,6 +46,7 @@ import {
   cashoutThreatLevel,
   connectionStatus,
   countdown,
+  dangerColors,
   displayMultiplier,
   gameState,
   isInRound,
@@ -137,6 +138,22 @@ $effect(() => {
       lastCashoutPayout = playerData.payout ?? 0;
       lastCashoutMultiplier = playerData.cashoutMultiplier;
     }
+  }
+});
+
+// Update CSS custom properties and threat-critical class from dangerColors store.
+$effect(() => {
+  const colors = $dangerColors;
+  const root = document.documentElement;
+  root.style.setProperty('--threat-color', colors.color);
+  root.style.setProperty('--threat-dim', colors.dim);
+  root.style.setProperty('--threat-bg', colors.bg);
+  root.style.setProperty('--threat-border', colors.border);
+  root.style.setProperty('--threat-glow-alpha', String(colors.glowAlpha));
+  if ($threatLevel === 'CRITICAL') {
+    root.classList.add('threat-critical');
+  } else {
+    root.classList.remove('threat-critical');
   }
 });
 
@@ -640,6 +657,11 @@ onDestroy(() => {
   .action-area {
     display: flex;
     justify-content: center;
+  }
+
+  /* CRITICAL threat — background crisis pulse on body */
+  :global(:root.threat-critical body) {
+    animation: bg-crisis 2s ease-in-out infinite;
   }
 
   @media (max-width: 700px) {

@@ -56,6 +56,7 @@ function handleCancel(e: Event) {
   onclick={handleDialogClick}
   oncancel={handleCancel}
 >
+  <div class="modal-jp">ラウンド検証</div>
   <h3>Verify Round #{entry.roundId}</h3>
   <p><strong>Crash Point:</strong> {entry.crashPoint.toFixed(2)}x</p>
   <p><strong>Round Seed:</strong> <code>{entry.roundSeed.slice(0, 16)}...</code></p>
@@ -86,74 +87,107 @@ function handleCancel(e: Event) {
     {/if}
   </div>
 
-  <button onclick={onClose}>Close</button>
+  <button onclick={onClose}>[ CLOSE ]</button>
 </dialog>
 
 <style>
   .modal {
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 8px;
+    background: #0a0800;
+    border: 1px solid var(--color-border, #332800);
+    border-radius: 0;
     padding: 1.5rem;
     max-width: 500px;
     width: 90%;
     cursor: default;
-    color: #fff;
+    font-family: 'Fira Code', monospace;
+    color: var(--color-primary, #ffb000);
   }
 
   .modal::backdrop {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
     cursor: pointer;
   }
 
+  .modal-jp {
+    font-size: 0.65rem;
+    color: var(--color-primary-dim, #805800);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+  }
+
   .modal h3 {
-    color: #fff;
+    color: var(--color-primary, #ffb000);
     margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+  }
+
+  p {
+    color: var(--color-primary-dim, #805800);
+    font-size: 0.85rem;
+    margin: 0.35rem 0;
+  }
+
+  p strong {
+    color: var(--color-primary-mid, #cc8800);
   }
 
   code {
-    font-family: monospace;
-    background: #0d0d1a;
+    font-family: 'Fira Code', monospace;
+    background: #080600;
+    border: 1px solid var(--color-border, #332800);
     padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    color: var(--color-primary, #ffb000);
   }
 
   .verification-status {
     margin: 1rem 0;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border, #332800);
+    background: #080600;
   }
 
   .status-loading {
-    color: #aaa;
+    color: var(--color-primary-dim, #805800);
     font-style: italic;
+    font-size: 0.85rem;
   }
 
   .status-valid {
-    color: #4caf50;
+    color: var(--color-success, #00cc66);
     font-weight: bold;
+    font-size: 0.9rem;
   }
 
   .status-invalid {
-    color: #d32f2f;
+    color: var(--color-critical, #ff0040);
     font-weight: bold;
+    font-size: 0.9rem;
   }
 
   .computed,
   .mismatch-detail {
-    color: #aaa;
-    font-size: 0.9rem;
+    color: var(--color-primary-dim, #805800);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
   }
 
   button {
-    background: #333;
-    border: none;
-    color: #fff;
+    background: transparent;
+    border: 1px solid var(--color-border, #332800);
+    color: var(--color-primary-dim, #805800);
     padding: 0.5rem 1rem;
-    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
     cursor: pointer;
+    margin-top: 0.5rem;
+    letter-spacing: 0.05em;
   }
 
   button:hover {
-    background: #444;
+    border-color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-mid, #cc8800);
   }
 </style>

@@ -1,33 +1,22 @@
 <script lang="ts">
 import { connectionStatus, latency } from '../lib/stores';
 
-type StatusConfig = {
-  label: string;
-  color: string;
-};
-
-const STATUS_CONFIG: Record<string, StatusConfig> = {
-  connected: { label: 'Connected', color: '#00c853' },
-  reconnecting: { label: 'Reconnecting', color: 'gold' },
-  disconnected: { label: 'Disconnected', color: 'crimson' },
-  connecting: { label: 'Connecting', color: 'gold' },
-};
-
-const config = $derived(STATUS_CONFIG[$connectionStatus] ?? STATUS_CONFIG.disconnected);
-
-function latencyColor(ms: number): string {
-  if (ms < 100) return '#00c853';
-  if (ms < 250) return 'gold';
-  return 'crimson';
-}
+const isConnected = $derived($connectionStatus === 'connected');
+const isReconnecting = $derived(
+  $connectionStatus === 'reconnecting' || $connectionStatus === 'connecting',
+);
 </script>
 
 <div class="connection-status">
-  <span class="dot" style="background-color: {config.color};"></span>
-  <span class="label">{config.label}</span>
-  {#if $connectionStatus === 'connected' && $latency !== null}
-    <span class="separator">·</span>
-    <span class="latency" style="color: {latencyColor($latency)};">{$latency}ms</span>
+  {#if isConnected}
+    <span class="dot connected">●</span>
+    <span class="latency">{$latency !== null ? `${$latency}ms` : '—'}</span>
+  {:else if isReconnecting}
+    <span class="dot reconnecting">○</span>
+    <span class="label reconnecting">RECONNECTING</span>
+  {:else}
+    <span class="dot offline">●</span>
+    <span class="label offline">OFFLINE</span>
   {/if}
 </div>
 
@@ -35,29 +24,41 @@ function latencyColor(ms: number): string {
   .connection-status {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
     font-size: 0.75rem;
-    color: #aaa;
+    font-family: 'Fira Code', monospace;
   }
 
   .dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+    font-size: 0.6rem;
+    line-height: 1;
   }
 
-  .label {
-    white-space: nowrap;
+  .dot.connected {
+    color: var(--color-success);
   }
 
-  .separator {
-    color: #666;
+  .dot.reconnecting {
+    color: var(--color-primary-dim);
+  }
+
+  .dot.offline {
+    color: var(--color-critical-dim);
   }
 
   .latency {
-    white-space: nowrap;
+    color: var(--color-success);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .label.reconnecting {
+    color: var(--color-primary-dim);
+    white-space: nowrap;
+  }
+
+  .label.offline {
+    color: var(--color-critical-dim);
+    white-space: nowrap;
   }
 </style>
