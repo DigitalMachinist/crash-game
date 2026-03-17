@@ -123,6 +123,33 @@ export type ServerMessage =
   | { type: 'pong'; t: number }
   | { type: 'error'; message: string };
 
+// ─── Hacker theme client types ────────────────────────────────────────────────
+
+export type ThreatLevel = 'GHOST' | 'LOW' | 'ELEVATED' | 'HIGH' | 'SEVERE' | 'CRITICAL';
+
+export interface TerminalLine {
+  id: number;
+  text: string;
+  color: string;
+  type: 'normal' | 'success' | 'warning' | 'danger' | 'progress' | 'command';
+  timestamp: number;
+}
+
+export interface RoundTarget {
+  org: string;
+  ip: string;
+  hostname: string;
+  roundId: number;
+}
+
+export interface DangerColors {
+  color: string;
+  dim: string;
+  bg: string;
+  border: string;
+  glowAlpha: number;
+}
+
 // ─── Client → Server message union ──────────────────────────────────────────
 // @see docs/websocket-protocol.md §4.2
 export type ClientMessage =
