@@ -40,6 +40,7 @@ import {
   balance,
   connectionStatus,
   countdown,
+  displayMultiplier,
   gameState,
   lastCrashResult,
   lastPendingPayout,
@@ -48,12 +49,16 @@ import {
   phase,
   roundTarget,
   terminalLines,
+  threatLevel,
 } from './lib/stores';
+import type { TerminalSession } from './lib/terminal-content';
+import { startTerminalSession } from './lib/terminal-content';
 
 let pendingPayoutToast: string | null = $state(null);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let fairnessModalOpen = $state(false);
 let nameModalOpen = $state(false);
+let terminalSession: TerminalSession | null = null;
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -99,6 +104,37 @@ $effect(() => {
   if ($phase === 'WAITING') {
     const sec = Math.ceil($countdown / 1000);
     terminalLines.set(getPrepLines(sec, $roundTarget));
+  }
+});
+
+// Running terminal: start/stop session with phase changes.
+$effect(() => {
+  const currentPhase = $phase;
+  const currentRoundId = $gameState?.roundId;
+  if (currentPhase === 'RUNNING' && currentRoundId != null) {
+    terminalSession?.stop();
+    terminalSession = startTerminalSession(
+      currentRoundId,
+      () => get(displayMultiplier),
+      (line) => {
+        terminalLines.update((lines) => {
+          const next = [...lines, line];
+          return next.length > 200 ? next.slice(next.length - 200) : next;
+        });
+      },
+      (id, newText) => {
+        terminalLines.update((lines) =>
+          lines.map((l) => (l.id === id ? { ...l, text: newText } : l)),
+        );
+      },
+    );
+    return () => {
+      terminalSession?.stop();
+      terminalSession = null;
+    };
+  } else if (currentPhase !== 'RUNNING') {
+    terminalSession?.stop();
+    terminalSession = null;
   }
 });
 
@@ -185,7 +221,11 @@ onDestroy(() => {
       <div class="game-area">
         <Multiplier />
         <!-- ThreatMeter (Wave 7) -->
-        <!-- TerminalDisplay (Wave 6) -->
+        <TerminalDisplay
+          lines={$terminalLines}
+          maxHeight="280px"
+          threatLevel={$threatLevel}
+        />
         <CashoutButton />
         <!-- ObserverBanner (Wave 7) -->
       </div>
