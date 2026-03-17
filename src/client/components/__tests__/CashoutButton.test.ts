@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
-import { gameState, myPlayerId, players } from '../../lib/stores';
+import { displayMultiplier, gameState, myPlayerId, players, threatLevel } from '../../lib/stores';
 import CashoutButton from '../CashoutButton.svelte';
 
 vi.mock('../../lib/commands', () => ({
@@ -56,6 +56,7 @@ beforeEach(() => {
   gameState.set(null);
   players.set({});
   myPlayerId.set('');
+  displayMultiplier.set(1.0);
   vi.clearAllMocks();
   vi.useFakeTimers();
 });
@@ -82,7 +83,30 @@ describe('CashoutButton component', () => {
     setupInRound();
     render(CashoutButton);
     expect(screen.getByRole('button')).toBeTruthy();
-    expect(screen.getByText('CASH OUT')).toBeTruthy();
+    expect(screen.getByText('[ DISCONNECT ]')).toBeTruthy();
+  });
+
+  it('shows [ DISCONNECT ] text at LOW/ELEVATED/HIGH/SEVERE threat', () => {
+    setupInRound();
+    displayMultiplier.set(1.5); // LOW
+    render(CashoutButton);
+    expect(screen.getByText('[ DISCONNECT ]')).toBeTruthy();
+  });
+
+  it('shows !! BAIL OUT !! text at CRITICAL threat (25x+)', async () => {
+    setupInRound();
+    displayMultiplier.set(30.0); // CRITICAL
+    render(CashoutButton);
+    await tick();
+    expect(screen.getByText('!! BAIL OUT !!')).toBeTruthy();
+  });
+
+  it('shows payout estimate line when wager > 0', () => {
+    setupInRound();
+    displayMultiplier.set(2.0);
+    render(CashoutButton);
+    expect(screen.getByText(/Cash out:/)).toBeTruthy();
+    expect(screen.getByText(/200\.00 CR/)).toBeTruthy();
   });
 
   it('calls sendCashout when the button is clicked', async () => {
@@ -92,13 +116,13 @@ describe('CashoutButton component', () => {
     expect(sendCashout).toHaveBeenCalledTimes(1);
   });
 
-  it('shows "Cashing out..." and is disabled after clicking', async () => {
+  it('shows [ ... ] and is disabled after clicking', async () => {
     setupInRound();
     render(CashoutButton);
     const button = screen.getByRole('button');
     await fireEvent.click(button);
     await tick();
-    expect(screen.getByText('Cashing out...')).toBeTruthy();
+    expect(screen.getByText('[ ... ]')).toBeTruthy();
     expect(button).toBeDisabled();
   });
 
@@ -176,7 +200,7 @@ describe('CashoutButton component', () => {
     await tick();
 
     expect(button).not.toBeDisabled();
-    expect(screen.getByText('CASH OUT')).toBeTruthy();
+    expect(screen.getByText('[ DISCONNECT ]')).toBeTruthy();
   });
 
   it('does NOT fire the 5s fallback when isInRound reactive reset fires first', async () => {

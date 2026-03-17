@@ -22,9 +22,12 @@ import FairnessModal from './components/FairnessModal.svelte';
 import History from './components/History.svelte';
 import Multiplier from './components/Multiplier.svelte';
 import NameModal from './components/NameModal.svelte';
+import ObserverBanner from './components/ObserverBanner.svelte';
 import PlayerList from './components/PlayerList.svelte';
 import TargetInfo from './components/TargetInfo.svelte';
 import TerminalDisplay from './components/TerminalDisplay.svelte';
+import ThreatMeter from './components/ThreatMeter.svelte';
+import ThreatPanel from './components/ThreatPanel.svelte';
 import {
   applyPendingPayout,
   applyRoundResult,
@@ -42,11 +45,13 @@ import {
   countdown,
   displayMultiplier,
   gameState,
+  isInRound,
   lastCrashResult,
   lastPendingPayout,
   myPlayerId,
   myPlayerName,
   phase,
+  players,
   roundTarget,
   terminalLines,
   threatLevel,
@@ -59,6 +64,7 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let fairnessModalOpen = $state(false);
 let nameModalOpen = $state(false);
 let terminalSession: TerminalSession | null = null;
+let hasCashedOutThisRound = $state(false);
 
 function showToast(msg: string) {
   pendingPayoutToast = msg;
@@ -96,6 +102,21 @@ $effect(() => {
 $effect(() => {
   if ($connectionStatus === 'connected' && $myPlayerName) {
     sendSetName($myPlayerName);
+  }
+});
+
+// Track whether the local player cashed out this round (for cashout screen routing).
+// Reset on new round, set when server confirms cashedOut=true for the local player.
+$effect(() => {
+  if ($phase === 'WAITING') {
+    hasCashedOutThisRound = false;
+  }
+});
+
+$effect(() => {
+  const pid = $myPlayerId;
+  if (pid && $players[pid]?.cashedOut === true) {
+    hasCashedOutThisRound = true;
   }
 });
 
@@ -219,21 +240,30 @@ onDestroy(() => {
       </div>
     {:else}
       <div class="game-area">
-        <Multiplier />
-        <!-- ThreatMeter (Wave 7) -->
+        <div class="multiplier-section">
+          <Multiplier />
+          <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
+        </div>
         <TerminalDisplay
           lines={$terminalLines}
           maxHeight="280px"
           threatLevel={$threatLevel}
         />
-        <CashoutButton />
-        <!-- ObserverBanner (Wave 7) -->
+        <div class="action-area">
+          {#if $isInRound || hasCashedOutThisRound}
+            <CashoutButton />
+          {:else if $phase === 'RUNNING'}
+            <ObserverBanner threatLevel={$threatLevel} />
+          {/if}
+        </div>
       </div>
     {/if}
 
     <aside class="sidebar">
       <PlayerList />
-      <!-- ThreatPanel (Wave 7/8) -->
+      {#if $phase === 'RUNNING'}
+        <ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} />
+      {/if}
       <History />
     </aside>
   </main>
