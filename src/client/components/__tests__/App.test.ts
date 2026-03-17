@@ -6,6 +6,7 @@ import type { GameStateSnapshot } from '../../../types';
 import App from '../../App.svelte';
 import {
   balance,
+  displayMultiplier,
   gameState,
   lastCrashResult,
   lastPendingPayout,
@@ -69,6 +70,10 @@ beforeEach(() => {
   balance.set(0);
   lastCrashResult.set(null);
   lastPendingPayout.set(null);
+  displayMultiplier.set(1.0);
+  // Clean up threat-critical class between tests
+  document.documentElement.classList.remove('threat-critical');
+  document.documentElement.style.removeProperty('--threat-color');
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
   vi.mocked(applyPendingPayout).mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 });
@@ -308,6 +313,56 @@ describe('App component', () => {
       await tick();
       const balanceEl = document.querySelector('[aria-label^="Balance:"]');
       expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00 credits');
+    });
+  });
+
+  describe('CSS custom property wiring (threat-level → CSS vars)', () => {
+    it('sets --threat-color on mount', async () => {
+      render(App);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBeTruthy();
+    });
+
+    it('updates --threat-color to CRITICAL color (#ff0040) at 30x', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBe('#ff0040');
+    });
+
+    it('sets --threat-color to amber (#ffb000) at 1x (GHOST)', async () => {
+      render(App);
+      displayMultiplier.set(1.0);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBe('#ffb000');
+    });
+
+    it('adds threat-critical class to documentElement at CRITICAL (30x)', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(true);
+    });
+
+    it('removes threat-critical class when dropping below CRITICAL', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(true);
+
+      displayMultiplier.set(1.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(false);
+    });
+
+    it('does not have threat-critical class at SEVERE (15x)', async () => {
+      render(App);
+      displayMultiplier.set(15.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(false);
     });
   });
 });
