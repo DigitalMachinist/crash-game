@@ -71,7 +71,7 @@ describe('History component', () => {
     it('renders a "Verify" button for each round', () => {
       history.set([makeEntry()]);
       render(History);
-      expect(screen.getByText('Verify')).toBeTruthy();
+      expect(screen.getByText('[ verify ]')).toBeTruthy();
     });
 
     it('renders all entries when multiple history entries are present', () => {
@@ -84,7 +84,7 @@ describe('History component', () => {
       expect(screen.getByText('#1')).toBeTruthy();
       expect(screen.getByText('#2')).toBeTruthy();
       expect(screen.getByText('#3')).toBeTruthy();
-      const verifyButtons = screen.getAllByText('Verify');
+      const verifyButtons = screen.getAllByText('[ verify ]');
       expect(verifyButtons).toHaveLength(3);
     });
   });
@@ -93,21 +93,21 @@ describe('History component', () => {
     it('opens the modal when "Verify" is clicked', () => {
       history.set([makeEntry()]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       expect(screen.getByRole('dialog')).toBeTruthy();
     });
 
     it('modal shows correct roundId in heading: "Verify Round #42"', () => {
       history.set([makeEntry({ roundId: 42 })]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       expect(screen.getByText('Verify Round #42')).toBeTruthy();
     });
 
     it('modal shows crash point formatted as "3.50x"', () => {
       history.set([makeEntry({ crashPoint: 3.5 })]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       // The modal renders crash point in a <p> tag; getByRole('dialog') scopes the search
       const dialog = screen.getByRole('dialog');
       expect(dialog.textContent).toContain('3.50x');
@@ -117,14 +117,14 @@ describe('History component', () => {
       const roundSeed = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
       history.set([makeEntry({ roundSeed })]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       expect(screen.getByText('abcdef1234567890...')).toBeTruthy();
     });
 
     it('modal shows drand round number', () => {
       history.set([makeEntry({ drandRound: 100 })]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       const dialog = screen.getByRole('dialog');
       expect(dialog.textContent).toContain('100');
     });
@@ -132,7 +132,7 @@ describe('History component', () => {
     it('dismisses the modal when "Close" button is clicked', () => {
       history.set([makeEntry()]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       expect(screen.getByRole('dialog')).toBeTruthy();
       fireEvent.click(screen.getByText('Close'));
       expect(screen.queryByRole('dialog')).toBeNull();
@@ -141,7 +141,7 @@ describe('History component', () => {
     it('dismisses the modal when the backdrop is clicked', () => {
       history.set([makeEntry()]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeTruthy();
       // Native <dialog> backdrop click: clicking the dialog element itself (not its content)
@@ -152,7 +152,7 @@ describe('History component', () => {
     it('dismisses the modal when Escape key is pressed on the backdrop', () => {
       history.set([makeEntry()]);
       render(History);
-      fireEvent.click(screen.getByText('Verify'));
+      fireEvent.click(screen.getByText('[ verify ]'));
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeTruthy();
       // Native <dialog> fires a 'cancel' event on Escape; simulate it
@@ -166,7 +166,7 @@ describe('History component', () => {
         makeEntry({ roundId: 2, crashPoint: 4.0 }),
       ]);
       render(History);
-      const verifyButtons = screen.getAllByText('Verify');
+      const verifyButtons = screen.getAllByText('[ verify ]');
       fireEvent.click(verifyButtons[1]!);
       expect(screen.getByText('Verify Round #2')).toBeTruthy();
       expect(screen.queryByText('Verify Round #1')).toBeNull();

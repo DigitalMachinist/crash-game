@@ -584,9 +584,21 @@ onDestroy(() => {
   .sidebar {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    border-left: 1px solid var(--color-border);
-    padding-left: 1rem;
+    gap: 0.5rem;
+    border-left: 1px solid var(--threat-border, var(--color-border));
+    padding-left: 0.75rem;
+  }
+
+  /* ─── Running phase sub-sections ─── */
+  .multiplier-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action-area {
+    display: flex;
+    justify-content: center;
   }
 
   @media (max-width: 700px) {
@@ -596,7 +608,7 @@ onDestroy(() => {
     .sidebar {
       border-left: none;
       padding-left: 0;
-      border-top: 1px solid var(--color-border);
+      border-top: 1px solid var(--threat-border, var(--color-border));
       padding-top: 1rem;
     }
     .lobby-panels {

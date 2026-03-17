@@ -19,7 +19,7 @@ function closeVerify() {
 </script>
 
 <div class="history">
-  <h3>Recent Rounds</h3>
+  <div class="panel-label">最近 RECENT</div>
   {#if $history.length === 0}
     <p class="empty">No rounds yet</p>
   {:else}
@@ -30,7 +30,7 @@ function closeVerify() {
           <span class="crash-point" style:color={getRarityColor(entry.crashPoint)}>
             {entry.crashPoint.toFixed(2)}x
           </span>
-          <button class="verify-btn" onclick={() => openVerify(entry)}>Verify</button>
+          <button class="verify-btn" onclick={() => openVerify(entry)}>[ verify ]</button>
         </li>
       {/each}
     </ul>
@@ -43,18 +43,23 @@ function closeVerify() {
 
 <style>
   .history {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
-  h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
-    color: #aaa;
+  .panel-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
   }
 
   .empty {
-    color: #666;
-    font-style: italic;
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    font-style: normal;
+    margin: 0;
   }
 
   ul {
@@ -66,39 +71,41 @@ function closeVerify() {
   li {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0;
-    border-bottom: 1px solid #222;
-    font-size: 0.9rem;
+    gap: 0.35rem;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid rgba(51, 40, 0, 0.3);
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
   }
 
   .round-id {
-    color: #666;
-    min-width: 3rem;
+    color: var(--color-primary-dim);
+    min-width: 2.5rem;
   }
 
   .crash-point {
     flex: 1;
-    font-weight: bold;
+    font-weight: 700;
   }
 
   .verify-btn {
     background: none;
-    border: 1px solid #666;
-    color: #ccc;
-    padding: 0.1rem 0.4rem;
-    border-radius: 3px;
+    border: 1px solid var(--color-primary-dim);
+    color: var(--color-primary-dim);
+    padding: 0.1rem 0.3rem;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
   }
 
   .verify-btn:hover {
-    border-color: #999;
-    color: #fff;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   .verify-btn:focus-visible {
-    outline: 2px solid #42a5f5;
+    outline: 1px solid var(--color-primary);
     outline-offset: 2px;
   }
 </style>

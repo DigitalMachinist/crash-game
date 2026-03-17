@@ -1,99 +1,126 @@
 <script lang="ts">
-import { getRarityColor } from '../lib/rarity';
-import { myPlayerId, phase, playersList } from '../lib/stores';
+import { myPlayerId, phase, playersList, threatLevel } from '../lib/stores';
+
+const isHighThreat = $derived(
+  $threatLevel === 'HIGH' || $threatLevel === 'SEVERE' || $threatLevel === 'CRITICAL',
+);
 </script>
 
-<div class="player-list">
-  <h3>Players</h3>
+<div class="operators-panel">
+  <div class="panel-label">作戦員 OPERATORS</div>
   {#if $playersList.length === 0}
-    <p class="empty">No players yet</p>
+    <p class="empty">No operators</p>
   {:else}
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">Player</th>
-          <th scope="col">Wager</th>
-          <th scope="col">Result</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each $playersList as player (player.playerId)}
-          <tr class:me={player.playerId === $myPlayerId}>
-            <td>
-              {player.name}
-              {#if player.autoCashout !== null}
-                <span class="auto-badge">Auto: {player.autoCashout.toFixed(2)}x</span>
-              {/if}
-            </td>
-            <td>${player.wager.toFixed(2)}</td>
-            <td>
-              {#if player.cashedOut && player.cashoutMultiplier !== null}
-                <span class="cashed-out" style:color={getRarityColor(player.cashoutMultiplier)}>Won {player.cashoutMultiplier.toFixed(2)}x (+${(player.payout ?? 0).toFixed(2)})</span>
-              {:else if $phase === 'CRASHED' && !player.cashedOut}
-                <span class="lost">Lost</span>
-              {:else}
-                <span class="waiting-result">—</span>
-              {/if}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <ul class="operator-list">
+      {#each $playersList as player (player.playerId)}
+        <li
+          class="operator-row"
+          class:me={player.playerId === $myPlayerId}
+          class:crossed={player.cashedOut && isHighThreat}
+        >
+          <span class="handle">
+            {player.name}
+            {#if player.playerId === $myPlayerId}
+              <span class="you-marker">← YOU</span>
+            {/if}
+          </span>
+          <span class="wager">{player.wager} CR</span>
+          <span class="status">
+            {#if player.cashedOut && player.cashoutMultiplier !== null}
+              <span class="dc">DC {player.cashoutMultiplier.toFixed(2)}x</span>
+            {:else if $phase === 'WAITING' || $phase === 'STARTING'}
+              <span class="rdy">RDY</span>
+            {:else}
+              <span class="dash">—</span>
+            {/if}
+          </span>
+        </li>
+      {/each}
+    </ul>
   {/if}
 </div>
 
 <style>
-  .player-list {
-    padding: 1rem;
+  .operators-panel {
+    padding: 0.5rem;
   }
 
-  h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
-    color: #aaa;
+  .panel-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
   }
 
   .empty {
-    color: #666;
-    font-style: italic;
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    font-style: normal;
+    margin: 0;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .operator-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
 
-  th, td {
-    text-align: left;
-    padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
+  .operator-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.2rem 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    border-bottom: 1px solid rgba(51, 40, 0, 0.4);
   }
 
-  th {
-    color: #888;
-    font-weight: normal;
-    border-bottom: 1px solid #333;
+  .operator-row.me {
+    background: rgba(255, 176, 0, 0.04);
   }
 
-  tr.me {
-    background: rgba(255, 255, 255, 0.05);
+  .operator-row.crossed .handle {
+    text-decoration: line-through;
+    color: var(--color-primary-dim);
   }
 
-  .auto-badge {
-    font-size: 0.75rem;
-    color: #ffa000;
-    margin-left: 0.5rem;
+  .handle {
+    color: var(--threat-color, var(--color-primary));
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .cashed-out {
-    /* color set via inline style:color (rarity tier) */
+  .you-marker {
+    color: var(--threat-color, var(--color-primary));
+    font-size: 9px;
+    margin-left: 0.25rem;
+    opacity: 0.7;
   }
 
-  .lost {
-    color: #d32f2f;
+  .wager {
+    color: var(--color-primary-dim);
+    white-space: nowrap;
   }
 
-  .waiting-result {
-    color: #666;
+  .status {
+    white-space: nowrap;
+    min-width: 4rem;
+    text-align: right;
+  }
+
+  .dc {
+    color: var(--color-success);
+  }
+
+  .rdy {
+    color: var(--color-success);
+  }
+
+  .dash {
+    color: var(--color-primary-dim);
   }
 </style>
