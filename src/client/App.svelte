@@ -163,18 +163,166 @@ onDestroy(() => {
 </div>
 
 <style>
+  /* ─── Global reset ─── */
   :global(*, *::before, *::after) {
     box-sizing: border-box;
   }
 
+  /* ─── CSS custom properties (palette + dynamic threat vars) ─── */
+  :global(:root) {
+    /* Base palette (GHOST / LOW) */
+    --color-primary: #ffb000;
+    --color-primary-dim: #805800;
+    --color-primary-mid: #cc8800;
+    --color-bg: #0a0800;
+    --color-bg-card: #080600;
+    --color-border: #332800;
+    --color-success: #00cc66;
+    --color-success-dim: #006633;
+
+    /* Threat level colors */
+    --color-elevated: #ff8c00;
+    --color-high: #ff6600;
+    --color-severe: #ff4400;
+    --color-critical: #ff0040;
+    --color-critical-pure: #ff0000;
+    --color-critical-dark: #cc0000;
+
+    /* Dim variants per threat level */
+    --color-elevated-dim: #803000;
+    --color-severe-dim: #800020;
+    --color-critical-dim: #400000;
+
+    /* Dynamic threat-level properties — updated via JS */
+    --threat-color: var(--color-primary);
+    --threat-dim: var(--color-primary-dim);
+    --threat-bg: var(--color-bg);
+    --threat-border: var(--color-border);
+    --threat-glow-alpha: 0.3;
+  }
+
+  /* ─── Global body ─── */
   :global(body) {
     margin: 0;
-    background: #0d0d1a;
-    color: #e0e0e0;
-    font-family: system-ui, -apple-system, sans-serif;
+    background: #0a0800;
+    color: #ffb000;
+    font-family: 'Fira Code', monospace;
     min-height: 100vh;
   }
 
+  /* ─── Shared keyframes (referenced by multiple components — must be :global) ─── */
+
+  /* Flicker tier 1 — subtle (GHOST through HIGH) */
+  @keyframes \1 {
+    0%   { opacity: 1 }
+    7%   { opacity: .97 }
+    12%  { opacity: 1 }
+    27%  { opacity: .98 }
+    32%  { opacity: 1 }
+    58%  { opacity: .96 }
+    59%  { opacity: 1 }
+    73%  { opacity: .97 }
+    74%  { opacity: 1 }
+    89%  { opacity: .95 }
+    91%  { opacity: 1 }
+  }
+
+  /* Flicker tier 2 — erratic (SEVERE and CRITICAL) */
+  @keyframes \1 {
+    0%   { opacity: 1 }
+    3%   { opacity: .94 }
+    5%   { opacity: 1 }
+    14%  { opacity: .96 }
+    15%  { opacity: 1 }
+    31%  { opacity: .93 }
+    33%  { opacity: 1 }
+    47%  { opacity: .95 }
+    48%  { opacity: 1 }
+    62%  { opacity: .91 }
+    64%  { opacity: 1 }
+    78%  { opacity: .94 }
+    79%  { opacity: 1 }
+    93%  { opacity: .92 }
+    95%  { opacity: 1 }
+  }
+
+  /* VHS horizontal band sweep */
+  @keyframes \1 {
+    0%   { top: -5% }
+    100% { top: 105% }
+  }
+
+  /* Glitch — main element jitter */
+  @keyframes \1 {
+    0%,100% { transform: translate(0) }
+    10%     { transform: translate(-2px, 0) }
+    20%     { transform: translate(1px, 0) }
+    40%     { transform: translate(-1px, 0) }
+    60%     { transform: translate(3px, 0) }
+    80%     { transform: translate(-1px, 0) }
+  }
+
+  /* Glitch — layer 1 (::before) clip-path tearing */
+  @keyframes \1 {
+    0%   { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    5%   { clip-path: inset(15% 0 70% 0); transform: translate(-8px, 0) }
+    7%   { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    15%  { clip-path: inset(60% 0 25% 0); transform: translate(12px, 0) }
+    17%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    28%  { clip-path: inset(40% 0 45% 0); transform: translate(-15px, 0) }
+    30%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    42%  { clip-path: inset(80% 0 8% 0); transform: translate(6px, 0) }
+    43%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    55%  { clip-path: inset(5% 0 85% 0); transform: translate(-20px, 0) }
+    56%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    68%  { clip-path: inset(50% 0 35% 0); transform: translate(10px, 0) }
+    70%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    82%  { clip-path: inset(25% 0 60% 0); transform: translate(-7px, 0) }
+    84%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    93%  { clip-path: inset(70% 0 15% 0); transform: translate(18px, 0) }
+    95%  { clip-path: inset(0 0 95% 0); transform: translate(0) }
+    100% { clip-path: inset(0 0 95% 0); transform: translate(0) }
+  }
+
+  /* Glitch — layer 2 (::after) clip-path tearing */
+  @keyframes \1 {
+    0%   { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    8%   { clip-path: inset(70% 0 15% 0); transform: translate(14px, 0) }
+    10%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    22%  { clip-path: inset(10% 0 78% 0); transform: translate(-11px, 0) }
+    24%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    35%  { clip-path: inset(45% 0 40% 0); transform: translate(22px, 0) }
+    37%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    50%  { clip-path: inset(85% 0 3% 0); transform: translate(-9px, 0) }
+    52%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    65%  { clip-path: inset(20% 0 65% 0); transform: translate(16px, 0) }
+    67%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    78%  { clip-path: inset(55% 0 30% 0); transform: translate(-18px, 0) }
+    80%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    90%  { clip-path: inset(35% 0 50% 0); transform: translate(8px, 0) }
+    92%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
+    100% { clip-path: inset(95% 0 0 0); transform: translate(0) }
+  }
+
+  /* CRITICAL background pulse */
+  @keyframes \1 {
+    0%,100% { background: #1a0000 }
+    50%     { background: #250000 }
+  }
+
+  /* Button pulse — CRITICAL disconnect (0.8s) */
+  @keyframes \1 {
+    0%,100% { opacity: 1 }
+    50%     { opacity: .5 }
+  }
+
+  /* Terminal danger line pulse — tier 6 (0.4s) */
+  @keyframes \1 {
+    0%,100% { opacity: 1 }
+    50%     { opacity: .4 }
+  }
+
+  /* ─── App layout ─── */
   .app {
     display: flex;
     flex-direction: column;
@@ -189,13 +337,13 @@ onDestroy(() => {
     align-items: center;
     justify-content: space-between;
     padding: 1rem 0;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid var(--color-border);
   }
 
   h1 {
     margin: 0;
     font-size: 1.5rem;
-    color: #fff;
+    color: var(--color-primary);
   }
 
   .header-right {
@@ -206,39 +354,42 @@ onDestroy(() => {
 
   .balance-display {
     font-size: 1rem;
-    color: #888;
+    color: var(--color-primary-dim);
   }
 
   .name-btn,
   .fairness-btn {
     background: transparent;
-    border: 1px solid #444;
-    color: #aaa;
+    border: 1px solid var(--color-border);
+    color: var(--color-primary-dim);
     padding: 0.3rem 0.75rem;
     border-radius: 4px;
     font-size: 0.85rem;
     cursor: pointer;
+    font-family: 'Fira Code', monospace;
   }
 
   .name-btn:hover,
   .fairness-btn:hover {
-    background: #1a1a2e;
-    color: #e0e0e0;
-    border-color: #666;
+    background: var(--color-bg-card);
+    color: var(--color-primary);
+    border-color: var(--color-primary-mid);
   }
 
-  .positive { color: #00c853; }
-  .negative { color: #d32f2f; }
+  .positive { color: var(--color-success); }
+  .negative { color: var(--color-critical); }
 
   .toast {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    background: #1565c0;
-    color: #fff;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-success-dim);
+    color: var(--color-success);
     padding: 0.75rem 1.25rem;
-    border-radius: 6px;
+    border-radius: 4px;
     font-size: 0.95rem;
+    font-family: 'Fira Code', monospace;
     z-index: 200;
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
   }
@@ -261,7 +412,7 @@ onDestroy(() => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    border-left: 1px solid #222;
+    border-left: 1px solid var(--color-border);
     padding-left: 1.5rem;
   }
 
@@ -272,7 +423,7 @@ onDestroy(() => {
     .sidebar {
       border-left: none;
       padding-left: 0;
-      border-top: 1px solid #222;
+      border-top: 1px solid var(--color-border);
       padding-top: 1rem;
     }
   }
