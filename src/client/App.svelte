@@ -290,7 +290,7 @@ onDestroy(() => {
   /* ─── Shared keyframes (referenced by multiple components — must be :global) ─── */
 
   /* Flicker tier 1 — subtle (GHOST through HIGH) */
-  @keyframes \1 {
+  @keyframes flk-lo {
     0%   { opacity: 1 }
     7%   { opacity: .97 }
     12%  { opacity: 1 }
@@ -305,7 +305,7 @@ onDestroy(() => {
   }
 
   /* Flicker tier 2 — erratic (SEVERE and CRITICAL) */
-  @keyframes \1 {
+  @keyframes flk-hi {
     0%   { opacity: 1 }
     3%   { opacity: .94 }
     5%   { opacity: 1 }
@@ -324,13 +324,13 @@ onDestroy(() => {
   }
 
   /* VHS horizontal band sweep */
-  @keyframes \1 {
+  @keyframes vhs {
     0%   { top: -5% }
     100% { top: 105% }
   }
 
   /* Glitch — main element jitter */
-  @keyframes \1 {
+  @keyframes gjit {
     0%,100% { transform: translate(0) }
     10%     { transform: translate(-2px, 0) }
     20%     { transform: translate(1px, 0) }
@@ -340,7 +340,7 @@ onDestroy(() => {
   }
 
   /* Glitch — layer 1 (::before) clip-path tearing */
-  @keyframes \1 {
+  @keyframes g1 {
     0%   { clip-path: inset(0 0 95% 0); transform: translate(0) }
     5%   { clip-path: inset(15% 0 70% 0); transform: translate(-8px, 0) }
     7%   { clip-path: inset(0 0 95% 0); transform: translate(0) }
@@ -362,7 +362,7 @@ onDestroy(() => {
   }
 
   /* Glitch — layer 2 (::after) clip-path tearing */
-  @keyframes \1 {
+  @keyframes g2 {
     0%   { clip-path: inset(95% 0 0 0); transform: translate(0) }
     8%   { clip-path: inset(70% 0 15% 0); transform: translate(14px, 0) }
     10%  { clip-path: inset(95% 0 0 0); transform: translate(0) }
@@ -382,19 +382,19 @@ onDestroy(() => {
   }
 
   /* CRITICAL background pulse */
-  @keyframes \1 {
+  @keyframes bg-crisis {
     0%,100% { background: #1a0000 }
     50%     { background: #250000 }
   }
 
   /* Button pulse — CRITICAL disconnect (0.8s) */
-  @keyframes \1 {
+  @keyframes pulse {
     0%,100% { opacity: 1 }
     50%     { opacity: .5 }
   }
 
   /* Terminal danger line pulse — tier 6 (0.4s) */
-  @keyframes \1 {
+  @keyframes pulse-fast {
     0%,100% { opacity: 1 }
     50%     { opacity: .4 }
   }

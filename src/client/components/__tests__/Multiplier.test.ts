@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
-import { displayMultiplier, gameState, multiplierAnimating } from '../../lib/stores';
+import {
+  dangerColors,
+  displayMultiplier,
+  gameState,
+  multiplierAnimating,
+  threatLevel,
+} from '../../lib/stores';
 import Multiplier from '../Multiplier.svelte';
 
 const makeGameState = (phase: GameStateSnapshot['phase']): GameStateSnapshot => ({
@@ -31,10 +37,10 @@ describe('Multiplier component', () => {
     expect(screen.getByText('1.00x')).toBeTruthy();
   });
 
-  it('renders STARTING... text when phase is STARTING', () => {
+  it('renders BREACHING... text when phase is STARTING', () => {
     gameState.set(makeGameState('STARTING'));
     render(Multiplier);
-    expect(screen.getByText('STARTING...')).toBeTruthy();
+    expect(screen.getByText('BREACHING...')).toBeTruthy();
   });
 
   it('does NOT render multiplier value when phase is STARTING', () => {
@@ -57,10 +63,10 @@ describe('Multiplier component', () => {
     expect(el.classList.contains('crashed')).toBe(true);
   });
 
-  it('renders CRASHED! label when phase is CRASHED', () => {
+  it('does NOT render CRASHED! label (CrashScreen handles crash display)', () => {
     gameState.set(makeGameState('CRASHED'));
     render(Multiplier);
-    expect(screen.getByText('CRASHED!')).toBeTruthy();
+    expect(screen.queryByText('CRASHED!')).toBeNull();
   });
 
   it('does NOT have class live or crashed when phase is WAITING', () => {
@@ -93,6 +99,41 @@ describe('Multiplier component', () => {
 
     expect(screen.queryByText('1.00x')).toBeNull();
     expect(screen.getByText('7.25x')).toBeTruthy();
+  });
+
+  it('shows 侵入中 LIVE HACK label when phase is RUNNING', () => {
+    gameState.set(makeGameState('RUNNING'));
+    render(Multiplier);
+    expect(screen.getByText(/LIVE HACK/)).toBeTruthy();
+  });
+
+  it('does NOT show LIVE HACK label when phase is WAITING', () => {
+    gameState.set(makeGameState('WAITING'));
+    render(Multiplier);
+    expect(screen.queryByText(/LIVE HACK/)).toBeNull();
+  });
+
+  it('applies glitch class at CRITICAL threat level during RUNNING', async () => {
+    gameState.set(makeGameState('RUNNING'));
+    displayMultiplier.set(30.0); // CRITICAL
+    render(Multiplier);
+    await tick();
+    const el = screen.getByText('30.00x');
+    expect(el.classList.contains('glitch')).toBe(true);
+  });
+
+  it('does NOT apply glitch class below CRITICAL during RUNNING', () => {
+    gameState.set(makeGameState('RUNNING'));
+    displayMultiplier.set(5.0); // HIGH, not CRITICAL
+    render(Multiplier);
+    const el = screen.getByText('5.00x');
+    expect(el.classList.contains('glitch')).toBe(false);
+  });
+
+  it('multiplier element has data-text attribute matching displayed value', () => {
+    render(Multiplier);
+    const el = screen.getByText('1.00x');
+    expect(el.getAttribute('data-text')).toBe('1.00x');
   });
 
   describe('accessibility (Issue 8.3)', () => {
