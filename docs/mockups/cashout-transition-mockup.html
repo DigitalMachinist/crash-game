@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cashout Transition Mockup — Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#e0e0e0;font-family:'Fira Code',monospace;font-size:14px;line-height:1.5}
+
+  nav{position:sticky;top:0;z-index:1000;background:#111;border-bottom:1px solid #333;padding:.5rem 1rem;display:flex;gap:.25rem;flex-wrap:wrap}
+  nav a{color:#888;text-decoration:none;padding:.4rem .8rem;border:1px solid #333;font-size:11px;font-family:'Fira Code',monospace;transition:all .15s}
+  nav a:hover,nav a.active{color:#ffb000;border-color:#ffb000;background:rgba(255,176,0,.05)}
+
+  section{min-height:100vh;padding:2rem;border-bottom:2px solid #222}
+  section h2{font-family:'Space Mono',monospace;font-size:1.2rem;color:#fff;margin-bottom:.25rem;letter-spacing:.05em}
+  .sub{color:#666;font-size:.8rem;margin-bottom:2rem}
+
+  .full{border:1px solid #333;overflow:hidden;margin-bottom:2rem;position:relative}
+  .label{padding:.4rem .75rem;background:#1a1a1a;border-bottom:1px solid #333;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.1em}
+
+  .jp{font-family:system-ui,sans-serif,'Fira Code';font-size:.65rem;letter-spacing:.2em;opacity:.5}
+
+  @keyframes vhs{0%{top:-5%}100%{top:105%}}
+  .vhs{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.03);z-index:15;animation:vhs 3s linear infinite;pointer-events:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#cashout-a">A: Multiplier live + cashout below</a>
+  <a href="#cashout-b">B: Full takeover (like crash)</a>
+  <a href="#cashout-c">C: Multiplier shows cashout point</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- OPTION A: Multiplier stays live, cashout card replaces terminal -->
+<!-- ============================================================ -->
+<section id="cashout-a">
+  <h2>Option A — Multiplier Stays Live, Cashout Card Below</h2>
+  <p class="sub">The multiplier keeps ticking (round is still running). The cashout confirmation card replaces the terminal + action area. Player can watch the multiplier climb past their exit point. Green styling per v3.</p>
+
+  <div class="full">
+    <div class="label">Tier 1 — low/mid threat, calm cashout at 3.50x, round still at 7.84x</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #331800;font-size:11px;background:#120600;">
+        <span style="color:#ff8c00;">[crashOS] <span style="color:#803000">@z3r0c00l</span> <span style="color:#803000">RND #4818</span> <span style="color:#803000">TGT:</span> <span style="color:#ff6600">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,497.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <!-- MAIN COLUMN -->
+        <div style="display:flex;flex-direction:column;border-right:1px solid #331800;background:#0a0800;">
+          <!-- Multiplier section — LIVE, round still running -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#803000;letter-spacing:.15em;margin-bottom:.25rem;"><span style="font-family:system-ui,sans-serif">侵入中</span>  LIVE HACK</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#ff6600;text-shadow:0 0 10px rgba(255,102,0,.4);font-variant-numeric:tabular-nums;">7.84x</div>
+            <!-- ThreatMeter -->
+            <div style="font-size:11px;color:#ff6600;margin-top:.25rem;">THREAT: <span style="letter-spacing:-.02em">▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░</span> HIGH</div>
+            <div style="font-size:10px;color:#803000;margin-top:.15rem;">PROXIES: <span style="color:#ff6600">4/6</span> &nbsp; IDS: <span style="color:#ff6600">3 alerts</span> &nbsp; COVER: <span style="color:#ff8c00">weakening</span></div>
+          </div>
+          <!-- Cashout card — replaces terminal + action area -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#000a00;border-top:1px solid #006633;">
+            <div style="font-family:system-ui,sans-serif;font-size:.65rem;color:#00cc66;letter-spacing:.2em;opacity:.8;">切断完了</div>
+            <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 5px rgba(0,204,102,.3);margin-top:.5rem;">CONNECTION TERMINATED</div>
+            <div style="color:#006633;font-size:10px;letter-spacing:.08em;margin-top:.25rem;">TRACES CLEARED — YOU WERE NEVER HERE</div>
+            <div style="width:40%;height:1px;background:#006633;margin:1.5rem 0;box-shadow:0 0 5px rgba(0,204,102,.2);"></div>
+            <div style="color:#00cc66;font-size:3rem;font-weight:700;text-shadow:0 0 20px rgba(0,204,102,.4);">+350.00 CR</div>
+            <div style="color:#006633;font-size:11px;margin-top:.5rem;">DISCONNECTED @ 3.50x</div>
+          </div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#803000">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff8c00">z3r0c00l</span> <span style="color:#803000">100</span> <span style="color:#00cc66;font-weight:700">DC 3.50x</span></div>
+            <div><span style="color:#ff8c00">ph4nt0m</span> <span style="color:#803000">200</span> <span style="color:#ff6600">LIVE</span></div>
+            <div><span style="color:#ff8c00">r00tk1t</span> <span style="color:#803000">75</span> <span style="color:#00cc66">DC 5.20x</span></div>
+            <div><span style="color:#ff8c00">null_ptr</span> <span style="color:#803000">350</span> <span style="color:#ff6600">LIVE</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#803000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #ff6600;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#803000">STATUS</div><div style="color:#ff6600;font-weight:700;">HIGH</div>
+              <div style="color:#803000">PROXIES</div><div style="color:#ff6600">4 / 6</div>
+              <div style="color:#803000">IDS</div><div style="color:#ff6600">3 alerts</div>
+              <div style="color:#803000">COVER</div><div style="color:#ff8c00">weakening</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#803000">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#803000">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#803000">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Tier 2 — high threat dramatic escape at 14.72x, round at 16.20x — all green per v3</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #331800;font-size:11px;background:#120600;">
+        <span style="color:#ff4400;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#ff4400">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">2,719.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="display:flex;flex-direction:column;border-right:1px solid #400000;background:#0a0800;">
+          <!-- Multiplier — LIVE, SEVERE -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#800020;letter-spacing:.15em;margin-bottom:.25rem;"><span style="font-family:system-ui,sans-serif">侵入中</span>  LIVE HACK</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#ff4400;text-shadow:0 0 12px rgba(255,68,0,.5);font-variant-numeric:tabular-nums;">16.20x</div>
+            <div style="font-size:11px;color:#ff0040;margin-top:.25rem;">THREAT: <span style="letter-spacing:-.02em">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░</span> SEVERE</div>
+            <div style="font-size:10px;color:#800020;margin-top:.15rem;">PROXIES: <span style="color:#ff0040">2/6</span> &nbsp; IDS: <span style="color:#ff0000">5+ alerts</span> &nbsp; COVER: <span style="color:#ff0040">compromised</span></div>
+          </div>
+          <!-- Cashout card — high threat, still all green -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#000a00;border-top:1px solid #006633;border:1px solid #006633;box-shadow:0 0 15px rgba(0,204,102,.08);">
+            <div style="font-family:system-ui,sans-serif;font-size:.65rem;color:#00cc66;letter-spacing:.2em;opacity:.8;">緊急切断</div>
+            <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 8px rgba(0,204,102,.4);margin-top:.5rem;">EMERGENCY DISCONNECT</div>
+            <div style="color:#006633;font-size:10px;letter-spacing:.08em;margin-top:.25rem;">TRACES BURNED — THEY'LL NEVER FIND YOU</div>
+            <div style="width:40%;height:1px;background:#006633;margin:1.5rem 0;box-shadow:0 0 8px rgba(0,204,102,.3);"></div>
+            <div style="color:#00cc66;font-size:3rem;font-weight:700;text-shadow:0 0 25px rgba(0,204,102,.5);">+1,472.00 CR</div>
+            <div style="color:#00cc66;font-size:11px;margin-top:.5rem;">ESCAPED @ 14.72x — CLOSE CALL</div>
+          </div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff4400">z3r0c00l</span> <span style="color:#800020">100</span> <span style="color:#00cc66;font-weight:700">DC 14.72x</span></div>
+            <div><span style="color:#ff4400">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff4400">LIVE</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff0040;font-weight:700;">SEVERE</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">2 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">5+ ALERTS</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">COMPROMISED</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#800020">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OPTION B: Full main column takeover — cashout fills everything -->
+<!-- ============================================================ -->
+<section id="cashout-b">
+  <h2>Option B — Full Main Column Takeover</h2>
+  <p class="sub">The entire main column becomes the cashout card. No live multiplier visible — you've disconnected, the hack is behind you. Cleaner, more celebratory. Sidebar still shows the round continuing.</p>
+
+  <div class="full">
+    <div class="label">Tier 1 — calm cashout at 3.50x, full main column</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">@z3r0c00l</span> <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,497.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <!-- MAIN COLUMN — full cashout card -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#000a00;border-right:1px solid #332800;">
+          <div style="font-family:system-ui,sans-serif;font-size:.65rem;color:#00cc66;letter-spacing:.2em;opacity:.8;">切断完了</div>
+          <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 5px rgba(0,204,102,.3);margin-top:.5rem;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;letter-spacing:.08em;margin-top:.25rem;">SESSION SCRUBBED — NO EVIDENCE REMAINS</div>
+          <div style="width:40%;height:1px;background:#006633;margin:2rem 0;box-shadow:0 0 5px rgba(0,204,102,.2);"></div>
+          <div style="color:#00cc66;font-size:3.5rem;font-weight:700;text-shadow:0 0 20px rgba(0,204,102,.4);">+350.00 CR</div>
+          <div style="color:#006633;font-size:11px;margin-top:.75rem;">DISCONNECTED @ 3.50x</div>
+          <div style="color:#805800;font-size:9px;margin-top:2rem;letter-spacing:.08em;">MONITORING ACTIVE ROUND</div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#805800">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ffb000">z3r0c00l</span> <span style="color:#805800">100</span> <span style="color:#00cc66;font-weight:700">DC 3.50x</span></div>
+            <div><span style="color:#ffb000">ph4nt0m</span> <span style="color:#805800">200</span> <span style="color:#ffb000">LIVE</span></div>
+            <div><span style="color:#ffb000">null_ptr</span> <span style="color:#805800">350</span> <span style="color:#ffb000">LIVE</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff6600;font-weight:700;">HIGH</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ff6600">4 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff6600">3 alerts</div>
+              <div style="color:#805800">COVER</div><div style="color:#ff8c00">weakening</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Tier 2 — dramatic escape at 14.72x, full main column, green throughout</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">@z3r0c00l</span> <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">2,719.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#000a00;border-right:1px solid #332800;border:1px solid #006633;box-shadow:0 0 15px rgba(0,204,102,.08);">
+          <div style="font-family:system-ui,sans-serif;font-size:.65rem;color:#00cc66;letter-spacing:.2em;opacity:.8;">緊急切断</div>
+          <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 8px rgba(0,204,102,.4);margin-top:.5rem;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;letter-spacing:.08em;margin-top:.25rem;">EXTRACTED UNDER FIRE — CLEAN GETAWAY</div>
+          <div style="width:40%;height:1px;background:#006633;margin:2rem 0;box-shadow:0 0 8px rgba(0,204,102,.3);"></div>
+          <div style="color:#00cc66;font-size:3.5rem;font-weight:700;text-shadow:0 0 25px rgba(0,204,102,.5);">+1,472.00 CR</div>
+          <div style="color:#00cc66;font-size:11px;margin-top:.75rem;">ESCAPED @ 14.72x — CLOSE CALL</div>
+          <div style="color:#805800;font-size:9px;margin-top:2rem;letter-spacing:.08em;">MONITORING ACTIVE ROUND</div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#805800">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ffb000">z3r0c00l</span> <span style="color:#805800">100</span> <span style="color:#00cc66;font-weight:700">DC 14.72x</span></div>
+            <div><span style="color:#ffb000">ph4nt0m</span> <span style="color:#805800">200</span> <span style="color:#ffb000">LIVE</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff0040;font-weight:700;">SEVERE</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ff0040">2 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff0000">5+ ALERTS</div>
+              <div style="color:#805800">COVER</div><div style="color:#ff0040">COMPROMISED</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OPTION C: Multiplier frozen at cashout point -->
+<!-- ============================================================ -->
+<section id="cashout-c">
+  <h2>Option C — Multiplier Shows Cashout Point</h2>
+  <p class="sub">The multiplier freezes at the cashout value (3.50x) and turns green — reinforcing what you locked in. Round info still visible in sidebar. Cashout card fills below. The multiplier doesn't track the live round anymore — you're out.</p>
+
+  <div class="full">
+    <div class="label">Tier 1 — multiplier frozen at 3.50x in green, calm cashout</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">@z3r0c00l</span> <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,497.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="display:flex;flex-direction:column;border-right:1px solid #332800;background:#000a00;">
+          <!-- Multiplier — frozen at cashout point, green -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;border-bottom:1px solid #006633;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#006633;letter-spacing:.15em;margin-bottom:.25rem;"><span style="font-family:system-ui,sans-serif">切断完了</span>  DISCONNECTED</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#00cc66;text-shadow:0 0 15px rgba(0,204,102,.4);font-variant-numeric:tabular-nums;">3.50x</div>
+          </div>
+          <!-- Cashout card -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+            <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 5px rgba(0,204,102,.3);">CONNECTION TERMINATED</div>
+            <div style="color:#006633;font-size:10px;letter-spacing:.08em;margin-top:.25rem;">TRACES CLEARED — YOU WERE NEVER HERE</div>
+            <div style="width:40%;height:1px;background:#006633;margin:1.5rem 0;box-shadow:0 0 5px rgba(0,204,102,.2);"></div>
+            <div style="color:#00cc66;font-size:3rem;font-weight:700;text-shadow:0 0 20px rgba(0,204,102,.4);">+350.00 CR</div>
+            <div style="color:#805800;font-size:9px;margin-top:2rem;letter-spacing:.08em;">MONITORING ACTIVE ROUND</div>
+          </div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#805800">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ffb000">z3r0c00l</span> <span style="color:#805800">100</span> <span style="color:#00cc66;font-weight:700">DC 3.50x</span></div>
+            <div><span style="color:#ffb000">ph4nt0m</span> <span style="color:#805800">200</span> <span style="color:#ffb000">LIVE</span></div>
+            <div><span style="color:#ffb000">null_ptr</span> <span style="color:#805800">350</span> <span style="color:#ffb000">LIVE</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff6600;font-weight:700;">HIGH</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ff6600">4 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff6600">3 alerts</div>
+              <div style="color:#805800">COVER</div><div style="color:#ff8c00">weakening</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Tier 3 — CRITICAL escape, legendary, multiplier frozen at 47.21x in green, max glow</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">@z3r0c00l</span> <span style="color:#805800">RND #4818</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">5,968.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="display:flex;flex-direction:column;border-right:1px solid #332800;background:#000a00;border:2px solid #00cc66;box-shadow:0 0 25px rgba(0,204,102,.12);">
+          <!-- Multiplier — frozen at legendary cashout, big green glow -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;border-bottom:1px solid #00cc66;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#00cc66;letter-spacing:.15em;margin-bottom:.25rem;text-shadow:0 0 5px rgba(0,204,102,.3);"><span style="font-family:system-ui,sans-serif">神業</span>  DISCONNECTED</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#00cc66;text-shadow:0 0 25px rgba(0,204,102,.6);font-variant-numeric:tabular-nums;">47.21x</div>
+          </div>
+          <!-- Cashout card — legendary -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+            <div style="font-weight:700;color:#00cc66;font-size:12px;letter-spacing:.12em;text-shadow:0 0 10px rgba(0,204,102,.5);">EMERGENCY DISCONNECT</div>
+            <div style="color:#00cc66;font-size:10px;letter-spacing:.08em;margin-top:.25rem;text-shadow:0 0 5px rgba(0,204,102,.3);">GHOST PROTOCOL — ALL TRACES DESTROYED</div>
+            <div style="width:40%;height:1px;background:#00cc66;margin:1.5rem 0;box-shadow:0 0 12px rgba(0,204,102,.4);"></div>
+            <div style="color:#00cc66;font-size:3.5rem;font-weight:700;text-shadow:0 0 30px rgba(0,204,102,.6);">+4,721.00 CR</div>
+            <div style="color:#00cc66;font-size:11px;margin-top:.75rem;text-shadow:0 0 5px rgba(0,204,102,.3);">ESCAPED @ 47.21x — LEGENDARY</div>
+          </div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#805800">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ffb000">z3r0c00l</span> <span style="color:#805800">100</span> <span style="color:#00cc66;font-weight:700">DC 47.21x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff0040;font-weight:700;">CRITICAL</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">FULL HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#805800">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="padding:3rem;text-align:center;color:#333;font-size:12px;">— END —</div>
+
+<script>
+  const sections=document.querySelectorAll('section');const navLinks=document.querySelectorAll('nav a');
+  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){navLinks.forEach(a=>a.classList.remove('active'));const link=document.querySelector(`nav a[href="#${entry.target.id}"]`);if(link)link.classList.add('active');}});},{threshold:.2});
+  sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>
