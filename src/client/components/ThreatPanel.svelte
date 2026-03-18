@@ -5,22 +5,33 @@ import { getSubIndicators } from '../lib/threat';
 let {
   threatLevel,
   multiplier,
+  disconnected = false,
+  traced = false,
 }: {
   threatLevel: ThreatLevel;
   multiplier: number;
+  disconnected?: boolean;
+  traced?: boolean;
 } = $props();
 
-const isCritical = $derived(threatLevel === 'CRITICAL');
-const isSevere = $derived(threatLevel === 'SEVERE');
-const subIndicators = $derived(getSubIndicators(threatLevel));
+const isCritical = $derived(!disconnected && !traced && threatLevel === 'CRITICAL');
+const isSevere = $derived(!disconnected && !traced && threatLevel === 'SEVERE');
+const subIndicators = $derived(
+  disconnected
+    ? { proxies: 'scrubbed', ids: 'dark', cover: 'restored' }
+    : traced
+      ? { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'BLOWN' }
+      : getSubIndicators(threatLevel),
+);
+const displayStatus = $derived(disconnected ? 'OFFLINE' : traced ? 'TRACED' : threatLevel);
 </script>
 
-<div class="threat-panel" class:severe={isSevere} class:critical={isCritical}>
+<div class="threat-panel" class:severe={isSevere} class:critical={isCritical} class:disconnected={disconnected} class:traced={traced}>
   <div class="panel-label">脅威評価 THREAT ASSESSMENT</div>
   <div class="divider">─────────────────────</div>
   <div class="row">
     <span class="key">STATUS</span>
-    <span class="val" class:pulse-status={isCritical}>{threatLevel}</span>
+    <span class="val" class:pulse-status={isCritical}>{displayStatus}</span>
   </div>
   <div class="row">
     <span class="key">PROXIES</span>
@@ -55,7 +66,7 @@ const subIndicators = $derived(getSubIndicators(threatLevel));
   }
 
   .panel-label {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Space Mono', system-ui, monospace;
     font-size: 8px;
     color: var(--threat-dim, var(--color-primary-dim));
     letter-spacing: 0.1em;
@@ -88,5 +99,23 @@ const subIndicators = $derived(getSubIndicators(threatLevel));
 
   .pulse-status {
     animation: pulse 0.8s infinite;
+  }
+
+  .threat-panel.disconnected {
+    border-color: var(--color-success-dim);
+  }
+
+  .threat-panel.disconnected .val {
+    color: var(--color-success);
+    font-weight: 700;
+  }
+
+  .threat-panel.traced {
+    border-color: #cc0000;
+  }
+
+  .threat-panel.traced .val {
+    color: #ff0040;
+    font-weight: 700;
   }
 </style>

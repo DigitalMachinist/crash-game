@@ -44,6 +44,11 @@ export function getDangerColors(level: ThreatLevel): DangerColors {
   }
 }
 
+/** Returns the threat-palette hex color for a given multiplier value. */
+export function getThreatColor(multiplier: number): string {
+  return getDangerColors(getThreatLevel(multiplier)).color;
+}
+
 /**
  * Returns 0–20 fill count for the threat bar, continuously interpolated
  * from multiplier. Breakpoints: 1x→0, 1.2x→2, 2.5x→6, 5x→10, 10x→14, 25x→20.
@@ -99,7 +104,7 @@ export function getSubIndicators(
       return { proxies: `${proxCount}/6`, ids: '5+ alerts', cover: 'compromised' };
     }
     case 'CRITICAL':
-      return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'BLOWN' };
+      return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'burning' };
     default:
       return { proxies: '6/6', ids: 'silent', cover: 'intact' };
   }

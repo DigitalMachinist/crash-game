@@ -1,109 +1,61 @@
 <script lang="ts">
 import { onMount } from 'svelte';
+import type { AgencyEntry } from '../lib/crash-agency';
+import { pickAgency, pickLockoutSubtitle } from '../lib/crash-agency';
 
 let {
   crashPoint,
   isSpectator = false,
+  isEscaped = false,
 }: {
   crashPoint: number;
   isSpectator?: boolean;
+  isEscaped?: boolean;
 } = $props();
 
-type AgencyEntry = {
-  name: string;
-  subtitle: string;
-  caseRef: string;
-};
-
-function randomDigits(n: number): string {
-  return Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
-}
-
-function randomAlpha(n: number): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-
-const RIVAL_HANDLES = ['gr00t', 'xX_ph4ntom_Xx', 'null_ptr', 'SYSTEM', 'l33tH4x0r'];
-
-function pickAgency(): AgencyEntry {
-  const agencies: AgencyEntry[] = [
-    {
-      name: 'FBI CYBER DIVISION',
-      subtitle: 'OPERATOR COMPROMISED — ALL SESSIONS TERMINATED',
-      caseRef: `CASE #2026-CF-${randomDigits(5)}`,
-    },
-    {
-      name: 'NSA TAILORED ACCESS OPS',
-      subtitle: 'SIGNAL INTERCEPTED — OPERATOR LOCATED',
-      caseRef: `SIGINT REF: SIGMA-${randomAlpha(4)}`,
-    },
-    {
-      name: 'INTERPOL CYBER CRIME',
-      subtitle: 'OPERATOR COMPROMISED — ALL SESSIONS TERMINATED',
-      caseRef: `WARRANT: IC-2026-EU-${randomDigits(4)}`,
-    },
-    {
-      name: 'CORPORATE SECURITY',
-      subtitle: 'UNAUTHORIZED ACCESS DETECTED — SOURCE IDENTIFIED',
-      caseRef: `INCIDENT: CS-${randomDigits(6)}`,
-    },
-    {
-      name: `PWNED BY: ${RIVAL_HANDLES[Math.floor(Math.random() * RIVAL_HANDLES.length)]}`,
-      subtitle: 'YOUR BACKDOOR HAD A BACKDOOR',
-      caseRef: '',
-    },
-  ];
-  return agencies[Math.floor(Math.random() * agencies.length)]!;
-}
-
 let agency = $state<AgencyEntry>({ name: '', subtitle: '', caseRef: '' });
+let lockoutSubtitle = $state('');
 
 onMount(() => {
   agency = pickAgency();
+  lockoutSubtitle = pickLockoutSubtitle();
 });
 </script>
 
-<div class="crash-screen">
+<div class="crash-screen" class:escaped={isEscaped}>
   <div class="vhs-band"></div>
-
-  <div class="main-panel">
-    <div class="hazard-stripe top"></div>
-    <div class="main-content">
-      <div class="jp-accent">警告 — 追跡完了</div>
-      <div class="traced">TRACED</div>
-      <div class="subtitle">{agency.subtitle}</div>
-      <div class="crash-multiplier">{crashPoint.toFixed(2)}x</div>
+  <div class="hazard-stripe top"></div>
+  <div class="main-content">
+    <div class="jp-accent">
+      {isEscaped ? '接続不能 — システム停止' : '警告 — 追跡完了'}
     </div>
-    <div class="hazard-stripe bottom"></div>
-  </div>
-
-  <div class="side-panel">
-    <div class="side-jp">状態報告</div>
-    <div class="side-title">STATUS READOUT</div>
-    <div class="readout-row"><span class="rk">PROXIES</span><span class="rv critical">0 / 6</span></div>
-    <div class="readout-row"><span class="rk">COVER</span><span class="rv critical">BLOWN</span></div>
-    <div class="readout-row"><span class="rk">IDS</span><span class="rv critical">ACTIVE HUNT</span></div>
-    <div class="agency-block">
-      <div class="divider">─────────────────</div>
-      <div class="agency-name">{agency.name}</div>
-      {#if agency.caseRef}
-        <div class="case-ref">{agency.caseRef}</div>
-      {/if}
-      <div class="divider">─────────────────</div>
-      {#if !isSpectator}
-        <div class="funds-seized">ALL FUNDS SEIZED</div>
-      {/if}
+    <div class="traced">
+      {isEscaped ? 'SYSTEM LOCKOUT' : 'TRACED'}
     </div>
+    <div class="subtitle">
+      {isEscaped ? lockoutSubtitle : agency.subtitle}
+    </div>
+    <div class="crash-multiplier">{crashPoint.toFixed(2)}x</div>
+    <div class="agency-divider"></div>
+    <div class="agency-name">{agency.name}</div>
+    {#if agency.caseRef}
+      <div class="case-ref">{agency.caseRef}</div>
+    {/if}
+    {#if !isSpectator && !isEscaped}
+      <div class="funds-seized">ALL FUNDS SEIZED</div>
+    {/if}
   </div>
+  <div class="hazard-stripe bottom"></div>
 </div>
 
 <style>
   .crash-screen {
     position: relative;
     display: flex;
+    flex-direction: column;
     background: #0a0000;
     min-height: 400px;
+    max-height: 500px;
     overflow: hidden;
     font-family: 'Fira Code', monospace;
   }
@@ -120,13 +72,6 @@ onMount(() => {
     pointer-events: none;
   }
 
-  /* Main panel */
-  .main-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
   .hazard-stripe {
     height: 14px;
     background: repeating-linear-gradient(
@@ -139,6 +84,11 @@ onMount(() => {
     flex-shrink: 0;
   }
 
+  @keyframes crash-pulse {
+    0%, 100% { background: #0a0000 }
+    50%      { background: #1e0000 }
+  }
+
   .main-content {
     flex: 1;
     display: flex;
@@ -147,9 +97,21 @@ onMount(() => {
     justify-content: center;
     padding: 2rem;
     gap: 0.5rem;
+    animation: crash-pulse 1s ease-in-out infinite;
+  }
+
+  .crash-screen.escaped {
+    min-height: 200px;
+    max-height: 340px;
+  }
+
+  .crash-screen.escaped .traced {
+    font-size: 2rem;
+    letter-spacing: 0.2em;
   }
 
   .jp-accent {
+    font-family: system-ui, sans-serif;
     font-size: 0.65rem;
     color: #cc0000;
     letter-spacing: 0.2em;
@@ -179,64 +141,17 @@ onMount(() => {
     margin-top: 1.5rem;
   }
 
-  /* Side panel */
-  .side-panel {
-    width: 220px;
-    border-left: 2px solid #cc0000;
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.25rem;
-  }
-
-  .side-jp {
-    font-family: inherit;
-    font-size: 0.9rem;
-    color: #cc0000;
-    margin-bottom: 0.1rem;
-  }
-
-  .side-title {
-    font-family: 'Space Mono', monospace;
-    font-size: 9px;
-    color: #cc0000;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
-  }
-
-  .readout-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    margin-bottom: 0.15rem;
-  }
-
-  .rk {
-    color: #ff6a00;
-  }
-
-  .rv.critical {
-    color: #ff0000;
-    font-weight: 700;
-  }
-
-  .agency-block {
-    margin-top: 0.5rem;
-    font-size: 10px;
-  }
-
-  .divider {
-    color: #400000;
-    margin: 0.3rem 0;
-    font-size: 9px;
-    overflow: hidden;
+  .agency-divider {
+    width: 60%;
+    border-top: 1px solid #400000;
+    margin: 0.5rem 0;
   }
 
   .agency-name {
     color: #ff6a00;
     font-weight: 700;
-    margin-bottom: 0.15rem;
+    font-size: 10px;
+    letter-spacing: 0.08em;
   }
 
   .case-ref {
@@ -249,5 +164,7 @@ onMount(() => {
     font-weight: 700;
     margin-top: 0.3rem;
     letter-spacing: 0.05em;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
   }
 </style>

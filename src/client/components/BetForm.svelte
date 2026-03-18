@@ -7,7 +7,7 @@
 
 import { MAX_WAGER, MIN_WAGER, WAGER_PRESETS } from '../../config';
 import { sendJoin } from '../lib/commands';
-import { balance, countdown, lastError, phase } from '../lib/stores';
+import { balance, countdown, lastError, myPlayerId, phase, players } from '../lib/stores';
 
 let wager = $state('');
 let autoCashoutStr = $state('');
@@ -24,6 +24,7 @@ const wagerNum = $derived(parseFloat(wager));
 const autoCashoutNum = $derived(autoCashoutStr ? parseFloat(autoCashoutStr) : null);
 const isValid = $derived(!isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER);
 const countdownSec = $derived(Math.ceil($countdown / 1000));
+const hasJoined = $derived($players[$myPlayerId] !== undefined);
 
 function setWager(amount: number) {
   wager = amount.toFixed(2);
@@ -84,8 +85,12 @@ function handleJoin() {
     <button
       class="join-btn"
       onclick={handleJoin}
-      disabled={!isValid}
-    >[ INITIATE BREACH ]</button>
+      disabled={!isValid || hasJoined}
+    >{hasJoined ? '[ BREACH INITIATED ]' : '[ INITIATE BREACH ]'}</button>
+
+    {#if hasJoined}
+      <div class="join-status">AWAITING ROUND START</div>
+    {/if}
 
     <div class="window-countdown">WINDOW: {countdownSec}s</div>
 
@@ -98,7 +103,7 @@ function handleJoin() {
 <style>
   .bet-form {
     position: relative;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-primary-mid);
     padding: 0.75rem;
     padding-top: 1rem;
     font-family: 'Fira Code', monospace;
@@ -116,15 +121,16 @@ function handleJoin() {
     font-family: 'Space Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.12em;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-mid);
     white-space: nowrap;
   }
 
   .jp {
+    font-family: system-ui, sans-serif;
     font-size: 0.65rem;
     letter-spacing: 0.2em;
     opacity: 0.5;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-mid);
   }
 
   .error {
@@ -236,6 +242,14 @@ function handleJoin() {
     cursor: not-allowed;
     border-color: var(--color-border);
     color: var(--color-primary-dim);
+  }
+
+  .join-status {
+    margin-top: 0.25rem;
+    text-align: center;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.08em;
   }
 
   .window-countdown {

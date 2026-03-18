@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
-import { balance, gameState, lastError } from '../../lib/stores';
+import { balance, gameState, lastError, myPlayerId, players } from '../../lib/stores';
 import BetForm from '../BetForm.svelte';
 
 vi.mock('../../lib/commands', () => ({
@@ -32,6 +32,8 @@ beforeEach(() => {
   gameState.set(null);
   balance.set(0);
   lastError.set(null);
+  myPlayerId.set('');
+  players.set({});
   vi.clearAllMocks();
 });
 
@@ -274,6 +276,52 @@ describe('BetForm component', () => {
       await tick();
 
       expect(screen.queryByText('Previous error')).toBeNull();
+    });
+  });
+
+  describe('hasJoined state', () => {
+    function makePlayerSnapshot() {
+      return {
+        id: 'conn1',
+        playerId: 'test-player-id',
+        name: 'Test',
+        wager: 100,
+        cashedOut: false,
+        cashoutMultiplier: null,
+        payout: null,
+        autoCashout: null,
+      };
+    }
+
+    it('shows [ BREACH INITIATED ] and is disabled when player has joined', async () => {
+      myPlayerId.set('test-player-id');
+      players.set({ 'test-player-id': makePlayerSnapshot() });
+      render(BetForm);
+      await tick();
+      const button = screen.getByRole('button', { name: '[ BREACH INITIATED ]' });
+      expect(button).toBeDisabled();
+    });
+
+    it('shows AWAITING ROUND START status when player has joined', async () => {
+      myPlayerId.set('test-player-id');
+      players.set({ 'test-player-id': makePlayerSnapshot() });
+      render(BetForm);
+      await tick();
+      expect(screen.getByText('AWAITING ROUND START')).toBeTruthy();
+    });
+
+    it('shows [ INITIATE BREACH ] and is enabled (with valid wager) when not joined', async () => {
+      render(BetForm);
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '100' } });
+      await tick();
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
+      expect(button).not.toBeDisabled();
+    });
+
+    it('does not show AWAITING ROUND START when not joined', () => {
+      render(BetForm);
+      expect(screen.queryByText('AWAITING ROUND START')).toBeNull();
     });
   });
 

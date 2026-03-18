@@ -20,9 +20,6 @@ const isHighThreat = $derived(
         >
           <span class="handle">
             {player.name}
-            {#if player.playerId === $myPlayerId}
-              <span class="you-marker">← YOU</span>
-            {/if}
           </span>
           <span class="wager">{player.wager} CR</span>
           <span class="status">
@@ -46,7 +43,7 @@ const isHighThreat = $derived(
   }
 
   .panel-label {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Space Mono', system-ui, monospace;
     font-size: 9px;
     color: var(--color-primary-dim);
     letter-spacing: 0.1em;
@@ -92,13 +89,6 @@ const isHighThreat = $derived(
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .you-marker {
-    color: var(--threat-color, var(--color-primary));
-    font-size: 9px;
-    margin-left: 0.25rem;
-    opacity: 0.7;
   }
 
   .wager {

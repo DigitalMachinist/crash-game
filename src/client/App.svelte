@@ -73,7 +73,8 @@ let lastCashoutPayout = $state(0);
 let lastCashoutMultiplier = $state(1.0);
 let wasInRound = $state(false);
 
-// Derived: show cashout screen only for successful cashouts, not after crash
+// Derived: show cashout screen during RUNNING and CRASHED — cashed-out players
+// keep their success message visible even after the round crashes.
 const showCashoutScreen = $derived(
   hasCashedOutThisRound && ($phase === 'RUNNING' || $phase === 'CRASHED'),
 );
@@ -230,9 +231,9 @@ onDestroy(() => {
       <span class="brand">[crashOS]</span>
       {#if $myPlayerName}
         <span class="sep">@</span>
-        <button class="name-btn" onclick={() => (nameModalOpen = true)}>{$myPlayerName}</button>
+        <button class="name-btn" onclick={() => (nameModalOpen = true)}>[ {$myPlayerName} ]</button>
       {:else}
-        <button class="name-btn" onclick={() => (nameModalOpen = true)}>set handle</button>
+        <button class="name-btn" onclick={() => (nameModalOpen = true)}>[ set handle ]</button>
       {/if}
       <span class="rnd">RND #{$gameState?.roundId ?? '—'}</span>
       {#if $roundTarget}
@@ -265,26 +266,11 @@ onDestroy(() => {
   {/if}
 
   <main class="app-main" class:running={$phase === 'RUNNING' || $phase === 'CRASHED'}>
-    {#if showCashoutScreen}
-      <div class="full-span">
-        <CashoutScreen
-          payout={lastCashoutPayout}
-          cashoutMultiplier={lastCashoutMultiplier}
-          threatLevel={$cashoutThreatLevel ?? 'GHOST'}
-        />
-      </div>
-    {:else if $phase === 'CRASHED'}
-      <div class="full-span">
-        <CrashScreen
-          crashPoint={$gameState?.crashPoint ?? 0}
-          isSpectator={!wasInRound}
-        />
-      </div>
-    {:else if $phase === 'WAITING' || $phase === 'STARTING'}
+    {#if $phase === 'WAITING' || $phase === 'STARTING'}
       <div class="lobby-area">
         <div class="lobby-panels">
-          <TargetInfo target={$roundTarget} />
           <BetForm />
+          <TargetInfo target={$roundTarget} />
         </div>
         <div class="prep-terminal">
           <TerminalDisplay lines={$terminalLines} dim={true} maxHeight="120px" threatLevel="GHOST" />
@@ -294,19 +280,56 @@ onDestroy(() => {
         <PlayerList />
         <History />
       </aside>
+    {:else if showCashoutScreen}
+      <div class="game-area">
+        {#if $phase === 'CRASHED'}
+          <CrashScreen
+            crashPoint={$gameState?.crashPoint ?? 0}
+            isSpectator={true}
+            isEscaped={true}
+          />
+        {:else}
+          <div class="multiplier-section">
+            <Multiplier />
+            <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
+          </div>
+        {/if}
+        <CashoutScreen
+          payout={lastCashoutPayout}
+          cashoutMultiplier={lastCashoutMultiplier}
+          threatLevel={$cashoutThreatLevel ?? 'GHOST'}
+        />
+      </div>
+      <aside class="sidebar">
+        <PlayerList />
+        <ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} disconnected={true} />
+        <History />
+      </aside>
+    {:else if $phase === 'CRASHED'}
+      <CrashScreen
+        crashPoint={$gameState?.crashPoint ?? 0}
+        isSpectator={!wasInRound}
+      />
+      <aside class="sidebar">
+        <PlayerList />
+        <ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} traced={wasInRound && !hasCashedOutThisRound} />
+        <History />
+      </aside>
     {:else}
       <div class="game-area">
         <div class="multiplier-section">
           <Multiplier />
           <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
         </div>
-        <TerminalDisplay
-          lines={$terminalLines}
-          maxHeight="280px"
-          threatLevel={$threatLevel}
-        />
+        <div class="terminal-wrapper">
+          <TerminalDisplay
+            lines={$terminalLines}
+            maxHeight="280px"
+            threatLevel={$threatLevel}
+          />
+        </div>
         <div class="action-area">
-          {#if $isInRound || hasCashedOutThisRound}
+          {#if $isInRound}
             <CashoutButton />
           {:else if $phase === 'RUNNING'}
             <ObserverBanner threatLevel={$threatLevel} />
@@ -596,14 +619,10 @@ onDestroy(() => {
   /* ─── Main layout ─── */
   .app-main {
     display: grid;
-    grid-template-columns: 1fr 180px;
+    grid-template-columns: 1fr 200px;
     gap: 1.5rem;
     padding: 1.5rem 0;
     flex: 1;
-  }
-
-  .app-main.running {
-    grid-template-columns: 1fr 200px;
   }
 
   /* ─── Lobby layout ─── */
@@ -633,11 +652,6 @@ onDestroy(() => {
     gap: 1rem;
   }
 
-  /* Phase screens span both grid columns */
-  .full-span {
-    grid-column: 1 / -1;
-  }
-
   /* ─── Sidebar ─── */
   .sidebar {
     display: flex;
@@ -654,9 +668,22 @@ onDestroy(() => {
     align-items: center;
   }
 
+  .terminal-wrapper {
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+
   .action-area {
     display: flex;
     justify-content: center;
+  }
+
+  /* ─── Japanese text font fallback ─── */
+  :global(.jp-accent),
+  :global(.side-jp),
+  :global(.modal-jp) {
+    font-family: system-ui, sans-serif;
   }
 
   /* CRITICAL threat — background crisis pulse on body */

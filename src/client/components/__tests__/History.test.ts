@@ -47,25 +47,32 @@ describe('History component', () => {
       expect(screen.getByText('3.50x')).toBeTruthy();
     });
 
-    it('applies Common rarity color (#d0d0d0) when crashPoint < 2', () => {
+    it('applies GHOST threat color (#ffb000) when crashPoint < 2', () => {
       history.set([makeEntry({ crashPoint: 1.23 })]);
       render(History);
       const span = screen.getByText('1.23x');
-      expect(span.style.color).toBe('rgb(208, 208, 208)');
+      expect(span.style.color).toBe('rgb(255, 176, 0)');
     });
 
-    it('applies Uncommon rarity color (#00c853) when crashPoint >= 2', () => {
+    it('applies ELEVATED threat color (#ff8c00) when crashPoint >= 2.5', () => {
       history.set([makeEntry({ crashPoint: 2.5 })]);
       render(History);
       const span = screen.getByText('2.50x');
-      expect(span.style.color).toBe('rgb(0, 200, 83)');
+      expect(span.style.color).toBe('rgb(255, 140, 0)');
     });
 
-    it('applies Rare rarity color (#42a5f5) when crashPoint >= 5', () => {
+    it('applies HIGH threat color (#ff6600) when crashPoint >= 5', () => {
       history.set([makeEntry({ crashPoint: 5.75 })]);
       render(History);
       const span = screen.getByText('5.75x');
-      expect(span.style.color).toBe('rgb(66, 165, 245)');
+      expect(span.style.color).toBe('rgb(255, 102, 0)');
+    });
+
+    it('applies CRITICAL threat color (#ff0040) when crashPoint >= 25', () => {
+      history.set([makeEntry({ crashPoint: 30.0 })]);
+      render(History);
+      const span = screen.getByText('30.00x');
+      expect(span.style.color).toBe('rgb(255, 0, 64)');
     });
 
     it('renders a "Verify" button for each round', () => {

@@ -35,16 +35,16 @@ const ORGS = [
 ];
 
 const HOSTNAMES = [
-  'srv-prod-web-03',
-  'db-primary-01',
-  'mail-gw-02',
-  'api-node-07',
-  'core-auth-01',
-  'backup-nas-02',
-  'core-router-01',
-  'cache-redis-04',
-  'svc-gateway-02',
-  'log-aggregator-01',
+  'api.nexus-biotech.net',
+  'db-primary.ellingson.corp',
+  'mail.orca-capital.io',
+  'cdn-prod.axiom-financial.net',
+  'auth.meridian-labs.corp',
+  'backup.atlas-defense.internal',
+  'gateway.massive-dynamic.io',
+  'cache.veridian-dynamics.net',
+  'svc.northside-digital.corp',
+  'log-agg.initech-systems.internal',
 ];
 
 const IP_PREFIXES = ['198.51.100', '203.0.113', '192.0.2', '198.18.0', '198.19.255'];

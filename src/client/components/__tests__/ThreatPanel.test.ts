@@ -32,7 +32,7 @@ describe('ThreatPanel', () => {
     render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0 });
     expect(screen.getByText('0/6 EXPOSED')).toBeTruthy();
     expect(screen.getByText('ACTIVE HUNT')).toBeTruthy();
-    expect(screen.getByText('BLOWN')).toBeTruthy();
+    expect(screen.getByText('burning')).toBeTruthy();
   });
 
   it('applies critical class at CRITICAL threat level', () => {
@@ -52,5 +52,39 @@ describe('ThreatPanel', () => {
     const panel = document.querySelector('.threat-panel');
     expect(panel?.classList.contains('severe')).toBe(false);
     expect(panel?.classList.contains('critical')).toBe(false);
+  });
+
+  describe('disconnected prop', () => {
+    it('renders OFFLINE status when disconnected=true', () => {
+      render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0, disconnected: true });
+      expect(screen.getByText('OFFLINE')).toBeTruthy();
+    });
+
+    it('renders scrubbed proxies when disconnected=true', () => {
+      render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0, disconnected: true });
+      expect(screen.getByText('scrubbed')).toBeTruthy();
+    });
+
+    it('renders dark IDS when disconnected=true', () => {
+      render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0, disconnected: true });
+      expect(screen.getByText('dark')).toBeTruthy();
+    });
+
+    it('renders restored cover when disconnected=true', () => {
+      render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0, disconnected: true });
+      expect(screen.getByText('restored')).toBeTruthy();
+    });
+
+    it('does NOT apply critical class when disconnected=true even at CRITICAL level', () => {
+      render(ThreatPanel, { threatLevel: 'CRITICAL', multiplier: 30.0, disconnected: true });
+      const panel = document.querySelector('.threat-panel');
+      expect(panel?.classList.contains('critical')).toBe(false);
+    });
+
+    it('applies disconnected class when disconnected=true', () => {
+      render(ThreatPanel, { threatLevel: 'GHOST', multiplier: 1.0, disconnected: true });
+      const panel = document.querySelector('.threat-panel');
+      expect(panel?.classList.contains('disconnected')).toBe(true);
+    });
   });
 });

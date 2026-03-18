@@ -90,7 +90,7 @@ const footer = $derived(
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 400px;
+    min-height: 280px;
     background: #000a00;
     border: 1px solid #006633;
     font-family: 'Fira Code', monospace;

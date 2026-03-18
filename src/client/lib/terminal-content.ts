@@ -72,7 +72,13 @@ export function startTerminalSession(
   const stableRng = mulberry32(roundId);
   const stable = {
     hostname: seededPick(
-      ['srv-prod-web-03', 'db-primary-01', 'mail-gw-02', 'api-node-07', 'core-auth-01'],
+      [
+        'api.nexus-biotech.net',
+        'db-primary.ellingson.corp',
+        'mail.orca-capital.io',
+        'cdn-prod.axiom-financial.net',
+        'auth.meridian-labs.corp',
+      ],
       stableRng,
     ),
     ip: seededPick(['198.51.100.██', '203.0.113.██', '10.0.14.██'], stableRng),

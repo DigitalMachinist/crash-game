@@ -2,13 +2,13 @@
 
 **Spec**: `docs/specs/2026-03-17-hacker-theme-qa-fixes.md`
 **Date**: 2026-03-17
-**Status**: Draft — Updated after mockup session (B2/B3 rewritten, Wave E merged into B2)
+**Status**: Draft — Updated after second feedback pass (Waves E–G added for Fixes 13–20; Fixes 1–12 confirmed implemented)
 
 ---
 
 ## Overview
 
-10 issues from the Wave 10e Visual QA pass (Fix 11 merged into Fix 6). Organized into 4 waves by dependency profile. All CSS/layout/config fixes — no new stores, no new dependencies. One new shared module (`crash-agency.ts`).
+11 issues from the Wave 10e Visual QA pass and subsequent feedback (Fix 11 merged into Fix 6, Fix 12 added). Organized into 4 waves by dependency profile. All CSS/layout/config fixes — no new stores, no new dependencies. One new shared module (`crash-agency.ts`).
 
 **No server API changes.** `config.ts` is shared but Fix 9 is a safe timing constant edit.
 
@@ -42,15 +42,16 @@ max-width: 4.5rem;
 
 ---
 
-### Step A2 — Fix 9: Crash Duration 10s
+### Step A2 — Fix 9 + Fix 12: Timing Constants
 
 **File**: `src/config.ts`
 
 ```typescript
-export const CRASHED_DISPLAY_MS = 10_000; // was 5_000
+export const WAITING_DURATION_MS = 15_000; // was 10_000 — more time to join
+export const CRASHED_DISPLAY_MS = 10_000; // was 5_000 — more time to read crash
 ```
 
-**Tests**: No unit test needed — it's a constant. Visual QA confirms.
+**Tests**: No unit test needed — they're constants. Visual QA confirms.
 
 ---
 
@@ -271,6 +272,7 @@ Remove the `.side-panel` (status readout, agency block). The status readout info
 CSS changes:
 - Remove `.side-panel`, `.side-jp`, `.side-title`, `.readout-row`, `.rk`, `.rv` rules.
 - `.crash-screen` changes from `display: flex` to `display: flex; flex-direction: column` (no longer side-by-side).
+- `.crash-screen` gets `max-height: 500px` to prevent excessive stretching on tall windows. Content is vertically centered within this constraint.
 - Add `.agency-divider`, `.agency-name`, `.case-ref` styles (moved from side panel).
 - Keep hazard stripes, VHS band, `.main-content` centered layout.
 
@@ -287,18 +289,30 @@ CSS changes:
 
 1. Remove `.full-span` wrapper from the CRASHED branch.
 2. Add sidebar alongside CrashScreen.
-3. Update `showCashoutScreen` to exclude CRASHED phase:
-
-```typescript
-// Was: hasCashedOutThisRound && ($phase === 'RUNNING' || $phase === 'CRASHED')
-const showCashoutScreen = $derived(
-  hasCashedOutThisRound && $phase === 'RUNNING',
-);
-```
-
-4. Reorder template branches so CRASHED comes before the cashout/RUNNING check:
+3. **`showCashoutScreen` keeps its current scope** — `hasCashedOutThisRound && ($phase === 'RUNNING' || $phase === 'CRASHED')`. Players who cashed out see their cashout confirmation persist through the crash phase. The crash panel only shows for players who were still in the round (lost) or spectators.
+4. Template priority: `showCashoutScreen` check comes **before** the CRASHED branch. If the player cashed out, they see cashout through the entire round including crash:
 
 ```svelte
+{#if showCashoutScreen}
+  <!-- Cashout card with live multiplier — persists through CRASHED -->
+  <div class="game-area">
+    <div class="multiplier-section">
+      <Multiplier />
+      {#if $phase !== 'CRASHED'}
+        <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
+      {/if}
+    </div>
+    <CashoutScreen
+      payout={lastCashoutPayout}
+      cashoutMultiplier={lastCashoutMultiplier}
+      threatLevel={$cashoutThreatLevel ?? 'GHOST'}
+    />
+  </div>
+  <aside class="sidebar">
+    <PlayerList />
+    <ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} />
+    <History />
+  </aside>
 {:else if $phase === 'CRASHED'}
   <CrashScreen
     crashPoint={$gameState?.crashPoint ?? 0}
@@ -312,9 +326,9 @@ const showCashoutScreen = $derived(
 ```
 
 **Tests**: `App.test.ts` — add tests:
-- During CRASHED phase, CrashScreen is rendered (TRACED text visible).
-- During CRASHED phase, sidebar is present (PlayerList visible).
-- During CRASHED phase with prior cashout, crash panel is shown (not cashout screen).
+- During CRASHED phase (no cashout), CrashScreen is rendered (TRACED text visible).
+- During CRASHED phase (no cashout), sidebar is present (PlayerList visible).
+- During CRASHED phase with prior cashout, cashout screen persists (not crash panel).
 
 ---
 
@@ -322,37 +336,28 @@ const showCashoutScreen = $derived(
 
 > **Mockup reference**: `docs/mockups/cashout-transition-mockup.html` — Option A (Tier 1 and Tier 2).
 
-The cashout confirmation no longer takes over the full grid. Instead, the RUNNING layout skeleton is preserved: the multiplier stays live at top, and CashoutScreen replaces the terminal + action area below it. Sidebar stays visible.
+The cashout confirmation no longer takes over the full grid. Instead, the RUNNING layout skeleton is preserved: the multiplier stays live at top, and CashoutScreen replaces the terminal + action area below it. Sidebar stays visible. The cashout screen persists through the CRASHED phase — players who cashed out see their success message rather than the crash panel.
 
-**File**: `src/client/App.svelte`
-
-Restructure the RUNNING (`{:else}`) branch to support the cashout sub-state:
+**Note**: The `showCashoutScreen` branch and its template structure are already handled in B2c (it comes first in the template, before the CRASHED branch). B3's job is to ensure the RUNNING `{:else}` branch properly handles the non-cashout case:
 
 ```svelte
 {:else}
+  <!-- RUNNING, no cashout -->
   <div class="game-area">
     <div class="multiplier-section">
       <Multiplier />
       <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
     </div>
-    {#if showCashoutScreen}
-      <CashoutScreen
-        payout={lastCashoutPayout}
-        cashoutMultiplier={lastCashoutMultiplier}
-        threatLevel={$cashoutThreatLevel ?? 'GHOST'}
-      />
-    {:else}
-      <div class="terminal-wrapper">
-        <TerminalDisplay lines={$terminalLines} maxHeight="280px" threatLevel={$threatLevel} />
-      </div>
-      <div class="action-area">
-        {#if $isInRound || hasCashedOutThisRound}
-          <CashoutButton />
-        {:else if $phase === 'RUNNING'}
-          <ObserverBanner threatLevel={$threatLevel} />
-        {/if}
-      </div>
-    {/if}
+    <div class="terminal-wrapper">
+      <TerminalDisplay lines={$terminalLines} maxHeight="280px" threatLevel={$threatLevel} />
+    </div>
+    <div class="action-area">
+      {#if $isInRound}
+        <CashoutButton />
+      {:else if $phase === 'RUNNING'}
+        <ObserverBanner threatLevel={$threatLevel} />
+      {/if}
+    </div>
   </div>
   <aside class="sidebar">
     <PlayerList />
@@ -442,6 +447,399 @@ Increase visual weight:
 
 ---
 
+## Implementation Status (as of second feedback pass)
+
+**Fixes 1–12 are fully implemented** in the working copy. All Wave A–D steps are complete. The following waves cover only Fixes 13–20.
+
+---
+
+## Wave E — Simple Independent Fixes (Fixes 13–17, all parallel)
+
+All five steps touch disjoint files. Can run as parallel agents or be done sequentially.
+
+---
+
+### Step E1 — Fix 13: Sidebar Width Consistency
+
+**File**: `src/client/App.svelte`
+
+Remove the `grid-template-columns` override from `.app-main.running` and standardize the base rule to `1fr 200px`:
+
+```css
+/* Change base rule */
+.app-main {
+  grid-template-columns: 1fr 200px; /* was 1fr 180px */
+}
+
+/* Remove this override entirely */
+.app-main.running {
+  grid-template-columns: 1fr 200px; /* DELETE this line — same as base now */
+}
+```
+
+The `.running` class may remain on the element if used for other purposes; only the column-width line is removed.
+
+**Tests**: None — visual regression.
+
+---
+
+### Step E2 — Fix 15: CRITICAL Cover "BLOWN" → "burning"
+
+**File**: `src/client/lib/threat.ts`
+
+```typescript
+// Change:
+case 'CRITICAL':
+  return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'BLOWN' };
+// To:
+case 'CRITICAL':
+  return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'burning' };
+```
+
+**Tests**: `src/client/lib/__tests__/threat.test.ts` — update the CRITICAL `cover` assertion from `'BLOWN'` to `'burning'`.
+
+---
+
+### Step E3 — Fix 16: Remove You-Marker from PlayerList
+
+**File**: `src/client/components/PlayerList.svelte`
+
+Remove the `{#if}` block and associated CSS:
+
+```svelte
+<!-- Remove this entire block from the handle span: -->
+{#if player.playerId === $myPlayerId}
+  <span class="you-marker">← YOU</span>
+{/if}
+```
+
+```css
+/* Remove these rules: */
+.you-marker { ... }
+```
+
+**Tests**: If any test asserts `← YOU` text is present, remove that assertion.
+
+---
+
+### Step E4 — Fix 17: History Panel Label "Recent Ops"
+
+**File**: `src/client/components/History.svelte`
+
+```svelte
+<!-- Change: -->
+<div class="panel-label">最近 RECENT</div>
+<!-- To: -->
+<div class="panel-label">最近 RECENT OPS</div>
+```
+
+**Tests**: Update any test that asserts the panel label text.
+
+---
+
+### Step E5 — Fix 18: Initiate Breach Disabled After Join
+
+**File**: `src/client/components/BetForm.svelte`
+
+Add `players` and `myPlayerId` to imports, derive `hasJoined`, update button and add status line:
+
+```svelte
+<script lang="ts">
+import { balance, countdown, lastError, phase, players, myPlayerId } from '../lib/stores';
+
+const hasJoined = $derived($players[$myPlayerId] !== undefined);
+</script>
+
+<!-- Update button: -->
+<button
+  class="join-btn"
+  onclick={handleJoin}
+  disabled={!isValid || hasJoined}
+>
+  {hasJoined ? '[ BREACH INITIATED ]' : '[ INITIATE BREACH ]'}
+</button>
+
+{#if hasJoined}
+  <div class="join-status">AWAITING ROUND START</div>
+{/if}
+```
+
+```css
+.join-status {
+  margin-top: 0.25rem;
+  text-align: center;
+  font-size: 10px;
+  color: var(--color-primary-dim);
+  letter-spacing: 0.08em;
+}
+```
+
+**Tests**: `BetForm.test.ts` (if it exists) — add test: when `$players[$myPlayerId]` is populated, button is disabled and shows `BREACH INITIATED`. When not populated, button is enabled and shows `INITIATE BREACH`.
+
+---
+
+## Wave F — Component Prop Additions (Fix 19 parts A+B, Fix 20; mostly parallel)
+
+F1 and F2 are independent. F3 (CrashScreen) must follow F2 (crash-agency). F4 (ThreatPanel) is independent of all.
+
+---
+
+### Step F1 — Fix 20 part A: ThreatPanel `disconnected` Prop
+
+**File**: `src/client/components/ThreatPanel.svelte`
+
+Add `disconnected?: boolean` prop. When true, override all displayed values with a safe-state readout and apply green styling:
+
+```svelte
+<script lang="ts">
+let {
+  threatLevel,
+  multiplier,
+  disconnected = false,
+}: {
+  threatLevel: ThreatLevel;
+  multiplier: number;
+  disconnected?: boolean;
+} = $props();
+
+const isCritical = $derived(!disconnected && threatLevel === 'CRITICAL');
+const isSevere = $derived(!disconnected && threatLevel === 'SEVERE');
+const subIndicators = $derived(
+  disconnected
+    ? { proxies: 'scrubbed', ids: 'dark', cover: 'restored' }
+    : getSubIndicators(threatLevel)
+);
+const displayStatus = $derived(disconnected ? 'OFFLINE' : threatLevel);
+</script>
+
+<div class="threat-panel"
+  class:severe={isSevere}
+  class:critical={isCritical}
+  class:disconnected={disconnected}
+>
+  ...
+  <span class="val" class:pulse-status={isCritical}>{displayStatus}</span>
+  ...
+</div>
+```
+
+```css
+.threat-panel.disconnected {
+  border-color: var(--color-success-dim);
+}
+.threat-panel.disconnected .val {
+  color: var(--color-success);
+  font-weight: 700;
+}
+```
+
+**Tests**: `ThreatPanel.test.ts` (create if absent) — when `disconnected={true}` and `threatLevel="CRITICAL"`: renders `OFFLINE`, `scrubbed`, `dark`, `restored`; no `.critical` CSS class on the panel element.
+
+---
+
+### Step F2 — Fix 19 part A: Lockout Subtitles in crash-agency.ts
+
+**File**: `src/client/lib/crash-agency.ts`
+
+Add `LOCKOUT_SUBTITLES` array and `pickLockoutSubtitle()` export:
+
+```typescript
+const LOCKOUT_SUBTITLES = [
+  'INTRUSION COUNTERMEASURES DEPLOYED — CONNECTION SEVERED',
+  'TARGET HOST INITIATED EMERGENCY ISOLATION PROTOCOL',
+  'REMOTE FAILSAFE ACTIVATED — UNABLE TO RECONNECT',
+  'SECURITY PERIMETER RESTORED — FURTHER ACCESS BLOCKED',
+  'NETWORK LOCKDOWN IN PROGRESS — ALL SESSIONS TERMINATED',
+];
+
+export function pickLockoutSubtitle(): string {
+  return LOCKOUT_SUBTITLES[Math.floor(Math.random() * LOCKOUT_SUBTITLES.length)]!;
+}
+```
+
+**Tests**: `src/client/lib/__tests__/crash-agency.test.ts` — add test: `pickLockoutSubtitle()` returns a non-empty string.
+
+---
+
+### Step F3 — Fix 14 + Fix 19 part B: CrashScreen `isEscaped` Prop + Pulse Animation
+
+**File**: `src/client/components/CrashScreen.svelte`
+
+Add `isEscaped?: boolean` prop. When true: use SYSTEM LOCKOUT heading, alternate JP accent, `pickLockoutSubtitle()` for subtitle, compact height, no `ALL FUNDS SEIZED`. Always add `crash-pulse` animation to `.main-content`.
+
+```svelte
+<script lang="ts">
+import { pickAgency, pickLockoutSubtitle } from '../lib/crash-agency';
+
+let {
+  crashPoint,
+  isSpectator = false,
+  isEscaped = false,
+}: {
+  crashPoint: number;
+  isSpectator?: boolean;
+  isEscaped?: boolean;
+} = $props();
+
+onMount(() => {
+  agency = pickAgency();
+  lockoutSubtitle = pickLockoutSubtitle();
+});
+</script>
+
+<div class="crash-screen" class:escaped={isEscaped}>
+  <div class="vhs-band"></div>
+  <div class="hazard-stripe top"></div>
+  <div class="main-content">
+    <div class="jp-accent">
+      {isEscaped ? '接続不能 — システム停止' : '警告 — 追跡完了'}
+    </div>
+    <div class="traced">
+      {isEscaped ? 'SYSTEM LOCKOUT' : 'TRACED'}
+    </div>
+    <div class="subtitle">
+      {isEscaped ? lockoutSubtitle : agency.subtitle}
+    </div>
+    <div class="crash-multiplier">{crashPoint.toFixed(2)}x</div>
+    <div class="agency-divider"></div>
+    <div class="agency-name">{agency.name}</div>
+    {#if agency.caseRef}
+      <div class="case-ref">{agency.caseRef}</div>
+    {/if}
+    {#if !isSpectator && !isEscaped}
+      <div class="funds-seized">ALL FUNDS SEIZED</div>
+    {/if}
+  </div>
+  <div class="hazard-stripe bottom"></div>
+</div>
+```
+
+CSS changes:
+
+```css
+/* Red pulse — applied to all crash states (alarm effect) */
+@keyframes crash-pulse {
+  0%, 100% { background: #0a0000 }
+  50%      { background: #1e0000 }
+}
+
+.main-content {
+  animation: crash-pulse 1s ease-in-out infinite;
+  /* existing properties unchanged */
+}
+
+/* Compact height for escaped variant (leaves room for cashout card below) */
+.crash-screen.escaped {
+  min-height: 200px;
+  max-height: 280px;
+}
+
+/* SYSTEM LOCKOUT heading size — slightly smaller than TRACED to fit longer text */
+.crash-screen.escaped .traced {
+  font-size: 2rem;
+  letter-spacing: 0.2em;
+}
+```
+
+**Tests**: `CrashScreen.test.ts` — add tests:
+- `isEscaped={true}`: `SYSTEM LOCKOUT` text is present; `TRACED` is absent; `ALL FUNDS SEIZED` is absent.
+- `isEscaped={false}` (default): `TRACED` is present; `SYSTEM LOCKOUT` is absent.
+- `isEscaped={true}` with `isSpectator={true}`: `ALL FUNDS SEIZED` still absent.
+
+---
+
+## Wave G — App.svelte Wiring (depends on F1, F3)
+
+Both Fix 19 and Fix 20 touch `App.svelte`. Do them in a single step to avoid conflicts.
+
+---
+
+### Step G1 — Fix 19 + Fix 20: App.svelte Final Wiring
+
+**File**: `src/client/App.svelte`
+
+**Fix 19**: In the `showCashoutScreen` branch, when `$phase === 'CRASHED'`, replace the multiplier section with `CrashScreen isEscaped=true` above `CashoutScreen`. When `$phase !== 'CRASHED'`, keep the existing multiplier section as-is.
+
+```svelte
+{:else if showCashoutScreen}
+  <div class="game-area">
+    {#if $phase === 'CRASHED'}
+      <CrashScreen
+        crashPoint={$gameState?.crashPoint ?? 0}
+        isSpectator={true}
+        isEscaped={true}
+      />
+    {:else}
+      <div class="multiplier-section">
+        <Multiplier />
+        <ThreatMeter multiplier={$displayMultiplier} threatLevel={$threatLevel} />
+      </div>
+    {/if}
+    <CashoutScreen
+      payout={lastCashoutPayout}
+      cashoutMultiplier={lastCashoutMultiplier}
+      threatLevel={$cashoutThreatLevel ?? 'GHOST'}
+    />
+  </div>
+  <aside class="sidebar">
+    <PlayerList />
+    <ThreatPanel
+      threatLevel={$threatLevel}
+      multiplier={$displayMultiplier}
+      disconnected={true}
+    />
+    <History />
+  </aside>
+```
+
+**Fix 20**: `disconnected={true}` is already included in the ThreatPanel call above — no additional change needed.
+
+**Tests**: `App.test.ts` — add tests:
+- During `showCashoutScreen + CRASHED`: `SYSTEM LOCKOUT` text is rendered; multiplier section is absent; cashout card is present.
+- During `showCashoutScreen + RUNNING`: multiplier section is present; `SYSTEM LOCKOUT` is absent.
+- During `showCashoutScreen` (any phase): ThreatPanel receives `disconnected={true}`.
+
+---
+
+## Updated Dependency Graph
+
+```
+Fixes 1–12 (Waves A–D) — ALREADY IMPLEMENTED
+       ↓
+Wave E (E1, E2, E3, E4, E5) — all independent, run concurrently
+       ↓
+Wave F:
+  F1 (ThreatPanel disconnected) — independent
+  F2 (crash-agency lockout subtitles) — independent
+  F3 (CrashScreen isEscaped + pulse) — depends on F2 (imports pickLockoutSubtitle)
+  NOTE: F1 and F2 can run concurrently; F3 follows F2
+       ↓
+Wave G (G1) — depends on F1 (ThreatPanel prop) and F3 (CrashScreen isEscaped)
+```
+
+Wave E is fully parallel. Wave F: F1 and F2 parallel, then F3. Wave G follows F.
+
+---
+
+## Updated Files Changed
+
+| File | Fixes |
+|------|-------|
+| `src/client/App.svelte` | E1 (grid width), G1 (cashout+crash wiring, disconnected ThreatPanel) |
+| `src/client/lib/threat.ts` | E2 (cover wording) |
+| `src/client/components/PlayerList.svelte` | E3 (remove you-marker) |
+| `src/client/components/History.svelte` | E4 (label text) |
+| `src/client/components/BetForm.svelte` | E5 (hasJoined logic) |
+| `src/client/components/ThreatPanel.svelte` | F1 (disconnected prop) |
+| `src/client/lib/crash-agency.ts` | F2 (lockout subtitles) |
+| `src/client/components/CrashScreen.svelte` | F3 (isEscaped prop + crash-pulse) |
+| `src/client/lib/__tests__/threat.test.ts` | E2 (cover assertion) |
+| `src/client/lib/__tests__/crash-agency.test.ts` | F2 (pickLockoutSubtitle test) |
+| `src/client/components/__tests__/CrashScreen.test.ts` | F3 (isEscaped tests) |
+| `src/client/components/__tests__/App.test.ts` | G1 (lockout+cashout layout, disconnected ThreatPanel) |
+
+---
+
 ## Dependency Graph
 
 ```
@@ -488,15 +886,12 @@ Wave A is fully parallel. Wave B is sequential (B1 → B2 → B3). Waves C and D
 
 ## Review Self-Assessment
 
-**Spec completeness**: All 10 issues have clear desired states and explicit solutions (Fix 11 merged into Fix 6). Approved mockups provide visual targets for the two most complex changes (B2, B3).
+**Spec completeness**: All 20 issues have clear desired states and explicit solutions. Fixes 1–12 are already implemented. Fixes 13–20 are fully planned across Waves E–G. Approved mockups cover the two most complex new changes (Fix 19 escaped crash view: `docs/mockups/escaped-crash-mockup.html`; original crash/cashout views: existing mockups).
 
-**Implementation risk**:
-- **B2 (crash panel)** is the highest-risk step: CrashScreen.svelte's internal layout changes (removing side-panel, restructuring to single-column) require updating both the component and its tests. The App.svelte template reordering (CRASHED before cashout check) plus the `showCashoutScreen` scope change must be done atomically to avoid a state where cashout overrides crash display.
-- **B3 (cashout layout)**: CashoutScreen was designed at full-span width. At main-column width it may need `min-height` and padding adjustments. The template restructuring nests CashoutScreen inside the RUNNING `{:else}` branch alongside Multiplier + ThreatMeter — this is a significant template change.
-- **B2 + B3 interaction**: Both touch App.svelte's main template. B2 must land before B3 to avoid merge conflicts. The `showCashoutScreen` derived expression is modified in B2c and relied upon in B3.
-- **A3 (FQDN hostnames)**: Two separate hostname arrays (prng.ts and terminal-content.ts stable pool) must both be updated to FQDNs.
-- **A5 (system-ui for Japanese)**: System-ui renders Japanese in a proportional sans-serif, not monospace. This is acceptable for decorative labels but should be checked visually — if it looks wrong, the fallback is a `font-size` reduction to compensate for different character widths.
+**Implementation risk (Waves E–G)**:
+- **F3 (CrashScreen isEscaped + pulse)** is the highest-risk step in the new waves: the component must branch on `isEscaped` throughout its template while keeping all existing TRACED behavior intact. The `crash-pulse` animation is applied universally (affects both the escaped and traced variant). Tests must cover both branches explicitly.
+- **G1 (App.svelte wiring)**: The `showCashoutScreen` branch currently renders the multiplier section unconditionally — the phase split (`CRASHED` → lockout panel, `RUNNING` → multiplier) is a meaningful structural change. The existing CRASHED + non-cashout branch is unchanged; only the `showCashoutScreen` + `CRASHED` sub-case changes.
+- **F1 (ThreatPanel disconnected)**: The `isCritical` and `isSevere` derived values must be gated on `!disconnected` to prevent the red border/glow from overriding the green disconnected styling.
+- **E5 (BetForm hasJoined)**: `$players[$myPlayerId]` is only populated during WAITING when the server confirms the join. If `$myPlayerId` is empty string on first render, the lookup returns `undefined` correctly — no edge-case guard needed.
 
-**Simplification vs old plan**: The old Wave E (4 sequential steps, Multiplier.svelte changes, crash terminal line `$effect`, CrashScreen retirement) has been replaced by B2 (3 sub-steps, CrashScreen simplification, no Multiplier.svelte changes needed). The new approach is less invasive — CrashScreen stays in the render tree, just simplified.
-
-**What's NOT in this plan**: Anything requiring server logic changes beyond `config.ts`, new npm packages, or new WebSocket message types.
+**What's NOT in this plan**: Anything requiring server logic changes, new npm packages, or new WebSocket message types. ThreatPanel tests may require a new `ThreatPanel.test.ts` file if one doesn't already exist.

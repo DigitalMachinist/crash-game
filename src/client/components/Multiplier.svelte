@@ -87,7 +87,7 @@ const isRunning = $derived($phase === 'RUNNING');
   }
 
   .live-label {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Space Mono', system-ui, monospace;
     font-size: 9px;
     color: var(--color-primary-dim);
     letter-spacing: 0.15em;

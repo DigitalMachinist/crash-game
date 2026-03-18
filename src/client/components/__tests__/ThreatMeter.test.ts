@@ -74,6 +74,6 @@ describe('ThreatMeter', () => {
     render(ThreatMeter, { multiplier: 30.0, threatLevel: 'CRITICAL' });
     expect(screen.getByText(/PROXIES: 0\/6 EXPOSED/)).toBeTruthy();
     expect(screen.getByText(/IDS: ACTIVE HUNT/)).toBeTruthy();
-    expect(screen.getByText(/COVER: BLOWN/)).toBeTruthy();
+    expect(screen.getByText(/COVER: burning/)).toBeTruthy();
   });
 });

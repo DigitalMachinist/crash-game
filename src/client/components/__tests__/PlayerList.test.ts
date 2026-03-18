@@ -82,15 +82,8 @@ describe('PlayerList component', () => {
     expect(row!.classList.contains('me')).toBe(false);
   });
 
-  it('shows ← YOU marker for current player', () => {
+  it('does NOT show ← YOU marker for any player', () => {
     myPlayerId.set('p1');
-    players.set({ p1: makePlayer({ playerId: 'p1', name: 'Alice' }) });
-    render(PlayerList);
-    expect(screen.getByText('← YOU')).toBeTruthy();
-  });
-
-  it('does NOT show ← YOU marker for other players', () => {
-    myPlayerId.set('p2');
     players.set({ p1: makePlayer({ playerId: 'p1', name: 'Alice' }) });
     render(PlayerList);
     expect(screen.queryByText('← YOU')).toBeNull();

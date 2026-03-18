@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getDangerColors, getSubIndicators, getThreatFillCount, getThreatLevel } from '../threat';
+import {
+  getDangerColors,
+  getSubIndicators,
+  getThreatColor,
+  getThreatFillCount,
+  getThreatLevel,
+} from '../threat';
 
 describe('getThreatLevel', () => {
   it('returns GHOST at 1.00x', () => {
@@ -143,6 +149,32 @@ describe('getDangerColors', () => {
   });
 });
 
+describe('getThreatColor', () => {
+  it('returns amber (#ffb000) for GHOST range (< 1.2x)', () => {
+    expect(getThreatColor(1.0)).toBe('#ffb000');
+  });
+
+  it('returns amber (#ffb000) for LOW range (1.2x–2.49x)', () => {
+    expect(getThreatColor(1.23)).toBe('#ffb000');
+  });
+
+  it('returns orange (#ff8c00) for ELEVATED range (2.5x)', () => {
+    expect(getThreatColor(2.5)).toBe('#ff8c00');
+  });
+
+  it('returns orange-red (#ff6600) for HIGH range (5x)', () => {
+    expect(getThreatColor(5.75)).toBe('#ff6600');
+  });
+
+  it('returns red-orange (#ff4400) for SEVERE range (10x)', () => {
+    expect(getThreatColor(15.0)).toBe('#ff4400');
+  });
+
+  it('returns hot red (#ff0040) for CRITICAL range (25x+)', () => {
+    expect(getThreatColor(30.0)).toBe('#ff0040');
+  });
+});
+
 describe('getSubIndicators', () => {
   it('returns safe values for GHOST', () => {
     const s = getSubIndicators('GHOST');
@@ -156,10 +188,10 @@ describe('getSubIndicators', () => {
     expect(s.cover).toBe('degrading');
   });
 
-  it('returns BLOWN for CRITICAL', () => {
+  it('returns burning for CRITICAL', () => {
     const s = getSubIndicators('CRITICAL');
     expect(s.proxies).toBe('0/6 EXPOSED');
     expect(s.ids).toBe('ACTIVE HUNT');
-    expect(s.cover).toBe('BLOWN');
+    expect(s.cover).toBe('burning');
   });
 });

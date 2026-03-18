@@ -1,11 +1,11 @@
 # Hacker Theme — Visual QA Fix Specification
 
 **Date**: 2026-03-17
-**Status**: Draft — Updated after mockup session (Fix 4/6/11 consolidated)
+**Status**: Draft — Updated after second feedback pass (Fixes 13–20 added)
 **Relates to**: `docs/specs/2026-03-17-hacker-theme.md` (addendum)
-**Mockups**: `docs/mockups/crash-transition-mockup.html`, `docs/mockups/cashout-transition-mockup.html`
+**Mockups**: `docs/mockups/crash-transition-mockup.html`, `docs/mockups/cashout-transition-mockup.html`, `docs/mockups/escaped-crash-mockup.html`
 
-This spec covers 10 issues identified during Step 10e Visual QA (Fix 11 merged into Fix 6). All changes are client-side unless noted.
+This spec covers issues identified during Step 10e Visual QA and subsequent feedback sessions. Fix 11 merged into Fix 6; Fix 12 added in first pass. Fixes 13–20 added in second feedback pass. All changes are client-side unless noted.
 
 ---
 
@@ -69,7 +69,9 @@ The two-column grid is preserved (main column + sidebar). The main column contai
 
 ### `showCashoutScreen` scope change
 
-Currently `showCashoutScreen` is true during both RUNNING and CRASHED. It should be scoped to RUNNING only — when the round crashes, the crash panel always takes over regardless of whether the player had cashed out.
+Currently `showCashoutScreen` is true during both RUNNING and CRASHED. It should remain true during both — when a player has cashed out and the round crashes, their cashout confirmation should persist rather than being replaced by the crash panel. The player already got their payout; showing them the crash screen is confusing and hides their success message.
+
+Template priority: `showCashoutScreen` takes precedence over the CRASHED branch. If the player cashed out, they see their cashout card through the end of the round (including through the CRASHED phase).
 
 ---
 
@@ -107,6 +109,7 @@ The two-column grid is preserved (main column + sidebar). The main column become
    - **`ALL FUNDS SEIZED`** — shown only if the player was in the round and did not cash out (`#ff0040`, Space Mono bold). Not shown for spectators or players who cashed out.
    - VHS scan line overlay for CRT feel.
    - Background `#0a0000`, no terminal output visible.
+   - **Max height**: `500px` with content centered vertically. Prevents the crash panel from stretching excessively on tall windows.
 
 2. **No terminal** — the terminal is hidden during crash. The crash panel fills this space.
 
@@ -117,7 +120,7 @@ The two-column grid is preserved (main column + sidebar). The main column become
 ### Component changes
 
 - **`CrashScreen.svelte`**: Remove the `.side-panel` (status readout, agency block). Move agency name + case reference into the main content area. The component becomes a single centered panel with hazard stripes.
-- **`App.svelte`**: Remove `.full-span` wrapper. Render `CrashScreen` in the main column with sidebar alongside. Update `showCashoutScreen` to exclude CRASHED phase.
+- **`App.svelte`**: Remove `.full-span` wrapper. Render `CrashScreen` in the main column with sidebar alongside. `showCashoutScreen` keeps its current scope (RUNNING + CRASHED) — players who cashed out see their cashout card persist through the crash phase.
 - **`pickAgency()`**: Extract to `src/client/lib/crash-agency.ts` shared module (CrashScreen imports from there).
 
 ---
@@ -181,6 +184,178 @@ The `History.test.ts` color assertions must be updated to expect threat colors r
 ## ~~Fix 11~~ — Merged into Fix 6
 
 > **Consolidated**: The original Fix 11 ("augment multiplier section instead of replacing layout") has been merged into Fix 6 based on the mockup session of 2026-03-17. The approved approach is a full main-column takeover (v3 Option A style) rather than augmenting the multiplier section. See Fix 6 for the complete specification.
+
+---
+
+## Fix 12 — Waiting Phase Duration: 10s → 15s
+
+**Problem**: The WAITING phase currently lasts 10 seconds (`WAITING_DURATION_MS = 10_000` in `src/config.ts`). This is too short for players to read the round info, set their wager, and join before the round starts.
+
+**Desired behavior**: The waiting phase lasts **15 seconds**. This is a shared constant (`src/config.ts`) used by both the server game loop and the client. The change is a one-line edit to `WAITING_DURATION_MS`.
+
+**Scope note**: Same scope as Fix 9 — `config.ts` is shared, this touches server timing (the alarm that advances from WAITING → STARTING). Safe, intentional tuning change.
+
+---
+
+---
+
+## Fix 13 — Sidebar Width Consistency
+
+**Problem**: `.app-main` uses `grid-template-columns: 1fr 180px` during WAITING/STARTING but switches to `1fr 200px` during RUNNING/CRASHED via the `.app-main.running` modifier. The narrower 180px sidebar during WAITING causes multiplier values in the History panel to get clipped.
+
+**Desired behavior**: Sidebar width is 200px in all phases. The column proportions never change between game phases.
+
+**Solution**: Remove the `grid-template-columns` override from `.app-main.running` in `App.svelte`. Change the base `.app-main` rule to `grid-template-columns: 1fr 200px`. The `.running` class may remain for any other purpose but no longer changes column widths.
+
+---
+
+## Fix 14 — Crash Screen: Red Background Pulse
+
+**Problem**: The crash screen has a static dark-red background (`#0a0000`). The CRITICAL threat level already has a `bg-crisis` body animation, but the crash state has no analogous alarm effect.
+
+**Desired behavior**: The main content area of the crash screen (between the two hazard stripes) pulses at approximately 1Hz with a sinusoidal red background — creating an alarm/siren effect. The hazard stripes themselves remain visually stable.
+
+**Solution**: Add a `@keyframes crash-pulse` animation in `CrashScreen.svelte` cycling the `.main-content` background between `#0a0000` (base) and `#1e0000` (warm red). Duration 1s, `ease-in-out` timing (approximates sinusoidal). Applied directly to `.main-content`.
+
+```css
+@keyframes crash-pulse {
+  0%, 100% { background: #0a0000 }
+  50%      { background: #1e0000 }
+}
+
+.main-content {
+  animation: crash-pulse 1s ease-in-out infinite;
+}
+```
+
+**Reference**: `bg-crisis` in `App.svelte` uses the same pattern at 2s duration on `body`. The crash pulse is faster (1s) and scoped to the panel.
+
+---
+
+## Fix 15 — CRITICAL Threat: Cover "BLOWN" Wording
+
+**Problem**: `getSubIndicators('CRITICAL')` in `threat.ts` returns `cover: 'BLOWN'`. "Blown" implies cover is already fully compromised and the operator is caught. At CRITICAL threat the player is *close* to being detected but can still disconnect safely — their cover is not yet gone.
+
+**Desired behavior**: CRITICAL cover reads `'burning'`, continuing the escalation ladder: `intact → degrading → compromised → burning`. This conveys imminent danger without implying capture has occurred.
+
+**Solution**: Change line in `threat.ts`:
+```typescript
+case 'CRITICAL':
+  return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'burning' };
+```
+
+**Tests**: Update the `threat.test.ts` CRITICAL cover assertion from `'BLOWN'` to `'burning'`.
+
+---
+
+## Fix 16 — Player List: Remove You-Marker Artifact
+
+**Problem**: In `PlayerList.svelte`, the local player's row includes a `← YOU` text marker inside the handle span. At 9px in `Fira Code`, the `←` character renders ambiguously (resembling `+`). Combined with the handle's `text-overflow: ellipsis`, this produces a `+...` artifact immediately before the wager amount, which communicates nothing useful.
+
+**Desired behavior**: No text marker appears before the wager amount. The local player's row is already distinguished by the existing `.operator-row.me` background highlight.
+
+**Solution**: Remove the `{#if player.playerId === $myPlayerId}<span class="you-marker">← YOU</span>{/if}` block and its associated `.you-marker` CSS rules from `PlayerList.svelte`.
+
+---
+
+## Fix 17 — History Panel: "Recent Ops" Label
+
+**Problem**: The History panel label reads `最近 RECENT`, which is generic and doesn't match the operational framing used elsewhere in the UI.
+
+**Desired behavior**: Label reads `最近 RECENT OPS`.
+
+**Solution**: Change `.panel-label` text in `History.svelte` from `最近 RECENT` to `最近 RECENT OPS`.
+
+**Tests**: Update any test asserting the exact panel label text.
+
+---
+
+## Fix 18 — Initiate Breach: Disable After Player Joins
+
+**Problem**: The `[ INITIATE BREACH ]` button in `BetForm.svelte` is disabled only for invalid wager input. After the player successfully joins the round, `$players[$myPlayerId]` is populated but the button remains visually active with no indication it cannot be used again.
+
+**Desired behavior**:
+- After joining, the button is disabled.
+- The button text changes to `[ BREACH INITIATED ]`.
+- A small status line appears below: `AWAITING ROUND START`.
+- The existing `disabled` CSS style (opacity 0.35, cursor not-allowed) applies to the joined state.
+
+**Solution**:
+- Add `players` and `myPlayerId` to `BetForm.svelte`'s store imports.
+- Derive `const hasJoined = $derived($players[$myPlayerId] !== undefined)`.
+- Button: `disabled={!isValid || hasJoined}`.
+- Button text: `{hasJoined ? '[ BREACH INITIATED ]' : '[ INITIATE BREACH ]'}`.
+- Add `{#if hasJoined}<div class="join-status">AWAITING ROUND START</div>{/if}` below the button.
+- Style `.join-status`: `font-size: 10px; color: var(--color-primary-dim); text-align: center; margin-top: 0.25rem; letter-spacing: 0.08em`.
+
+---
+
+## Fix 19 — Escaped Player: System Lockout View on Crash
+
+**Problem**: When a player has cashed out and the round subsequently crashes, the `showCashoutScreen` branch shows only the cashout card — there is no indication that the crash occurred.
+
+**Desired behavior**: When `showCashoutScreen && $phase === 'CRASHED'`, the main column shows a compact "SYSTEM LOCKOUT" panel stacked above the cashout card. The lockout panel:
+- Uses the same visual structure as `CrashScreen` (hazard stripes, VHS band, red pulse background, agency name + case ref).
+- Replaces `TRACED` with `SYSTEM LOCKOUT` — the system crashed, but the player was not caught.
+- Uses a separate pool of mitigation-framed subtitles rather than agency arrest subtitles (e.g. `REMOTE FAILSAFE ACTIVATED — UNABLE TO RECONNECT`, `INTRUSION COUNTERMEASURES DEPLOYED — CONNECTION SEVERED`, `TARGET HOST INITIATED EMERGENCY ISOLATION PROTOCOL`).
+- Still shows the crash multiplier and agency name + case ref.
+- Does **not** show `ALL FUNDS SEIZED`.
+- Is compact (`min-height: ~200px`) so the cashout card is visible beneath it without scrolling.
+- JP accent: `接続不能 — システム停止` ("Unable to connect — System stopped").
+
+**Reference mockup**: `docs/mockups/escaped-crash-mockup.html` — Sections A and B.
+
+**Layout in `showCashoutScreen + CRASHED` branch** (replaces multiplier section):
+```
+[ CrashScreen isEscaped=true ]   ← compact SYSTEM LOCKOUT panel
+[ CashoutScreen ]                ← cashout card below
+```
+No multiplier display, no ThreatMeter — the round is over.
+
+**Component changes**:
+- `CrashScreen.svelte`: add `isEscaped?: boolean` prop. When true: use `SYSTEM LOCKOUT` heading, `接続不能 — システム停止` JP accent, pick subtitle from a separate lockout pool, reduce `min-height` to `200px`, omit `ALL FUNDS SEIZED`.
+- `crash-agency.ts`: add `LOCKOUT_SUBTITLES` string array and exported `pickLockoutSubtitle(): string` function.
+- `App.svelte`: in the `showCashoutScreen + CRASHED` case, replace the multiplier section with `<CrashScreen isEscaped={true} crashPoint={$gameState?.crashPoint ?? 0} />` above `<CashoutScreen />`.
+
+**Tests**: `CrashScreen.test.ts` — add tests for `isEscaped` prop: SYSTEM LOCKOUT text is visible; TRACED text is absent; ALL FUNDS SEIZED is absent.
+
+---
+
+## Fix 20 — Disconnected Player: Threat Assessment Frozen to Safe State
+
+**Problem**: After a player cashes out, the `ThreatPanel` in the sidebar continues to update with the live round threat level. The threat escalates as the round continues, suggesting the player is still at risk when they are not.
+
+**Desired behavior**: When the local player has disconnected (cashed out), the `ThreatPanel` shows a frozen safe-state readout that no longer responds to the live multiplier. The values indicate the player's connection is dark and their tracks are covered:
+
+| Key | Value |
+|-----|-------|
+| STATUS | OFFLINE |
+| PROXIES | scrubbed |
+| IDS | dark |
+| COVER | restored |
+
+The panel border changes to `var(--color-success-dim)` (`#006633`) and the value text color changes to `var(--color-success)` (`#00cc66`). The `severe` and `critical` border overrides do not apply. No pulse animation.
+
+**Solution**:
+- `ThreatPanel.svelte`: add `disconnected?: boolean` prop. When true, render the fixed safe-state values and apply a `.disconnected` CSS class (green border, green value text, no threat-level classes).
+- `App.svelte`: in the `showCashoutScreen` branch, pass `disconnected={true}` to `<ThreatPanel>`.
+
+```svelte
+<!-- in showCashoutScreen branch -->
+<ThreatPanel threatLevel={$threatLevel} multiplier={$displayMultiplier} disconnected={true} />
+```
+
+```css
+/* ThreatPanel.svelte */
+.threat-panel.disconnected {
+  border-color: var(--color-success-dim);
+}
+.threat-panel.disconnected .val {
+  color: var(--color-success);
+}
+```
+
+**Tests**: Add a `ThreatPanel.test.ts` (or extend existing) test: when `disconnected={true}`, renders `OFFLINE`, `scrubbed`, `dark`, `restored` regardless of `threatLevel` prop value.
 
 ---
 

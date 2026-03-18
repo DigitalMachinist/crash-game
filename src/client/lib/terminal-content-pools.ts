@@ -84,7 +84,7 @@ export const TIER5: LineTemplate[] = [
   { text: '[DEEP] Accessing crown jewel partition...', color: '#ff6600', type: 'warning' },
   { text: '[!] Anomaly detected — traffic spike 847%', color: '#ff4400', type: 'danger' },
   { text: '[*] Firewall rules modifying in real-time', color: '#ff6600', type: 'warning' },
-  { text: '[!] li██ integrity fa██ure on {iface}', color: '#ff4400', type: 'danger' },
+  { text: '[!] link integrity fa??ure on {iface}', color: '#ff4400', type: 'danger' },
 ];
 
 /** Tier 6 — Danger Zone (30.0x+) */
@@ -92,7 +92,7 @@ export const TIER6: LineTemplate[] = [
   { text: '[!] ██ {agency} — TRACKING ██', color: '#ff0040', type: 'danger' },
   { text: '[!] ██ DIRECT EXPOSURE IMMINENT ██', color: '#ff0040', type: 'danger' },
   { text: '[!] P4CKET L0SS: {pct1}%... {pct2}%...', color: '#ff0040', type: 'danger' },
-  { text: '[ERR] {iface}: li██ is not re░dy', color: '#ff0040', type: 'danger' },
+  { text: '[ERR] {iface}: link is not re??dy', color: '#ff0040', type: 'danger' },
   { text: '[!] ██ DISCONNECT NOW ██', color: '#ff0040', type: 'danger' },
   { text: '[!] TRACE VECTOR LOCKED', color: '#ff0040', type: 'danger' },
   { text: '[!] OPERATOR EXPOSED — ABORT MISSION', color: '#ff0040', type: 'danger' },
