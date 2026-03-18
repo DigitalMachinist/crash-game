@@ -40,7 +40,8 @@ function handleCancel(e: Event) {
   onclick={handleDialogClick}
   oncancel={handleCancel}
 >
-  <h3 id="fairness-title">Provably Fair</h3>
+  <div class="modal-jp">証明可能な公平性</div>
+  <h3 id="fairness-title">PROVABLY FAIR</h3>
 
   <section class="section">
     <h4>What does "provably fair" mean?</h4>
@@ -123,30 +124,41 @@ function handleCancel(e: Event) {
     </p>
   </section>
 
-  <button onclick={onClose}>Close</button>
+  <button onclick={onClose}>[ CLOSE ]</button>
 </dialog>
 
 <style>
   .modal {
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 8px;
+    background: #0a0800;
+    border: 1px solid var(--color-border, #332800);
+    border-radius: 0;
     padding: 1.5rem;
     max-width: 560px;
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
+    font-family: 'Fira Code', monospace;
+    color: var(--color-primary, #ffb000);
   }
 
   .modal::backdrop {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .modal-jp {
+    font-size: 0.65rem;
+    color: var(--color-primary-dim, #805800);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
   }
 
   .modal h3 {
-    color: #fff;
+    color: var(--color-primary, #ffb000);
     margin-top: 0;
     margin-bottom: 1rem;
-    font-size: 1.25rem;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    font-weight: 700;
   }
 
   .section {
@@ -154,18 +166,18 @@ function handleCancel(e: Event) {
   }
 
   .section h4 {
-    color: #ccc;
+    color: var(--color-primary-mid, #cc8800);
     margin: 0 0 0.4rem 0;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
   }
 
   .section p,
   .section ol {
-    color: #bbb;
-    font-size: 0.9rem;
-    line-height: 1.55;
+    color: var(--color-primary-dim, #805800);
+    font-size: 0.85rem;
+    line-height: 1.6;
     margin: 0 0 0.5rem 0;
   }
 
@@ -178,24 +190,28 @@ function handleCancel(e: Event) {
   }
 
   strong {
-    color: #e0e0e0;
+    color: var(--color-primary, #ffb000);
   }
 
   em {
-    color: #ccc;
+    color: var(--color-primary-mid, #cc8800);
+    font-style: normal;
   }
 
   button {
-    background: #333;
-    border: none;
-    color: #fff;
+    background: transparent;
+    border: 1px solid var(--color-border, #332800);
+    color: var(--color-primary-dim, #805800);
     padding: 0.5rem 1rem;
-    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
     cursor: pointer;
     margin-top: 0.5rem;
+    letter-spacing: 0.05em;
   }
 
   button:hover {
-    background: #444;
+    border-color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-mid, #cc8800);
   }
 </style>

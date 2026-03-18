@@ -5,12 +5,9 @@
  * server-side validation errors (e.g., invalid wager, already joined).
  */
 
-import { HOUSE_EDGE, MAX_WAGER, MIN_WAGER, WAGER_PRESETS } from '../../config';
+import { MAX_WAGER, MIN_WAGER, WAGER_PRESETS } from '../../config';
 import { sendJoin } from '../lib/commands';
-import { balance, lastError, phase } from '../lib/stores';
-
-const houseEdgePct = Math.round(HOUSE_EDGE * 100);
-const rtpPct = 100 - houseEdgePct;
+import { balance, countdown, lastError, myPlayerId, phase, players } from '../lib/stores';
 
 let wager = $state('');
 let autoCashoutStr = $state('');
@@ -26,6 +23,8 @@ $effect(() => {
 const wagerNum = $derived(parseFloat(wager));
 const autoCashoutNum = $derived(autoCashoutStr ? parseFloat(autoCashoutStr) : null);
 const isValid = $derived(!isNaN(wagerNum) && wagerNum >= MIN_WAGER && wagerNum <= MAX_WAGER);
+const countdownSec = $derived(Math.ceil($countdown / 1000));
+const hasJoined = $derived($players[$myPlayerId] !== undefined);
 
 function setWager(amount: number) {
   wager = amount.toFixed(2);
@@ -40,28 +39,33 @@ function handleJoin() {
 
 {#if $phase === 'WAITING'}
   <div class="bet-form">
-    <h3>Place Your Bet</h3>
+    <div class="panel-label"><span class="jp">資源配分</span> RESOURCES</div>
 
     {#if errorMessage}
       <div id="wager-error" class="error">{errorMessage}</div>
     {/if}
 
     <div class="field">
-      <label for="wager">Wager</label>
+      <label for="wager">ALLOCATE CREDITS:</label>
       <input
         id="wager"
         type="number"
         bind:value={wager}
-        placeholder="0"
+        placeholder="0.00"
         min={MIN_WAGER.toFixed(2)}
         max={MAX_WAGER.toFixed(2)}
         step="0.01"
+        aria-label="Wager"
         aria-describedby={errorMessage ? 'wager-error' : undefined}
         aria-invalid={errorMessage ? 'true' : undefined}
       />
       <div class="presets" role="group" aria-label="Wager presets">
         {#each WAGER_PRESETS as amount}
-          <button type="button" onclick={() => setWager(amount)}>${amount}</button>
+          <button
+            type="button"
+            class:active={wagerNum === amount}
+            onclick={() => setWager(amount)}
+          >[ {amount} ]</button>
         {/each}
       </div>
     </div>
@@ -81,152 +85,189 @@ function handleJoin() {
     <button
       class="join-btn"
       onclick={handleJoin}
-      disabled={!isValid}
-    >
-      Join Round
-    </button>
+      disabled={!isValid || hasJoined}
+    >{hasJoined ? '[ BREACH INITIATED ]' : '[ INITIATE BREACH ]'}</button>
 
-    <div class="balance">Balance: {$balance >= 0 ? '+' : ''}{$balance.toFixed(2)}</div>
-    <p class="rtp-notice">
-      Game of chance · House edge: {houseEdgePct}% ·
-      <span class="rtp-tooltip" title="99% RTP assumes you adopt a consistent cashout strategy. Actual return depends on your play. If you never cashout, you lose 100%.">
-        RTP: {rtpPct}%
-      </span>
-    </p>
+    {#if hasJoined}
+      <div class="join-status">AWAITING ROUND START</div>
+    {/if}
+
+    <div class="window-countdown">WINDOW: {countdownSec}s</div>
+
+    <div class="balance-row">
+      BALANCE: <span class="balance-val">{$balance.toFixed(2)} CR</span>
+    </div>
   </div>
 {/if}
 
 <style>
   .bet-form {
-    padding: 1rem;
-    border: 1px solid #333;
-    border-radius: 8px;
+    position: relative;
+    border: 1px solid var(--color-primary-mid);
+    padding: 0.75rem;
+    padding-top: 1rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--color-bg-card);
+    flex: 1;
   }
 
-  h3 {
-    margin: 0 0 1rem;
-    color: #aaa;
-    font-size: 1rem;
+  .panel-label {
+    position: absolute;
+    top: -0.55em;
+    left: 0.75rem;
+    background: var(--color-bg-card);
+    padding: 0 0.25rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--color-primary-mid);
+    white-space: nowrap;
+  }
+
+  .jp {
+    font-family: system-ui, sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    opacity: 0.5;
+    color: var(--color-primary-mid);
   }
 
   .error {
-    color: #d32f2f;
-    font-size: 0.9rem;
-    margin-bottom: 0.75rem;
-    padding: 0.5rem;
-    background: rgba(211, 47, 47, 0.1);
-    border-radius: 4px;
+    color: var(--color-severe);
+    font-size: 11px;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    background: rgba(255, 68, 0, 0.08);
+    border: 1px solid var(--color-severe);
   }
 
   .field {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
   }
 
   label {
     display: block;
-    font-size: 0.85rem;
-    color: #888;
+    font-size: 10px;
+    color: var(--color-primary-dim);
     margin-bottom: 0.25rem;
+    letter-spacing: 0.08em;
   }
 
   input {
     width: 100%;
-    padding: 0.5rem;
-    background: #0d0d1a;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 1rem;
+    padding: 0.4rem 0.5rem;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-primary);
+    font-size: 13px;
+    font-family: 'Fira Code', monospace;
     box-sizing: border-box;
+    caret-color: var(--color-primary);
   }
 
   input:focus {
-    border-color: #666;
+    border-color: var(--color-primary-mid);
+    outline: none;
   }
 
   input:focus-visible {
-    outline: 2px solid #42a5f5;
-    outline-offset: 2px;
+    outline: 1px solid var(--color-primary-mid);
+    outline-offset: 1px;
+  }
+
+  input::placeholder {
+    color: var(--color-primary-dim);
+    opacity: 0.5;
   }
 
   .presets {
     display: flex;
-    gap: 0.35rem;
-    margin-top: 0.5rem;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
   }
 
   .presets button {
     flex: 1;
-    padding: 0.3rem 0;
+    padding: 0.25rem 0;
     background: transparent;
-    border: 1px solid #2a2a3e;
-    border-radius: 4px;
-    color: #888;
-    font-size: 0.75rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-primary-dim);
+    font-size: 10px;
+    font-family: 'Fira Code', monospace;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.1s;
   }
 
-  .presets button:hover {
-    background: #1a1a2e;
-    border-color: #555;
-    color: #e0e0e0;
+  .presets button:hover,
+  .presets button.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   .field-secondary label {
-    font-size: 0.75rem;
-    color: #666;
+    font-size: 9px;
+    color: var(--color-primary-dim);
+    opacity: 0.7;
   }
 
   .field-secondary input {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.9rem;
-    border-color: #2a2a2a;
+    padding: 0.3rem 0.5rem;
+    font-size: 12px;
+    border-color: var(--color-border);
   }
 
   .join-btn {
     width: 100%;
-    padding: 0.75rem;
-    background: #1565c0;
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 1rem;
-    font-weight: bold;
+    padding: 0.6rem;
+    background: transparent;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    font-size: 12px;
+    font-family: 'Fira Code', monospace;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     cursor: pointer;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
+    transition: all 0.1s;
   }
 
   .join-btn:hover:not(:disabled) {
-    background: #1976d2;
+    background: rgba(255, 176, 0, 0.08);
+    border-color: var(--color-primary-mid);
   }
 
   .join-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.35;
     cursor: not-allowed;
+    border-color: var(--color-border);
+    color: var(--color-primary-dim);
   }
 
-  .balance {
-    margin-top: 0.75rem;
+  .join-status {
+    margin-top: 0.25rem;
     text-align: center;
-    font-size: 0.9rem;
-    color: #888;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.08em;
   }
 
-  .rtp-notice {
-    margin-top: 0.5rem;
+  .window-countdown {
+    margin-top: 0.4rem;
     text-align: center;
-    font-size: 0.75rem;
-    color: #555;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.08em;
   }
 
-  .rtp-tooltip {
-    border-bottom: 1px dotted #666;
-    cursor: help;
-    transition: color 0.15s;
+  .balance-row {
+    margin-top: 0.4rem;
+    font-size: 10px;
+    color: var(--color-primary-dim);
+    letter-spacing: 0.06em;
   }
 
-  .rtp-tooltip:hover {
-    color: #aaa;
+  .balance-val {
+    color: var(--color-success);
   }
 </style>

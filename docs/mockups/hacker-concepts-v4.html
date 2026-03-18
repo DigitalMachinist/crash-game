@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hack Game — v4: Spectator + Final Tweaks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#e0e0e0;font-family:'Fira Code',monospace;font-size:14px;line-height:1.5}
+  nav{position:sticky;top:0;z-index:1000;background:#111;border-bottom:1px solid #333;padding:.5rem 1rem;display:flex;gap:.25rem;flex-wrap:wrap}
+  nav a{color:#888;text-decoration:none;padding:.4rem .8rem;border:1px solid #333;border-radius:3px;font-size:11px;font-family:'Fira Code',monospace;transition:all .15s}
+  nav a:hover,nav a.active{color:#ffb000;border-color:#ffb000;background:rgba(255,176,0,.05)}
+  section{min-height:100vh;padding:2rem;border-bottom:2px solid #222}
+  section h2{font-family:'Space Mono',monospace;font-size:1.2rem;color:#fff;margin-bottom:.25rem;letter-spacing:.05em}
+  .sub{color:#666;font-size:.8rem;margin-bottom:2rem}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:1.5rem;margin-bottom:2rem}
+  .card{border:1px solid #333;border-radius:4px;overflow:hidden}
+  .label{padding:.4rem .75rem;background:#1a1a1a;border-bottom:1px solid #333;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.1em}
+  .body{padding:1rem;min-height:300px;position:relative;overflow:hidden}
+  .full{border:1px solid #333;border-radius:4px;overflow:hidden;margin-bottom:2rem;position:relative}
+  .term{font-family:'Fira Code',monospace;font-size:13px;line-height:1.45;white-space:pre;overflow-x:hidden}
+  .jp{font-family:'Fira Code',monospace;font-size:.65rem;letter-spacing:.2em;opacity:.5}
+  .btn{font-family:'Fira Code',monospace;font-weight:700;font-size:.9rem;padding:.5rem 1.5rem;cursor:pointer;border:2px solid;letter-spacing:.08em;transition:all .15s;text-transform:uppercase;background:transparent}
+  .crt::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12),rgba(0,0,0,.12) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:10}
+  @keyframes flk-lo{0%{opacity:1}7%{opacity:.97}12%{opacity:1}27%{opacity:.98}32%{opacity:1}58%{opacity:.96}59%{opacity:1}73%{opacity:.97}74%{opacity:1}89%{opacity:.95}91%{opacity:1}}
+  @keyframes flk-hi{0%{opacity:1}3%{opacity:.94}5%{opacity:1}14%{opacity:.96}15%{opacity:1}31%{opacity:.93}33%{opacity:1}47%{opacity:.95}48%{opacity:1}62%{opacity:.91}64%{opacity:1}78%{opacity:.94}79%{opacity:1}93%{opacity:.92}95%{opacity:1}}
+  .flk-lo{animation:flk-lo 3s infinite}.flk-hi{animation:flk-hi 1.5s infinite}
+  @keyframes vhs{0%{top:-5%}100%{top:105%}}
+  .vhs{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.03);z-index:15;animation:vhs 3s linear infinite;pointer-events:none}
+  .vhs2{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,.025);z-index:15;animation:vhs 4.7s linear infinite;animation-delay:-1.3s;pointer-events:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .pulse{animation:pulse .8s infinite}
+  @keyframes pulse-fast{0%,100%{opacity:1}50%{opacity:.4}}
+  .pulse-fast{animation:pulse-fast .5s infinite}
+  @keyframes bg-crisis{0%,100%{background:#1a0000}50%{background:#250000}}
+  @keyframes g1{0%{clip-path:inset(0 0 95% 0);transform:translate(0)}5%{clip-path:inset(15% 0 70% 0);transform:translate(-8px,0)}7%{clip-path:inset(0 0 95% 0);transform:translate(0)}15%{clip-path:inset(60% 0 25% 0);transform:translate(12px,0)}17%{clip-path:inset(0 0 95% 0);transform:translate(0)}28%{clip-path:inset(40% 0 45% 0);transform:translate(-15px,0)}30%{clip-path:inset(0 0 95% 0);transform:translate(0)}42%{clip-path:inset(80% 0 8% 0);transform:translate(6px,0)}43%{clip-path:inset(0 0 95% 0);transform:translate(0)}55%{clip-path:inset(5% 0 85% 0);transform:translate(-20px,0)}56%{clip-path:inset(0 0 95% 0);transform:translate(0)}68%{clip-path:inset(50% 0 35% 0);transform:translate(10px,0)}70%{clip-path:inset(0 0 95% 0);transform:translate(0)}82%{clip-path:inset(25% 0 60% 0);transform:translate(-7px,0)}84%{clip-path:inset(0 0 95% 0);transform:translate(0)}93%{clip-path:inset(70% 0 15% 0);transform:translate(18px,0)}95%{clip-path:inset(0 0 95% 0);transform:translate(0)}100%{clip-path:inset(0 0 95% 0);transform:translate(0)}}
+  @keyframes g2{0%{clip-path:inset(95% 0 0 0);transform:translate(0)}8%{clip-path:inset(70% 0 15% 0);transform:translate(14px,0)}10%{clip-path:inset(95% 0 0 0);transform:translate(0)}22%{clip-path:inset(10% 0 78% 0);transform:translate(-11px,0)}24%{clip-path:inset(95% 0 0 0);transform:translate(0)}35%{clip-path:inset(45% 0 40% 0);transform:translate(22px,0)}37%{clip-path:inset(95% 0 0 0);transform:translate(0)}50%{clip-path:inset(85% 0 3% 0);transform:translate(-9px,0)}52%{clip-path:inset(95% 0 0 0);transform:translate(0)}65%{clip-path:inset(20% 0 65% 0);transform:translate(16px,0)}67%{clip-path:inset(95% 0 0 0);transform:translate(0)}78%{clip-path:inset(55% 0 30% 0);transform:translate(-18px,0)}80%{clip-path:inset(95% 0 0 0);transform:translate(0)}90%{clip-path:inset(35% 0 50% 0);transform:translate(8px,0)}92%{clip-path:inset(95% 0 0 0);transform:translate(0)}100%{clip-path:inset(95% 0 0 0);transform:translate(0)}}
+  @keyframes gjit{0%,100%{transform:translate(0)}10%{transform:translate(-2px,0)}20%{transform:translate(1px,0)}40%{transform:translate(-1px,0)}60%{transform:translate(3px,0)}80%{transform:translate(-1px,0)}}
+  .glitch{position:relative;animation:gjit .15s infinite}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;height:100%;background:inherit}
+  .glitch::before{color:#ff0040;animation:g1 .8s infinite;text-shadow:-2px 0 #ff0040}
+  .glitch::after{color:#ff6600;animation:g2 .65s infinite;text-shadow:2px 0 #ff6600}
+  .hz-t,.hz-b{position:absolute;left:0;right:0;height:14px;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);z-index:5}
+  .hz-t{top:0}.hz-b{bottom:0}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#spectator-waiting">01 Spectator: Waiting</a>
+  <a href="#spectator-running">02 Spectator: Running</a>
+  <a href="#spectator-danger">03 Spectator: Danger</a>
+  <a href="#spectator-crash">04 Spectator: Crash</a>
+  <a href="#running-host">05 Running: HOST tweak</a>
+  <a href="#cashout-variety">06 Cashout: Text Variety</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- 01: SPECTATOR WAITING -->
+<!-- ============================================================ -->
+<section id="spectator-waiting">
+  <h2>01 — Spectator: Waiting Phase</h2>
+  <p class="sub">Player chose not to join. The brief + resources area changes.</p>
+
+  <div class="row">
+    <div class="card">
+      <div class="label">Option A: Resources panel replaced with "Observing" status</div>
+      <div style="background:#0a0800;">
+        <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+          <span style="color:#ffb000;">[crashOS<span style="color:#805800">@</span>rogue-7xK9]</span>
+          <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 180px;min-height:320px;">
+          <div style="padding:1rem;border-right:1px solid #332800;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+              <!-- Brief -->
+              <div style="border:1px solid #332800;padding:.75rem;position:relative;">
+                <div style="position:absolute;top:-.6em;left:.75em;background:#0a0800;padding:0 .4em;font-size:9px;letter-spacing:.12em;"><span class="jp" style="color:#805800;">作戦概要</span> <span style="color:#805800;font-family:'Space Mono';">OPERATION BRIEF</span></div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .75rem;font-size:11px;margin-top:.25rem;">
+                  <div style="color:#805800">TARGET</div><div style="color:#ffb000;font-weight:700">ELLINGSON MINERAL</div>
+                  <div style="color:#805800">ADDR</div><div style="color:#ffb000">198.51.100.██</div>
+                  <div style="color:#805800">HOST</div><div style="color:#cc8800">srv-prod-03.ellingson</div>
+                  <div style="color:#805800">ROUND</div><div style="color:#ffb000">#4818</div>
+                </div>
+              </div>
+              <!-- Observing (replaces resources) -->
+              <div style="border:1px solid #332800;padding:.75rem;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="position:absolute;top:-.6em;left:.75em;background:#0a0800;padding:0 .4em;font-size:9px;letter-spacing:.12em;"><span class="jp" style="color:#805800;">監視中</span> <span style="color:#805800;font-family:'Space Mono';">STATUS</span></div>
+                <div style="color:#805800;font-size:12px;letter-spacing:.1em;margin-bottom:.5rem;">OBSERVING</div>
+                <div style="color:#805800;font-size:10px;text-align:center;margin-bottom:.75rem;">You did not join this operation</div>
+                <div style="color:#805800;font-size:10px;">NEXT WINDOW: <span style="color:#ffb000;">7s</span></div>
+              </div>
+            </div>
+            <!-- Prep terminal still visible -->
+            <div class="crt flk-lo" style="border-top:1px solid #332800;padding-top:.5rem;position:relative;">
+              <div class="vhs"></div>
+              <div class="term" style="font-size:11px;color:#805800;text-shadow:0 0 3px rgba(255,176,0,.15);position:relative;z-index:1;">[00:06] Initializing proxy chain...
+[00:05] <span style="color:#00cc66">> route add via tor-exit-DE</span>
+[00:04] Proxy chain: 6 bounces active.
+[00:03] Loading exploit kit... <span style="color:#ffb000">[████████████████████] 100%</span>
+[00:02] Payload staged. Awaiting operators.</div>
+            </div>
+          </div>
+          <div style="padding:.75rem;font-size:10px;">
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+            <div style="line-height:1.8;color:#ffb000;">
+              <div>ph4nt0m <span style="color:#805800">200</span> <span style="color:#00cc66">RDY</span></div>
+              <div>r00tk1t <span style="color:#805800">75</span> <span style="color:#00cc66">RDY</span></div>
+            </div>
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">最近</span> RECENT</div>
+            <div style="line-height:1.6;">
+              <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+              <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Option B: Resources panel stays visible — they can still join until the window closes</div>
+      <div style="background:#0a0800;">
+        <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+          <span style="color:#ffb000;">[crashOS<span style="color:#805800">@</span>rogue-7xK9]</span>
+          <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 180px;min-height:320px;">
+          <div style="padding:1rem;border-right:1px solid #332800;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+              <div style="border:1px solid #332800;padding:.75rem;position:relative;">
+                <div style="position:absolute;top:-.6em;left:.75em;background:#0a0800;padding:0 .4em;font-size:9px;letter-spacing:.12em;"><span class="jp" style="color:#805800;">作戦概要</span> <span style="color:#805800;font-family:'Space Mono';">OPERATION BRIEF</span></div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .75rem;font-size:11px;margin-top:.25rem;">
+                  <div style="color:#805800">TARGET</div><div style="color:#ffb000;font-weight:700">ELLINGSON MINERAL</div>
+                  <div style="color:#805800">ADDR</div><div style="color:#ffb000">198.51.100.██</div>
+                  <div style="color:#805800">HOST</div><div style="color:#cc8800">srv-prod-03.ellingson</div>
+                  <div style="color:#805800">ROUND</div><div style="color:#ffb000">#4818</div>
+                </div>
+              </div>
+              <!-- Resources panel stays, same as joined lobby -->
+              <div style="border:1px solid #332800;padding:.75rem;position:relative;">
+                <div style="position:absolute;top:-.6em;left:.75em;background:#0a0800;padding:0 .4em;font-size:9px;letter-spacing:.12em;"><span class="jp" style="color:#805800;">資源配分</span> <span style="color:#805800;font-family:'Space Mono';">RESOURCES</span></div>
+                <div style="font-size:10px;color:#805800;margin-top:.25rem;margin-bottom:.4rem;">ALLOCATE CREDITS:</div>
+                <div style="border:1px solid #332800;padding:.3rem .5rem;color:#ffb000;font-size:14px;background:#080600;margin-bottom:.4rem;">100<span class="pulse">█</span></div>
+                <div style="display:flex;gap:.25rem;margin-bottom:.6rem;">
+                  <button class="btn" style="color:#ffb000;border-color:#332800;font-size:10px;padding:.2rem .4rem;">10</button>
+                  <button class="btn" style="color:#ffb000;border-color:#332800;font-size:10px;padding:.2rem .4rem;">25</button>
+                  <button class="btn" style="color:#ffb000;border-color:#ffb000;font-size:10px;padding:.2rem .4rem;">100</button>
+                  <button class="btn" style="color:#ffb000;border-color:#332800;font-size:10px;padding:.2rem .4rem;">500</button>
+                  <button class="btn" style="color:#ffb000;border-color:#332800;font-size:10px;padding:.2rem .4rem;">MAX</button>
+                </div>
+                <div style="text-align:center;">
+                  <button class="btn" style="color:#ffb000;border-color:#ffb000;font-size:.75rem;padding:.35rem .75rem;">[ INITIATE BREACH ]</button>
+                </div>
+                <div style="text-align:center;color:#805800;font-size:10px;margin-top:.3rem;">WINDOW: <span style="color:#ffb000">7s</span></div>
+              </div>
+            </div>
+            <div class="crt flk-lo" style="border-top:1px solid #332800;padding-top:.5rem;position:relative;">
+              <div class="vhs"></div>
+              <div class="term" style="font-size:11px;color:#805800;text-shadow:0 0 3px rgba(255,176,0,.15);position:relative;z-index:1;">[00:06] Initializing proxy chain...
+[00:05] <span style="color:#00cc66">> route add via tor-exit-DE</span>
+[00:04] Proxy chain: 6 bounces active.
+[00:03] Loading exploit kit... <span style="color:#ffb000">[████████████████████] 100%</span>
+[00:02] Payload staged. Awaiting operators.</div>
+            </div>
+          </div>
+          <div style="padding:.75rem;font-size:10px;">
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+            <div style="line-height:1.8;color:#ffb000;">
+              <div>ph4nt0m <span style="color:#805800">200</span> <span style="color:#00cc66">RDY</span></div>
+              <div>r00tk1t <span style="color:#805800">75</span> <span style="color:#00cc66">RDY</span></div>
+            </div>
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">最近</span> RECENT</div>
+            <div style="line-height:1.6;">
+              <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+              <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 02: SPECTATOR RUNNING -->
+<!-- ============================================================ -->
+<section id="spectator-running">
+  <h2>02 — Spectator: Running Phase (~4x)</h2>
+  <p class="sub">Not in the round — watching the hack unfold. No disconnect button, terminal takes more focus.</p>
+
+  <div class="full">
+    <div class="label">Option A: Disconnect area replaced with "Observing" banner — terminal gets more height</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span> <span style="color:#805800">HOST:</span> <span style="color:#cc8800">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:440px;">
+        <div style="padding:1rem;border-right:1px solid #332800;display:flex;flex-direction:column;">
+          <div style="text-align:center;margin-bottom:.5rem;">
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.15em;"><span class="jp">侵入中</span> LIVE HACK</div>
+            <div style="color:#ff8c00;font-size:3.5rem;font-weight:700;text-shadow:0 0 10px rgba(255,140,0,.4);">4.12x</div>
+            <div style="font-size:11px;color:#ff8c00;">THREAT: <span style="letter-spacing:-.02em">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED</div>
+            <div style="font-size:10px;color:#805800;margin-top:.15rem;">PROXIES: <span style="color:#ffb000">6/6</span> &nbsp; IDS: <span style="color:#ff6600">1 alert</span> &nbsp; COVER: <span style="color:#ffb000">intact</span></div>
+          </div>
+          <!-- Terminal takes all remaining space -->
+          <div class="crt flk-lo" style="flex:1;border-top:1px solid #332800;padding-top:.5rem;position:relative;overflow:hidden;">
+            <div class="vhs"></div>
+            <div class="term" style="font-size:12px;color:#ffb000;text-shadow:0 0 3px rgba(255,176,0,.3);position:relative;z-index:1;">
+<span style="color:#00cc66">[+] ROOT ACCESS GRANTED</span>
+root@srv-prod-web-03:~# <span style="color:#ffd060">ls /opt/.secrets/</span>
+master.key  vpn-gateway.ovpn  credentials.kdbx
+root@srv-prod-web-03:~# <span style="color:#ffd060">cat api_keys.json</span>
+<span style="color:#ff8c00">{</span>
+<span style="color:#ff8c00">  "stripe_live": "sk_live_51HG4dK..."</span>
+<span style="color:#ff8c00">  "aws_root": "AKIAI44QH8DHBEX..."</span>
+<span style="color:#ff8c00">}</span>
+<span style="color:#cc8800">[*] Pivoting to db-primary-01...</span>
+<span style="color:#00cc66">[+] SSH key accepted</span>
+<span style="color:#ffcc00">[EXFIL] credentials.kdbx [██████████████░░] 72%</span>
+<span style="color:#cc8800">[*] Running hashcat against rockyou.txt...</span>
+<span style="color:#00cc66">[+] deploy:D3pl0y_M4st3r!</span>
+<span style="color:#cc8800">[*] Dumping database: production_core</span>
+<span style="color:#00cc66">[+] 847,291 user records found</span></div>
+          </div>
+          <!-- Observing banner instead of disconnect -->
+          <div style="text-align:center;padding:.5rem;border-top:1px solid #332800;margin-top:.5rem;">
+            <div style="color:#805800;font-size:11px;letter-spacing:.08em;"><span class="jp" style="color:#805800;">監視中</span> &nbsp; OBSERVING — NOT IN THIS OP</div>
+          </div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;color:#ffb000;">
+            <div>ph4nt0m <span style="color:#805800">200</span></div>
+            <div>r00tk1t <span style="color:#805800">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff8c00;font-weight:700;">ELEVATED</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ffb000">6 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff6600">1 alert</div>
+              <div style="color:#805800">COVER</div><div style="color:#ffb000">intact</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">最近</span> RECENT</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+            <div><span style="color:#805800">#4815</span> <span style="color:#ff6600">14.72x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Option B: Disconnect area shows "Join Next" prompt — invites re-engagement</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span> <span style="color:#805800">HOST:</span> <span style="color:#cc8800">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:440px;">
+        <div style="padding:1rem;border-right:1px solid #332800;display:flex;flex-direction:column;">
+          <div style="text-align:center;margin-bottom:.5rem;">
+            <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.15em;"><span class="jp">侵入中</span> LIVE HACK</div>
+            <div style="color:#ff8c00;font-size:3.5rem;font-weight:700;text-shadow:0 0 10px rgba(255,140,0,.4);">4.12x</div>
+            <div style="font-size:11px;color:#ff8c00;">THREAT: <span style="letter-spacing:-.02em">▓▓▓▓▓▓▓▓░░░░░░░░░░░░</span> ELEVATED</div>
+            <div style="font-size:10px;color:#805800;margin-top:.15rem;">PROXIES: <span style="color:#ffb000">6/6</span> &nbsp; IDS: <span style="color:#ff6600">1 alert</span> &nbsp; COVER: <span style="color:#ffb000">intact</span></div>
+          </div>
+          <div class="crt flk-lo" style="flex:1;border-top:1px solid #332800;padding-top:.5rem;position:relative;overflow:hidden;">
+            <div class="vhs"></div>
+            <div class="term" style="font-size:12px;color:#ffb000;text-shadow:0 0 3px rgba(255,176,0,.3);position:relative;z-index:1;">
+<span style="color:#00cc66">[+] ROOT ACCESS GRANTED</span>
+root@srv-prod-web-03:~# <span style="color:#ffd060">ls /opt/.secrets/</span>
+master.key  vpn-gateway.ovpn  credentials.kdbx
+root@srv-prod-web-03:~# <span style="color:#ffd060">cat api_keys.json</span>
+<span style="color:#ff8c00">{</span>
+<span style="color:#ff8c00">  "stripe_live": "sk_live_51HG4dK..."</span>
+<span style="color:#ff8c00">}</span>
+<span style="color:#cc8800">[*] Pivoting to db-primary-01...</span>
+<span style="color:#00cc66">[+] SSH key accepted</span>
+<span style="color:#ffcc00">[EXFIL] credentials.kdbx [██████████████░░] 72%</span></div>
+          </div>
+          <!-- Join next prompt -->
+          <div style="text-align:center;padding:.6rem;border-top:1px solid #332800;margin-top:.5rem;display:flex;align-items:center;justify-content:center;gap:1.5rem;">
+            <div style="color:#805800;font-size:10px;"><span class="jp">監視中</span> OBSERVING</div>
+            <button class="btn" style="color:#ffb000;border-color:#332800;font-size:.75rem;padding:.3rem 1rem;opacity:.7;">JOIN NEXT OP →</button>
+          </div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;color:#ffb000;">
+            <div>ph4nt0m <span style="color:#805800">200</span></div>
+            <div>r00tk1t <span style="color:#805800">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #332800;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#805800">STATUS</div><div style="color:#ff8c00;font-weight:700;">ELEVATED</div>
+              <div style="color:#805800">PROXIES</div><div style="color:#ffb000">6 / 6</div>
+              <div style="color:#805800">IDS</div><div style="color:#ff6600">1 alert</div>
+              <div style="color:#805800">COVER</div><div style="color:#ffb000">intact</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#805800;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">最近</span> RECENT</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#805800">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+            <div><span style="color:#805800">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 03: SPECTATOR DANGER -->
+<!-- ============================================================ -->
+<section id="spectator-danger">
+  <h2>03 — Spectator: Danger Phase (~14x)</h2>
+  <p class="sub">Same danger escalation — spectators see the full drama unfold even without skin in the game</p>
+
+  <div class="full">
+    <div class="label">14.38x — Severe — Spectator still gets the full visual experience</div>
+    <div style="background:#120600;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #331800;font-size:11px;">
+        <span style="color:#ff8c00;">[crashOS] <span style="color:#803000">RND #4818</span> <span style="color:#803000">TGT:</span> <span style="color:#ff6600">ELLINGSON MINERAL</span> <span style="color:#803000">HOST:</span> <span style="color:#ff6600">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:440px;">
+        <div style="padding:1rem;border-right:1px solid #331800;display:flex;flex-direction:column;">
+          <div style="text-align:center;margin-bottom:.5rem;">
+            <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.15em;"><span class="jp">侵入中</span> LIVE HACK</div>
+            <div style="color:#ff4400;font-size:3.5rem;font-weight:700;text-shadow:0 0 12px rgba(255,68,0,.5);">14.38x</div>
+            <div style="font-size:11px;color:#ff0040;">THREAT: <span style="letter-spacing:-.02em">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░</span> SEVERE</div>
+            <div style="font-size:10px;color:#803000;margin-top:.15rem;">PROXIES: <span style="color:#ff0040">2/6</span> &nbsp; IDS: <span style="color:#ff0000">5+ alerts</span> &nbsp; COVER: <span style="color:#ff0040">compromised</span></div>
+          </div>
+          <div class="crt flk-hi" style="flex:1;border-top:1px solid #331800;padding-top:.5rem;position:relative;overflow:hidden;">
+            <div class="vhs"></div><div class="vhs2"></div>
+            <div class="term" style="font-size:12px;text-shadow:0 0 3px rgba(255,100,0,.3);position:relative;z-index:1;">
+<span style="color:#ff0040">[!] ALERT: Reverse trace initiated</span>
+<span style="color:#ff6600">[!] Proxy node 6 compromised</span>
+<span style="color:#ff0040">[!] Proxy node 5 compromised</span>
+<span style="color:#ff0040">[!] SOC ALERT: Priority CRITICAL</span>
+<span style="color:#ffcc00">[EXFIL] model_weights.bin [████████████░░░░] 62%</span>
+<span style="color:#ff6600">[*] Rotating exit tunnel...</span>
+<span style="color:#ff0040">[!] Counter-intrusion payload detected</span>
+<span style="color:#ff0000">[!] Proxy node 4 compromised</span>
+<span style="color:#ff0000">[!] ██ THEY KNOW YOU'RE HERE ██</span></div>
+          </div>
+          <div style="text-align:center;padding:.5rem;border-top:1px solid #331800;margin-top:.5rem;">
+            <div style="color:#803000;font-size:10px;"><span class="jp" style="color:#803000;">監視中</span> OBSERVING — NOT IN THIS OP</div>
+          </div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;">
+          <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;color:#ff8c00;">
+            <div>ph4nt0m <span style="color:#803000">200</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#cc0000">STATUS</div><div style="color:#ff0040;font-weight:700;">SEVERE</div>
+              <div style="color:#cc0000">PROXIES</div><div style="color:#ff0040">2 / 6</div>
+              <div style="color:#cc0000">IDS</div><div style="color:#ff0000">5+ ALERTS</div>
+              <div style="color:#cc0000">COVER</div><div style="color:#ff0040">COMPROMISED</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#803000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp">最近</span> RECENT</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#803000">#4817</span> <span style="color:#ffb000">4.72x</span></div>
+            <div><span style="color:#803000">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 04: SPECTATOR CRASH -->
+<!-- ============================================================ -->
+<section id="spectator-crash">
+  <h2>04 — Spectator: Crash</h2>
+  <p class="sub">Spectators see the same crash screen — the crash is an event for everyone watching</p>
+
+  <div class="full">
+    <div class="label">Crash as a spectator — identical to the player crash, no "ALL FUNDS SEIZED" since none were yours</div>
+    <div style="background:#0a0000;min-height:320px;display:flex;position:relative;overflow:hidden;">
+      <div class="hz-t"></div><div class="hz-b"></div><div class="vhs"></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+        <div class="jp" style="color:#cc0000;">警告 — 追跡完了</div>
+        <div style="font-family:'Fira Code';font-weight:700;color:#cc0000;text-shadow:0 0 25px rgba(204,0,0,.5);letter-spacing:.3em;font-size:2.8rem;">TRACED</div>
+        <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;margin-top:.5rem;">OPERATOR COMPROMISED — ALL SESSIONS TERMINATED</div>
+        <div style="margin-top:1.5rem;font-weight:700;font-size:2rem;color:#ff0040;text-shadow:0 0 10px rgba(255,0,64,.4);">14.38x</div>
+      </div>
+      <div style="width:220px;border-left:2px solid #cc0000;padding:1rem;display:flex;flex-direction:column;justify-content:center;font-size:11px;">
+        <div class="jp" style="color:#cc0000;">状態報告</div>
+        <div style="font-family:'Space Mono';color:#cc0000;letter-spacing:.1em;margin-bottom:.75rem;font-size:9px;">STATUS READOUT</div>
+        <div style="color:#ff6a00;line-height:1.9;">
+          PROXIES: <span style="color:#ff0000">0 / 6</span><br>
+          COVER: <span style="color:#ff0000">BLOWN</span><br>
+          IDS: <span style="color:#ff0040">ACTIVE HUNT</span>
+        </div>
+        <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid #400000;">
+          <div style="color:#ff0040;font-size:10px;">INTERPOL CYBER CRIME</div>
+          <div style="color:#805800;font-size:10px;">WARRANT: IC-2026-EU-4481</div>
+        </div>
+        <!-- No "ALL FUNDS SEIZED" for spectator -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 05: RUNNING HOST TWEAK -->
+<!-- ============================================================ -->
+<section id="running-host">
+  <h2>05 — Running: Header with HOST</h2>
+  <p class="sub">Minor tweak — confirmed layout with HOST in header bar</p>
+
+  <div class="full">
+    <div class="label">Header bar — TGT + HOST both visible</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #332800;font-size:11px;">
+        <span style="color:#ffb000;">[crashOS] <span style="color:#805800">RND #4818</span> <span style="color:#805800">TGT:</span> <span style="color:#cc8800">ELLINGSON MINERAL</span> <span style="color:#805800">HOST:</span> <span style="color:#cc8800">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,147.50 CR</span></span>
+      </div>
+      <div style="padding:1rem;text-align:center;">
+        <div style="color:#805800;font-size:11px;">Header now includes HOST. Content below is the confirmed v3 layout.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Danger state header — colors shift with threat</div>
+    <div style="background:#120600;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #331800;font-size:11px;">
+        <span style="color:#ff8c00;">[crashOS] <span style="color:#803000">RND #4818</span> <span style="color:#803000">TGT:</span> <span style="color:#ff6600">ELLINGSON MINERAL</span> <span style="color:#803000">HOST:</span> <span style="color:#ff6600">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,147.50 CR</span></span>
+      </div>
+      <div style="padding:1rem;text-align:center;color:#803000;font-size:11px;">Severe — header text shifts to orange</div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Critical state header</div>
+    <div style="background:#1a0000;animation:bg-crisis 1.2s infinite;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;">
+        <span style="color:#ff0040;">[crashOS] <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#ff0040">ELLINGSON MINERAL</span> <span style="color:#800020">HOST:</span> <span style="color:#ff0040">srv-prod-03</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,147.50 CR</span></span>
+      </div>
+      <div style="padding:1rem;text-align:center;color:#800020;font-size:11px;">Critical — header goes red, wallet stays green (your money is always visible)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 06: CASHOUT TEXT VARIETY -->
+<!-- ============================================================ -->
+<section id="cashout-variety">
+  <h2>06 — Cashout: Text Variety Pool</h2>
+  <p class="sub">Rotating text under "CONNECTION TERMINATED" / "EMERGENCY DISCONNECT" for freshness</p>
+
+  <div class="full">
+    <div class="label">Low / Mid threat — Calm disconnect text pool</div>
+    <div style="background:#0a0800;padding:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">TRACES CLEARED — YOU WERE NEVER HERE</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">SESSION SCRUBBED — NO EVIDENCE REMAINS</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">CLEAN EXIT — LIKE A GHOST</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">LOGS PURGED — IDENTITY INTACT</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">ALL TUNNELS CLOSED — PROXY CHAIN BURNED</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">CONNECTION TERMINATED</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">ZERO FOOTPRINT — TEXTBOOK EXTRACTION</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">High / Severe threat — Dramatic escape text pool</div>
+    <div style="background:#0a0800;padding:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">TRACES BURNED — THEY'LL NEVER FIND YOU</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">VANISHED — LIKE YOU WERE NEVER THERE</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">SLIPPED THROUGH THEIR FINGERS</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">EXTRACTED UNDER FIRE — CLEAN GETAWAY</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">OUT THE BACK DOOR — CLOSE ONE</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;">EMERGENCY DISCONNECT</div>
+          <div style="color:#006633;font-size:10px;margin-top:.25rem;">GONE DARK — THEY'RE CHASING SHADOWS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">Critical threat escape — Legendary text pool</div>
+    <div style="background:#0a0800;padding:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;text-shadow:0 0 5px rgba(0,204,102,.3);">EMERGENCY DISCONNECT</div>
+          <div style="color:#00cc66;font-size:10px;margin-top:.25rem;text-shadow:0 0 3px rgba(0,204,102,.2);">GHOST PROTOCOL — ALL TRACES DESTROYED</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;text-shadow:0 0 5px rgba(0,204,102,.3);">EMERGENCY DISCONNECT</div>
+          <div style="color:#00cc66;font-size:10px;margin-top:.25rem;text-shadow:0 0 3px rgba(0,204,102,.2);">IMPOSSIBLE EXTRACTION — THEY DIDN'T STAND A CHANCE</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;text-shadow:0 0 5px rgba(0,204,102,.3);">EMERGENCY DISCONNECT</div>
+          <div style="color:#00cc66;font-size:10px;margin-top:.25rem;text-shadow:0 0 3px rgba(0,204,102,.2);">ABSOLUTE LEGEND — WALKED THROUGH FIRE</div>
+        </div>
+        <div style="border:1px solid #1a2a1a;padding:1rem;text-align:center;">
+          <div style="color:#00cc66;font-size:11px;letter-spacing:.1em;font-weight:700;text-shadow:0 0 5px rgba(0,204,102,.3);">EMERGENCY DISCONNECT</div>
+          <div style="color:#00cc66;font-size:10px;margin-top:.25rem;text-shadow:0 0 3px rgba(0,204,102,.2);">THEY SENT EVERYTHING — YOU SENT NOTHING BACK</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="padding:3rem;text-align:center;color:#333;font-size:12px;">— END OF v4 —</div>
+
+<script>
+  const sections=document.querySelectorAll('section');const navLinks=document.querySelectorAll('nav a');
+  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){navLinks.forEach(a=>a.classList.remove('active'));const link=document.querySelector(`nav a[href="#${entry.target.id}"]`);if(link)link.classList.add('active');}});},{threshold:.2});
+  sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

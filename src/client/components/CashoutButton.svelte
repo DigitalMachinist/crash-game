@@ -10,14 +10,38 @@
  */
 
 import { sendCashout } from '../lib/commands';
-import { isInRound, phase } from '../lib/stores';
+import {
+  cashoutThreatLevel,
+  displayMultiplier,
+  isInRound,
+  myPlayerId,
+  phase,
+  players,
+  threatLevel,
+} from '../lib/stores';
 
 let isLoading = $state(false);
 let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
+const isCritical = $derived($threatLevel === 'CRITICAL');
+const isMid = $derived($threatLevel === 'HIGH' || $threatLevel === 'SEVERE');
+const btnClass = $derived(isCritical ? 'btn-crit' : isMid ? 'btn-mid' : 'btn-low');
+const btnText = $derived(isCritical ? '!! BAIL OUT !!' : '[ DISCONNECT ]');
+
+const myWager = $derived($players[$myPlayerId]?.wager ?? 0);
+const estimatedPayout = $derived((myWager * $displayMultiplier).toFixed(2));
+const payoutColor = $derived(
+  isCritical
+    ? 'var(--color-critical-dim)'
+    : isMid
+      ? 'var(--color-elevated-dim)'
+      : 'var(--color-success-dim)',
+);
+
 function handleCashout() {
   if (isLoading) return;
   isLoading = true;
+  cashoutThreatLevel.set($threatLevel);
   sendCashout();
   fallbackTimer = setTimeout(() => {
     isLoading = false;
@@ -35,16 +59,21 @@ $effect(() => {
 {#if $phase === 'RUNNING' && $isInRound}
   <div class="cashout-container">
     <button
-      class="cashout-btn"
+      class="cashout-btn {btnClass}"
       onclick={handleCashout}
       disabled={isLoading}
     >
       {#if isLoading}
-        Cashing out...
+        [ ... ]
       {:else}
-        CASH OUT
+        {btnText}
       {/if}
     </button>
+    {#if !isLoading && myWager > 0}
+      <div class="payout-line" style:color={payoutColor}>
+        Cash out: {$displayMultiplier.toFixed(2)}x → {estimatedPayout} CR
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -52,33 +81,49 @@ $effect(() => {
   .cashout-container {
     padding: 1rem;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .cashout-btn {
-    padding: 1rem 3rem;
-    background: #d32f2f;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 1.5rem;
-    font-weight: bold;
+    padding: 0.75rem 2.5rem;
+    background: transparent;
+    border: 2px solid;
+    color: inherit;
+    font-family: 'Fira Code', monospace;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: transform 0.1s, background 0.1s;
+    letter-spacing: 0.1em;
+    transition: opacity 0.1s;
     min-width: 200px;
   }
 
-  .cashout-btn:hover:not(:disabled) {
-    background: #e53935;
-    transform: scale(1.02);
-  }
-
-  .cashout-btn:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
   .cashout-btn:disabled {
-    opacity: 0.7;
+    opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .btn-low {
+    color: #00cc66;
+    border-color: #00cc66;
+  }
+
+  .btn-mid {
+    color: #ff6600;
+    border-color: #ff6600;
+  }
+
+  .btn-crit {
+    color: #ff0040;
+    border-color: #ff0040;
+    background: rgba(255, 0, 64, 0.08);
+    animation: pulse 0.8s infinite;
+  }
+
+  .payout-line {
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
   }
 </style>

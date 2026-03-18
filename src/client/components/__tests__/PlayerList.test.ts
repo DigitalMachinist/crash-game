@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
-import { gameState, myPlayerId, players } from '../../lib/stores';
+import { displayMultiplier, gameState, myPlayerId, players } from '../../lib/stores';
 import PlayerList from '../PlayerList.svelte';
 
 type Phase = 'WAITING' | 'STARTING' | 'RUNNING' | 'CRASHED';
@@ -40,33 +40,34 @@ beforeEach(() => {
   players.set({});
   gameState.set(null);
   myPlayerId.set('');
+  displayMultiplier.set(1.0);
 });
 
 describe('PlayerList component', () => {
-  it('shows "No players yet" when players store is empty', () => {
+  it('shows "No operators" when players store is empty', () => {
     render(PlayerList);
-    expect(screen.getByText('No players yet')).toBeTruthy();
+    expect(screen.getByText('No operators')).toBeTruthy();
   });
 
-  it('does NOT show "No players yet" when players are present', () => {
+  it('does NOT show "No operators" when players are present', () => {
     players.set({ p1: makePlayer() });
     render(PlayerList);
-    expect(screen.queryByText('No players yet')).toBeNull();
+    expect(screen.queryByText('No operators')).toBeNull();
   });
 
-  it('shows player name and wager in the table', () => {
+  it('shows player name and wager in CR format', () => {
     players.set({ p1: makePlayer({ name: 'Alice', wager: 100 }) });
     render(PlayerList);
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.getByText('$100.00')).toBeTruthy();
+    expect(screen.getByText('100 CR')).toBeTruthy();
   });
 
   it("local player's row has class 'me'", () => {
     myPlayerId.set('p1');
     players.set({ p1: makePlayer({ playerId: 'p1', name: 'Alice' }) });
     render(PlayerList);
-    const nameCell = screen.getByText('Alice');
-    const row = nameCell.closest('tr');
+    const nameEl = screen.getByText('Alice');
+    const row = nameEl.closest('li');
     expect(row).not.toBeNull();
     expect(row!.classList.contains('me')).toBe(true);
   });
@@ -75,69 +76,64 @@ describe('PlayerList component', () => {
     myPlayerId.set('p2');
     players.set({ p1: makePlayer({ playerId: 'p1', name: 'Alice' }) });
     render(PlayerList);
-    const nameCell = screen.getByText('Alice');
-    const row = nameCell.closest('tr');
+    const nameEl = screen.getByText('Alice');
+    const row = nameEl.closest('li');
     expect(row).not.toBeNull();
     expect(row!.classList.contains('me')).toBe(false);
   });
 
-  it('shows auto-cashout badge "Auto: 2.00x" when autoCashout is set', () => {
-    players.set({ p1: makePlayer({ autoCashout: 2.0 }) });
+  it('does NOT show ← YOU marker for any player', () => {
+    myPlayerId.set('p1');
+    players.set({ p1: makePlayer({ playerId: 'p1', name: 'Alice' }) });
     render(PlayerList);
-    expect(screen.getByText('Auto: 2.00x')).toBeTruthy();
+    expect(screen.queryByText('← YOU')).toBeNull();
   });
 
-  it('does NOT show auto-cashout badge when autoCashout is null', () => {
-    players.set({ p1: makePlayer({ autoCashout: null }) });
-    render(PlayerList);
-    expect(screen.queryByText(/Auto:/)).toBeNull();
-  });
-
-  it('shows cashed-out result "Won 2.50x (+$250.00)" when player has cashedOut=true and cashoutMultiplier set', () => {
+  it('shows DC X.XXx status for cashed-out player', () => {
     players.set({
       p1: makePlayer({ cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
     });
     render(PlayerList);
-    expect(screen.getByText('Won 2.50x (+$250.00)')).toBeTruthy();
+    expect(screen.getByText('DC 2.50x')).toBeTruthy();
   });
 
-  it('applies rarity color to cashout multiplier (Uncommon green for 2.50x)', () => {
-    players.set({
-      p1: makePlayer({ cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
-    });
-    render(PlayerList);
-    const span = screen.getByText('Won 2.50x (+$250.00)');
-    expect(span.style.color).toBe('rgb(0, 200, 83)');
-  });
-
-  it('applies Epic rarity color for high cashout multiplier (10.00x)', () => {
-    players.set({
-      p1: makePlayer({ cashedOut: true, cashoutMultiplier: 10, payout: 1000 }),
-    });
-    render(PlayerList);
-    const span = screen.getByText('Won 10.00x (+$1000.00)');
-    expect(span.style.color).toBe('rgb(171, 71, 188)');
-  });
-
-  it('table header columns have scope="col"', () => {
-    render(PlayerList);
-    const headers = document.querySelectorAll('th');
-    for (const th of Array.from(headers)) {
-      expect(th.getAttribute('scope')).toBe('col');
-    }
-  });
-
-  it('shows "Lost" when phase is CRASHED and player has cashedOut=false', () => {
-    gameState.set(makeGameState('CRASHED'));
+  it('shows RDY status during WAITING phase', () => {
+    gameState.set(makeGameState('WAITING'));
     players.set({ p1: makePlayer({ cashedOut: false }) });
     render(PlayerList);
-    expect(screen.getByText('Lost')).toBeTruthy();
+    expect(screen.getByText('RDY')).toBeTruthy();
   });
 
-  it('shows "—" during RUNNING when player has not cashed out yet', () => {
+  it('shows — during RUNNING when player has not cashed out yet', () => {
     gameState.set(makeGameState('RUNNING'));
     players.set({ p1: makePlayer({ cashedOut: false }) });
     render(PlayerList);
     expect(screen.getByText('—')).toBeTruthy();
+  });
+
+  it('applies crossed class at HIGH+ threat for cashed-out players', async () => {
+    displayMultiplier.set(6.0); // HIGH threat
+    gameState.set(makeGameState('RUNNING'));
+    players.set({
+      p1: makePlayer({ playerId: 'p1', cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
+    });
+    render(PlayerList);
+    const row = document.querySelector('li.crossed');
+    expect(row).toBeTruthy();
+  });
+
+  it('does NOT apply crossed class at GHOST threat', () => {
+    displayMultiplier.set(1.0); // GHOST
+    players.set({
+      p1: makePlayer({ cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
+    });
+    render(PlayerList);
+    const row = document.querySelector('li.crossed');
+    expect(row).toBeNull();
+  });
+
+  it('renders OPERATORS section label', () => {
+    render(PlayerList);
+    expect(screen.getByText(/OPERATORS/)).toBeTruthy();
   });
 });

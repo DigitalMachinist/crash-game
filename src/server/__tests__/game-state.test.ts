@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COUNTDOWN_TICK_MS,
   HISTORY_LENGTH,
   MAX_PLAYER_ID_LENGTH,
   MAX_PLAYERS_PER_ROUND,
@@ -1613,7 +1614,8 @@ describe('round lifecycle', () => {
     expect(state.players.size).toBe(2);
 
     // 3. Countdown to STARTING
-    for (let i = 0; i < 10; i++) {
+    const ticksToStart = WAITING_DURATION_MS / COUNTDOWN_TICK_MS;
+    for (let i = 0; i < ticksToStart; i++) {
       const r = handleCountdownTick(state);
       state = r.state;
     }

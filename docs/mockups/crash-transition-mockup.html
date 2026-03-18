@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash Transition Mockup — Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#e0e0e0;font-family:'Fira Code',monospace;font-size:14px;line-height:1.5}
+
+  nav{position:sticky;top:0;z-index:1000;background:#111;border-bottom:1px solid #333;padding:.5rem 1rem;display:flex;gap:.25rem;flex-wrap:wrap}
+  nav a{color:#888;text-decoration:none;padding:.4rem .8rem;border:1px solid #333;font-size:11px;font-family:'Fira Code',monospace;transition:all .15s}
+  nav a:hover,nav a.active{color:#ffb000;border-color:#ffb000;background:rgba(255,176,0,.05)}
+
+  section{min-height:100vh;padding:2rem;border-bottom:2px solid #222}
+  section h2{font-family:'Space Mono',monospace;font-size:1.2rem;color:#fff;margin-bottom:.25rem;letter-spacing:.05em}
+  .sub{color:#666;font-size:.8rem;margin-bottom:2rem}
+
+  .full{border:1px solid #333;overflow:hidden;margin-bottom:2rem;position:relative}
+  .label{padding:.4rem .75rem;background:#1a1a1a;border-bottom:1px solid #333;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.1em}
+
+  .jp{font-family:system-ui,sans-serif,'Fira Code';font-size:.65rem;letter-spacing:.2em;opacity:.5}
+
+  /* Hazard stripes */
+  .hz-t,.hz-b{position:absolute;left:0;right:0;height:14px;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);z-index:5}
+  .hz-t{top:0}.hz-b{bottom:0}
+
+  /* Hazard stripe side borders (for option B) */
+  .hz-l,.hz-r{position:absolute;top:0;bottom:0;width:14px;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);z-index:5}
+  .hz-l{left:0}.hz-r{right:0}
+
+  /* VHS band */
+  @keyframes vhs{0%{top:-5%}100%{top:105%}}
+  .vhs{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.03);z-index:15;animation:vhs 3s linear infinite;pointer-events:none}
+
+  /* CRT scanlines */
+  .crt::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12),rgba(0,0,0,.12) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:10}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#crash-a">A: Full takeover</a>
+  <a href="#crash-b">B: Hazard border</a>
+  <a href="#crash-c">C: Multiplier anchored</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- OPTION A: Full main-column takeover — closest to v3 Option A -->
+<!-- ============================================================ -->
+<section id="crash-a">
+  <h2>Option A — Full Main Column Takeover</h2>
+  <p class="sub">Closest to the v3 crash design. The entire main column becomes the crash panel with hazard stripes top-to-bottom. Terminal is gone. Sidebar stays. The multiplier value moves into the crash panel (like v3).</p>
+
+  <div class="full">
+    <div class="label">FBI variant — player was in round (ALL FUNDS SEIZED visible)</div>
+    <div style="background:#0a0800;">
+      <!-- Header bar -->
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;background:#0a0000;">
+        <span style="color:#cc0000;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#cc0000">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">897.50 CR</span></span>
+      </div>
+      <!-- Two-column grid -->
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <!-- MAIN COLUMN — crash panel -->
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#0a0000;border-right:1px solid #400000;overflow:hidden;">
+          <div class="hz-t"></div><div class="hz-b"></div><div class="vhs"></div>
+          <div class="jp" style="color:#cc0000;">警告 — 追跡完了</div>
+          <div style="font-weight:700;color:#cc0000;text-shadow:0 0 25px rgba(204,0,0,.5);letter-spacing:.3em;font-size:2.8rem;margin-top:.5rem;">TRACED</div>
+          <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;margin-top:.75rem;">OPERATOR COMPROMISED — ALL SESSIONS TERMINATED</div>
+          <div style="margin-top:2rem;font-weight:700;font-size:2rem;color:#ff0040;text-shadow:0 0 10px rgba(255,0,64,.4);">4.73x</div>
+          <div style="margin-top:1.5rem;padding-top:.75rem;border-top:1px solid #400000;text-align:center;">
+            <div style="color:#ff0040;font-size:10px;">FBI CYBER DIVISION</div>
+            <div style="color:#805800;font-size:9px;margin-top:.15rem;">CASE #2026-CF-84729</div>
+          </div>
+          <div style="margin-top:1.5rem;color:#ff0040;font-family:'Space Mono',monospace;font-weight:700;font-size:.85rem;letter-spacing:.1em;">ALL FUNDS SEIZED</div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;background:#0a0000;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff6a00">z3r0c00l</span> <span style="color:#800020">100</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">r00tk1t</span> <span style="color:#800020">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff8c00;font-weight:700;">ELEVATED</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">ACTIVE HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4818</span> <span style="color:#ff8c00">4.73x</span></div>
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#800020">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">NSA variant — spectator (no ALL FUNDS SEIZED)</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;background:#0a0000;">
+        <span style="color:#cc0000;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#cc0000">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:#0a0000;border-right:1px solid #400000;overflow:hidden;">
+          <div class="hz-t"></div><div class="hz-b"></div><div class="vhs"></div>
+          <div class="jp" style="color:#cc0000;">警告 — 追跡完了</div>
+          <div style="font-weight:700;color:#cc0000;text-shadow:0 0 25px rgba(204,0,0,.5);letter-spacing:.3em;font-size:2.8rem;margin-top:.5rem;">TRACED</div>
+          <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;margin-top:.75rem;">SIGNAL INTERCEPTED — OPERATOR LOCATED</div>
+          <div style="margin-top:2rem;font-weight:700;font-size:2rem;color:#ff0040;text-shadow:0 0 10px rgba(255,0,64,.4);">8.44x</div>
+          <div style="margin-top:1.5rem;padding-top:.75rem;border-top:1px solid #400000;text-align:center;">
+            <div style="color:#ff0040;font-size:10px;">NSA TAILORED ACCESS OPS</div>
+            <div style="color:#805800;font-size:9px;margin-top:.15rem;">SIGINT REF: SIGMA-4X92</div>
+          </div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;background:#0a0000;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff6a00">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">r00tk1t</span> <span style="color:#800020">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff6600;font-weight:700;">HIGH</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">ACTIVE HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4818</span> <span style="color:#ff6600">8.44x</span></div>
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OPTION B: Hazard border framing — stripes on all 4 edges -->
+<!-- ============================================================ -->
+<section id="crash-b">
+  <h2>Option B — Hazard Border Frame</h2>
+  <p class="sub">Like Option A but hazard stripes on all four edges of the main column, framing the crash like a warning placard. More visually contained.</p>
+
+  <div class="full">
+    <div class="label">FBI variant — hazard border on all 4 sides</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;background:#0a0000;">
+        <span style="color:#cc0000;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#cc0000">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">897.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <!-- MAIN COLUMN — hazard border frame -->
+        <div style="position:relative;background:#0a0000;border-right:1px solid #400000;overflow:hidden;">
+          <div class="hz-t"></div><div class="hz-b"></div><div class="hz-l"></div><div class="hz-r"></div>
+          <div class="vhs"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2.5rem;min-height:500px;">
+            <div class="jp" style="color:#cc0000;">警告 — 追跡完了</div>
+            <div style="font-weight:700;color:#cc0000;text-shadow:0 0 25px rgba(204,0,0,.5);letter-spacing:.3em;font-size:2.8rem;margin-top:.5rem;">TRACED</div>
+            <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;margin-top:.75rem;text-align:center;">OPERATOR COMPROMISED — ALL SESSIONS TERMINATED</div>
+            <div style="margin-top:2rem;font-weight:700;font-size:2rem;color:#ff0040;text-shadow:0 0 10px rgba(255,0,64,.4);">4.73x</div>
+            <div style="margin-top:1.5rem;padding-top:.75rem;border-top:1px solid #400000;text-align:center;">
+              <div style="color:#ff0040;font-size:10px;">FBI CYBER DIVISION</div>
+              <div style="color:#805800;font-size:9px;margin-top:.15rem;">CASE #2026-CF-84729</div>
+            </div>
+            <div style="margin-top:1.5rem;color:#ff0040;font-family:'Space Mono',monospace;font-weight:700;font-size:.85rem;letter-spacing:.1em;">ALL FUNDS SEIZED</div>
+          </div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;background:#0a0000;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff6a00">z3r0c00l</span> <span style="color:#800020">100</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">r00tk1t</span> <span style="color:#800020">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff8c00;font-weight:700;">ELEVATED</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">ACTIVE HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4818</span> <span style="color:#ff8c00">4.73x</span></div>
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#800020">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OPTION C: Multiplier anchored at top, crash fills below -->
+<!-- ============================================================ -->
+<section id="crash-c">
+  <h2>Option C — Multiplier Anchored, Crash Below</h2>
+  <p class="sub">The multiplier stays at its exact RUNNING position (top of main column). The area below it becomes the crash panel with hazard stripes. Multiplier never moves — the crash is expressed by its styling change (red, no glow) and the content swap below.</p>
+
+  <div class="full">
+    <div class="label">FBI variant — multiplier stays anchored, crash content replaces terminal + action area</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;background:#0a0000;">
+        <span style="color:#cc0000;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#cc0000">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">897.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <!-- MAIN COLUMN -->
+        <div style="display:flex;flex-direction:column;border-right:1px solid #400000;background:#0a0000;">
+          <!-- Multiplier section — same position as RUNNING, just restyled -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;border-bottom:none;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#cc0000;letter-spacing:.15em;margin-bottom:.25rem;"><span style="font-family:system-ui,sans-serif">警告</span>  TRACED</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums;">4.73x</div>
+          </div>
+          <!-- Hazard stripe divider -->
+          <div style="height:14px;flex-shrink:0;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);"></div>
+          <!-- Crash content — fills remaining space -->
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow:hidden;">
+            <div class="vhs"></div>
+            <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;text-align:center;">OPERATOR COMPROMISED — ALL SESSIONS TERMINATED</div>
+            <div style="margin-top:1.5rem;padding-top:.75rem;border-top:1px solid #400000;text-align:center;">
+              <div style="color:#ff0040;font-size:11px;font-weight:700;">FBI CYBER DIVISION</div>
+              <div style="color:#805800;font-size:9px;margin-top:.15rem;">CASE #2026-CF-84729</div>
+            </div>
+            <div style="margin-top:1.5rem;color:#ff0040;font-family:'Space Mono',monospace;font-weight:700;font-size:.85rem;letter-spacing:.1em;">ALL FUNDS SEIZED</div>
+          </div>
+          <!-- Hazard stripe bottom -->
+          <div style="height:14px;flex-shrink:0;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);"></div>
+        </div>
+        <!-- SIDEBAR -->
+        <div style="padding:.75rem;font-size:10px;background:#0a0000;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff6a00">z3r0c00l</span> <span style="color:#800020">100</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">r00tk1t</span> <span style="color:#800020">75</span> <span style="color:#00cc66">DC 3.80x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff8c00;font-weight:700;">ELEVATED</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">ACTIVE HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4818</span> <span style="color:#ff8c00">4.73x</span></div>
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+            <div><span style="color:#800020">#4816</span> <span style="color:#ff0040">2.41x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full">
+    <div class="label">NSA variant — spectator view (no ALL FUNDS SEIZED)</div>
+    <div style="background:#0a0800;">
+      <div style="display:flex;justify-content:space-between;padding:.4rem .75rem;border-bottom:1px solid #400000;font-size:11px;background:#0a0000;">
+        <span style="color:#cc0000;">[crashOS] <span style="color:#800020">@z3r0c00l</span> <span style="color:#800020">RND #4818</span> <span style="color:#800020">TGT:</span> <span style="color:#cc0000">ELLINGSON MINERAL</span></span>
+        <span style="color:#00cc66;">● 34ms &nbsp; <span style="font-weight:700">1,247.50 CR</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 200px;min-height:500px;">
+        <div style="display:flex;flex-direction:column;border-right:1px solid #400000;background:#0a0000;">
+          <!-- Multiplier section — anchored -->
+          <div style="display:flex;flex-direction:column;align-items:center;padding:1.5rem 2rem;">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:#cc0000;letter-spacing:.15em;margin-bottom:.25rem;"><span style="font-family:system-ui,sans-serif">警告</span>  TRACED</div>
+            <div style="font-size:3.5rem;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums;">8.44x</div>
+          </div>
+          <div style="height:14px;flex-shrink:0;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);"></div>
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow:hidden;">
+            <div class="vhs"></div>
+            <div style="color:#ff6a00;letter-spacing:.1em;font-size:.8rem;text-align:center;">SIGNAL INTERCEPTED — OPERATOR LOCATED</div>
+            <div style="margin-top:1.5rem;padding-top:.75rem;border-top:1px solid #400000;text-align:center;">
+              <div style="color:#ff0040;font-size:11px;font-weight:700;">NSA TAILORED ACCESS OPS</div>
+              <div style="color:#805800;font-size:9px;margin-top:.15rem;">SIGINT REF: SIGMA-4X92</div>
+            </div>
+          </div>
+          <div style="height:14px;flex-shrink:0;background:repeating-linear-gradient(-45deg,#ffb000,#ffb000 8px,#000 8px,#000 16px);"></div>
+        </div>
+        <div style="padding:.75rem;font-size:10px;background:#0a0000;">
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-bottom:.5rem;"><span class="jp" style="color:#800020">作戦員</span> OPERATORS</div>
+          <div style="line-height:1.8;">
+            <div><span style="color:#ff6a00">ph4nt0m</span> <span style="color:#800020">200</span> <span style="color:#ff0040;font-weight:700">TRACED</span></div>
+            <div><span style="color:#ff6a00">r00tk1t</span> <span style="color:#800020">75</span> <span style="color:#00cc66">DC 5.20x</span></div>
+          </div>
+          <div style="font-family:'Space Mono';color:#cc0000;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#cc0000">脅威評価</span> THREAT</div>
+          <div style="border:1px solid #cc0000;padding:.5rem;font-size:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:.2rem .5rem;">
+              <div style="color:#800020">STATUS</div><div style="color:#ff6600;font-weight:700;">HIGH</div>
+              <div style="color:#800020">PROXIES</div><div style="color:#ff0040">0 / 6</div>
+              <div style="color:#800020">IDS</div><div style="color:#ff0000">ACTIVE HUNT</div>
+              <div style="color:#800020">COVER</div><div style="color:#ff0040">BLOWN</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Mono';color:#800020;font-size:9px;letter-spacing:.12em;margin-top:1.25rem;margin-bottom:.5rem;"><span class="jp" style="color:#800020">最近</span> RECENT OPS</div>
+          <div style="line-height:1.6;">
+            <div><span style="color:#800020">#4818</span> <span style="color:#ff6600">8.44x</span></div>
+            <div><span style="color:#800020">#4817</span> <span style="color:#ffb000">1.83x</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="padding:3rem;text-align:center;color:#333;font-size:12px;">— END —</div>
+
+<script>
+  const sections=document.querySelectorAll('section');const navLinks=document.querySelectorAll('nav a');
+  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){navLinks.forEach(a=>a.classList.remove('active'));const link=document.querySelector(`nav a[href="#${entry.target.id}"]`);if(link)link.classList.add('active');}});},{threshold:.2});
+  sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

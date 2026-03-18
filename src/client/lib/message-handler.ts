@@ -17,8 +17,10 @@
 import { get } from 'svelte/store';
 import type { PlayerSnapshot, ServerMessage } from '../../types';
 import { applyBet, getBalance } from './balance';
+import { generateRoundTarget, mulberry32 } from './prng';
 import {
   balance,
+  cashoutThreatLevel,
   displayMultiplier,
   gameState,
   history,
@@ -29,6 +31,8 @@ import {
   multiplierAnimating,
   myPlayerId,
   players,
+  roundTarget,
+  terminalLines,
 } from './stores';
 
 export function dispatchMessage(msg: ServerMessage): void {
@@ -42,6 +46,13 @@ export function dispatchMessage(msg: ServerMessage): void {
       }
       players.set(record);
       history.set(snapshot.history);
+      // WAITING: new round starting — generate deterministic target and reset hacker stores.
+      if (snapshot.phase === 'WAITING') {
+        const rng = mulberry32(snapshot.roundId);
+        roundTarget.set(generateRoundTarget(snapshot.roundId, rng));
+        cashoutThreatLevel.set(null);
+        terminalLines.set([]);
+      }
       // CRASHED state: freeze the multiplier display and notify App for accounting.
       // Fires for both fresh crashes and reconnects during the CRASHED display window;
       // App.svelte's isRoundRecorded guard prevents double-application in both cases.

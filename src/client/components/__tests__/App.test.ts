@@ -6,6 +6,7 @@ import type { GameStateSnapshot } from '../../../types';
 import App from '../../App.svelte';
 import {
   balance,
+  displayMultiplier,
   gameState,
   lastCrashResult,
   lastPendingPayout,
@@ -69,6 +70,10 @@ beforeEach(() => {
   balance.set(0);
   lastCrashResult.set(null);
   lastPendingPayout.set(null);
+  displayMultiplier.set(1.0);
+  // Clean up threat-critical class between tests
+  document.documentElement.classList.remove('threat-critical');
+  document.documentElement.style.removeProperty('--threat-color');
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
   vi.mocked(applyPendingPayout).mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 });
@@ -98,29 +103,29 @@ describe('App component', () => {
     it('calls getBalance() on mount and initializes balance display', () => {
       render(App);
       expect(getBalance).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('+100.00')).toBeTruthy();
+      expect(screen.getAllByText('100.00 CR').length).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe('balance display', () => {
-    it('shows positive balance with + prefix', () => {
+    it('shows positive balance', () => {
       render(App);
       // getBalance mock returns 100, balance store is set to 100 on mount
-      expect(screen.getByText('+100.00')).toBeTruthy();
+      expect(screen.getAllByText('100.00 CR').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows negative balance without + prefix', async () => {
+    it('shows negative balance', async () => {
       render(App);
       balance.set(-50);
       await tick();
-      expect(screen.getByText('-50.00')).toBeTruthy();
+      expect(screen.getAllByText('-50.00 CR').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows zero balance with + prefix', async () => {
+    it('shows zero balance', async () => {
       vi.mocked(getBalance).mockReturnValue(0);
       render(App);
       await tick();
-      expect(screen.getByText('+0.00')).toBeTruthy();
+      expect(screen.getAllByText('0.00 CR').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -244,14 +249,14 @@ describe('App component', () => {
   });
 
   describe('DOM structure', () => {
-    it('renders the app title', () => {
+    it('renders the app brand', () => {
       render(App);
-      expect(screen.getByRole('heading', { name: 'Crash' })).toBeTruthy();
+      expect(screen.getByText('[crashOS]')).toBeTruthy();
     });
 
-    it('renders balance label', () => {
+    it('renders wallet label', () => {
       render(App);
-      expect(screen.getAllByText(/Balance:/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/WALLET:/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('does not show toast initially', () => {
@@ -295,11 +300,11 @@ describe('App component', () => {
   });
 
   describe('balance display aria-label', () => {
-    it('balance display has aria-label with positive balance', () => {
+    it('balance display has aria-label with balance', () => {
       render(App);
       const balanceEl = document.querySelector('[aria-label^="Balance:"]');
       expect(balanceEl).not.toBeNull();
-      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: +100.00');
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: 100.00 credits');
     });
 
     it('balance display aria-label updates when balance goes negative', async () => {
@@ -307,7 +312,57 @@ describe('App component', () => {
       balance.set(-50);
       await tick();
       const balanceEl = document.querySelector('[aria-label^="Balance:"]');
-      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00');
+      expect(balanceEl!.getAttribute('aria-label')).toBe('Balance: -50.00 credits');
+    });
+  });
+
+  describe('CSS custom property wiring (threat-level → CSS vars)', () => {
+    it('sets --threat-color on mount', async () => {
+      render(App);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBeTruthy();
+    });
+
+    it('updates --threat-color to CRITICAL color (#ff0040) at 30x', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBe('#ff0040');
+    });
+
+    it('sets --threat-color to amber (#ffb000) at 1x (GHOST)', async () => {
+      render(App);
+      displayMultiplier.set(1.0);
+      await tick();
+      const color = document.documentElement.style.getPropertyValue('--threat-color');
+      expect(color).toBe('#ffb000');
+    });
+
+    it('adds threat-critical class to documentElement at CRITICAL (30x)', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(true);
+    });
+
+    it('removes threat-critical class when dropping below CRITICAL', async () => {
+      render(App);
+      displayMultiplier.set(30.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(true);
+
+      displayMultiplier.set(1.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(false);
+    });
+
+    it('does not have threat-critical class at SEVERE (15x)', async () => {
+      render(App);
+      displayMultiplier.set(15.0);
+      await tick();
+      expect(document.documentElement.classList.contains('threat-critical')).toBe(false);
     });
   });
 });

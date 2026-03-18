@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
-import { balance, gameState, lastError } from '../../lib/stores';
+import { balance, gameState, lastError, myPlayerId, players } from '../../lib/stores';
 import BetForm from '../BetForm.svelte';
 
 vi.mock('../../lib/commands', () => ({
@@ -32,6 +32,8 @@ beforeEach(() => {
   gameState.set(null);
   balance.set(0);
   lastError.set(null);
+  myPlayerId.set('');
+  players.set({});
   vi.clearAllMocks();
 });
 
@@ -39,38 +41,38 @@ describe('BetForm component', () => {
   describe('visibility based on phase', () => {
     it('is visible when phase is WAITING (gameState null defaults to WAITING)', () => {
       render(BetForm);
-      expect(screen.getByText('Place Your Bet')).toBeTruthy();
+      expect(screen.getByText(/RESOURCES/)).toBeTruthy();
     });
 
     it('is visible when gameState phase is explicitly WAITING', () => {
       gameState.set(makeGameState('WAITING'));
       render(BetForm);
-      expect(screen.getByText('Place Your Bet')).toBeTruthy();
+      expect(screen.getByText(/RESOURCES/)).toBeTruthy();
     });
 
     it('is NOT visible when phase is RUNNING', () => {
       gameState.set(makeGameState('RUNNING'));
       render(BetForm);
-      expect(screen.queryByText('Place Your Bet')).toBeNull();
+      expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
 
     it('is NOT visible when phase is STARTING', () => {
       gameState.set(makeGameState('STARTING'));
       render(BetForm);
-      expect(screen.queryByText('Place Your Bet')).toBeNull();
+      expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
 
     it('is NOT visible when phase is CRASHED', () => {
       gameState.set(makeGameState('CRASHED'));
       render(BetForm);
-      expect(screen.queryByText('Place Your Bet')).toBeNull();
+      expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
   });
 
   describe('Join Round button disabled state', () => {
     it('button is disabled when wager field is empty', () => {
       render(BetForm);
-      const button = screen.getByRole('button', { name: 'Join Round' });
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
       expect(button).toBeDisabled();
     });
 
@@ -79,7 +81,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '0' } });
       await tick();
-      const button = screen.getByRole('button', { name: 'Join Round' });
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
       expect(button).toBeDisabled();
     });
 
@@ -88,7 +90,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '-10' } });
       await tick();
-      const button = screen.getByRole('button', { name: 'Join Round' });
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
       expect(button).toBeDisabled();
     });
 
@@ -97,7 +99,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '100' } });
       await tick();
-      const button = screen.getByRole('button', { name: 'Join Round' });
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
       expect(button).not.toBeDisabled();
     });
 
@@ -106,7 +108,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '0.05' } });
       await tick();
-      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).toBeDisabled();
     });
 
     it('button is enabled when wager equals minimum (0.10)', async () => {
@@ -114,7 +116,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '0.10' } });
       await tick();
-      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).not.toBeDisabled();
     });
 
     it('button is enabled when wager equals maximum (1000.00)', async () => {
@@ -122,7 +124,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '1000' } });
       await tick();
-      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).not.toBeDisabled();
     });
 
     it('button is disabled when wager exceeds maximum (1000.01)', async () => {
@@ -130,7 +132,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '1000.01' } });
       await tick();
-      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).toBeDisabled();
     });
 
     it('wager input has min="0.10" attribute', () => {
@@ -152,7 +154,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '50' } });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       expect(sendJoin).toHaveBeenCalledTimes(1);
     });
@@ -162,7 +164,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '50' } });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       expect(sendJoin).toHaveBeenCalledWith(50, null);
     });
@@ -179,7 +181,7 @@ describe('BetForm component', () => {
         target: { value: '2.5' },
       });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       expect(sendJoin).toHaveBeenCalledWith(100, 2.5);
     });
@@ -188,7 +190,7 @@ describe('BetForm component', () => {
       render(BetForm);
       await fireEvent.input(screen.getByLabelText('Wager'), { target: { value: '75' } });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       const [, autoCashoutArg] = (sendJoin as ReturnType<typeof vi.fn>).mock.calls[0]!;
       expect(autoCashoutArg).toBeNull();
@@ -196,7 +198,7 @@ describe('BetForm component', () => {
 
     it('does NOT call sendJoin when button is disabled (invalid wager)', async () => {
       render(BetForm);
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       expect(sendJoin).not.toHaveBeenCalled();
     });
@@ -208,7 +210,7 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
       await fireEvent.input(wagerInput, { target: { value: '100' } });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
       expect(wagerInput.value).toBe('100');
     });
@@ -270,28 +272,63 @@ describe('BetForm component', () => {
       const wagerInput = screen.getByLabelText('Wager');
       await fireEvent.input(wagerInput, { target: { value: '100' } });
       await tick();
-      await fireEvent.click(screen.getByRole('button', { name: 'Join Round' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ INITIATE BREACH ]' }));
       await tick();
 
       expect(screen.queryByText('Previous error')).toBeNull();
     });
   });
 
-  describe('RTP notice', () => {
-    it('shows house edge and RTP text when WAITING', () => {
+  describe('hasJoined state', () => {
+    function makePlayerSnapshot() {
+      return {
+        id: 'conn1',
+        playerId: 'test-player-id',
+        name: 'Test',
+        wager: 100,
+        cashedOut: false,
+        cashoutMultiplier: null,
+        payout: null,
+        autoCashout: null,
+      };
+    }
+
+    it('shows [ BREACH INITIATED ] and is disabled when player has joined', async () => {
+      myPlayerId.set('test-player-id');
+      players.set({ 'test-player-id': makePlayerSnapshot() });
       render(BetForm);
-      expect(screen.getByText(/House edge:/)).toBeTruthy();
-      expect(screen.getByText(/RTP:/)).toBeTruthy();
+      await tick();
+      const button = screen.getByRole('button', { name: '[ BREACH INITIATED ]' });
+      expect(button).toBeDisabled();
     });
 
-    it('shows "House edge: 1%" when HOUSE_EDGE is 0.01', () => {
+    it('shows AWAITING ROUND START status when player has joined', async () => {
+      myPlayerId.set('test-player-id');
+      players.set({ 'test-player-id': makePlayerSnapshot() });
       render(BetForm);
-      expect(screen.getByText(/House edge: 1%/)).toBeTruthy();
+      await tick();
+      expect(screen.getByText('AWAITING ROUND START')).toBeTruthy();
     });
 
-    it('shows "RTP: 99%" when HOUSE_EDGE is 0.01', () => {
+    it('shows [ INITIATE BREACH ] and is enabled (with valid wager) when not joined', async () => {
       render(BetForm);
-      expect(screen.getByText(/RTP: 99%/)).toBeTruthy();
+      const wagerInput = screen.getByLabelText('Wager');
+      await fireEvent.input(wagerInput, { target: { value: '100' } });
+      await tick();
+      const button = screen.getByRole('button', { name: '[ INITIATE BREACH ]' });
+      expect(button).not.toBeDisabled();
+    });
+
+    it('does not show AWAITING ROUND START when not joined', () => {
+      render(BetForm);
+      expect(screen.queryByText('AWAITING ROUND START')).toBeNull();
+    });
+  });
+
+  describe('window countdown', () => {
+    it('shows WINDOW countdown label when WAITING', () => {
+      render(BetForm);
+      expect(screen.getByText(/WINDOW:/)).toBeTruthy();
     });
   });
 
@@ -299,27 +336,27 @@ describe('BetForm component', () => {
     it('renders preset buttons for each WAGER_PRESETS value', async () => {
       render(BetForm);
       await tick();
-      expect(screen.getByRole('button', { name: '$1' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: '$5' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: '$10' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: '$50' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: '$100' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '[ 1 ]' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '[ 5 ]' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '[ 10 ]' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '[ 50 ]' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '[ 100 ]' })).toBeTruthy();
     });
 
     it('sets wager input value when a preset button is clicked', async () => {
       render(BetForm);
-      await fireEvent.click(screen.getByRole('button', { name: '$50' }));
+      await fireEvent.click(screen.getByRole('button', { name: '[ 50 ]' }));
       await tick();
       const wagerInput = screen.getByLabelText('Wager') as HTMLInputElement;
       expect(wagerInput.value).toBe('50.00');
     });
 
-    it('enables Join Round button after clicking a preset', async () => {
+    it('enables submit button after clicking a preset', async () => {
       render(BetForm);
-      expect(screen.getByRole('button', { name: 'Join Round' })).toBeDisabled();
-      await fireEvent.click(screen.getByRole('button', { name: '$10' }));
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).toBeDisabled();
+      await fireEvent.click(screen.getByRole('button', { name: '[ 10 ]' }));
       await tick();
-      expect(screen.getByRole('button', { name: 'Join Round' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: '[ INITIATE BREACH ]' })).not.toBeDisabled();
     });
   });
 });

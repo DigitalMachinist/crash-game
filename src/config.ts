@@ -7,8 +7,8 @@
  * @see docs/project-architecture.md §1.5
  */
 // ─── Game loop timing ────────────────────────────────────────────────────────
-export const WAITING_DURATION_MS = 10_000; // Countdown before each round
-export const CRASHED_DISPLAY_MS = 5_000; // Results screen duration
+export const WAITING_DURATION_MS = 15_000; // Countdown before each round
+export const CRASHED_DISPLAY_MS = 10_000; // Results screen duration
 export const TICK_INTERVAL_MS = 100; // Server broadcast interval during RUNNING
 export const COUNTDOWN_TICK_MS = 1_000; // Server broadcast interval during WAITING
 

@@ -159,7 +159,7 @@ describe('VerifyModal component', () => {
       const onClose = vi.fn();
       const entry = makeEntry();
       render(VerifyModal, { props: { entry, onClose } });
-      fireEvent.click(screen.getByText('Close'));
+      fireEvent.click(screen.getByText('[ CLOSE ]'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 

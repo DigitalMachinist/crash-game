@@ -14,12 +14,17 @@
  */
 import { derived, writable } from 'svelte/store';
 import type {
+  DangerColors,
   GameStateSnapshot,
   HistoryEntry,
   Phase,
   PlayerSnapshot,
+  RoundTarget,
   ServerMessage,
+  TerminalLine,
+  ThreatLevel,
 } from '../../types';
+import { getDangerColors, getThreatLevel } from './threat';
 
 export const gameState = writable<GameStateSnapshot | null>(null);
 export const players = writable<Record<string, PlayerSnapshot>>({});
@@ -118,4 +123,18 @@ export const isInRound = derived(
   [phase, players, myPlayerId],
   ([$phase, $players, $id]) =>
     ($phase === 'RUNNING' || $phase === 'STARTING') && $id in $players && !$players[$id]?.cashedOut,
+);
+
+// ─── Hacker theme stores ──────────────────────────────────────────────────────
+
+export const terminalLines = writable<TerminalLine[]>([]);
+export const roundTarget = writable<RoundTarget | null>(null);
+export const cashoutThreatLevel = writable<ThreatLevel | null>(null);
+
+export const threatLevel = derived<typeof displayMultiplier, ThreatLevel>(displayMultiplier, ($m) =>
+  getThreatLevel($m),
+);
+
+export const dangerColors = derived<typeof threatLevel, DangerColors>(threatLevel, ($level) =>
+  getDangerColors($level),
 );

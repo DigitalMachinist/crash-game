@@ -59,66 +59,85 @@ function handleKeydown(e: KeyboardEvent) {
   onclick={handleDialogClick}
   oncancel={handleCancel}
 >
-  <h3 id="name-title">Set Your Name</h3>
-  <p class="hint">Choose a display name for other players to see.</p>
+  <div class="modal-jp">識別子設定</div>
+  <h3 id="name-title">CHOOSE YOUR HANDLE</h3>
+  <p class="hint">// alias visible to all operators in this session</p>
 
   <input
     type="text"
     bind:value={nameInput}
-    placeholder="Anonymous"
+    placeholder="anonymous"
     maxlength={MAX_PLAYER_NAME_LENGTH}
     onkeydown={handleKeydown}
   />
 
   <div class="actions">
-    <button class="confirm-btn" onclick={handleConfirm}>Confirm</button>
-    <button class="skip-btn" onclick={handleSkip}>Skip</button>
+    <button class="confirm-btn" onclick={handleConfirm}>[ CONFIRM ]</button>
+    <button class="skip-btn" onclick={handleSkip}>[ SKIP ]</button>
   </div>
 </dialog>
 
 <style>
   .modal {
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 8px;
+    background: #0a0800;
+    border: 1px solid var(--color-border, #332800);
+    border-radius: 0;
     padding: 1.5rem;
     max-width: 380px;
     width: 90%;
+    font-family: 'Fira Code', monospace;
+    color: var(--color-primary, #ffb000);
   }
 
   .modal::backdrop {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .modal-jp {
+    font-size: 0.65rem;
+    color: var(--color-primary-dim, #805800);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
   }
 
   h3 {
-    color: #fff;
+    color: var(--color-primary, #ffb000);
     margin: 0 0 0.5rem;
-    font-size: 1.25rem;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    font-weight: 700;
   }
 
   .hint {
-    color: #888;
-    font-size: 0.9rem;
+    color: var(--color-primary-dim, #805800);
+    font-size: 0.75rem;
     margin: 0 0 1rem;
   }
 
   input {
     width: 100%;
-    padding: 0.6rem;
-    background: #0d0d1a;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: #080600;
+    border: 1px solid var(--color-border, #332800);
+    border-radius: 0;
+    color: var(--color-primary, #ffb000);
+    font-size: 0.9rem;
+    font-family: 'Fira Code', monospace;
     box-sizing: border-box;
   }
 
+  input::placeholder {
+    color: var(--color-primary-dim, #805800);
+    opacity: 0.6;
+  }
+
   input:focus {
-    border-color: #666;
+    outline: none;
+    border-color: var(--color-primary-mid, #cc8800);
   }
 
   input:focus-visible {
-    outline: 2px solid #42a5f5;
+    outline: 1px solid var(--color-primary, #ffb000);
     outline-offset: 2px;
   }
 
@@ -131,30 +150,32 @@ function handleKeydown(e: KeyboardEvent) {
   .confirm-btn {
     flex: 1;
     padding: 0.5rem 1rem;
-    background: #1565c0;
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 0.95rem;
+    background: transparent;
+    border: 1px solid var(--color-primary, #ffb000);
+    color: var(--color-primary, #ffb000);
+    font-size: 0.85rem;
+    font-family: 'Fira Code', monospace;
     cursor: pointer;
+    letter-spacing: 0.05em;
   }
 
   .confirm-btn:hover {
-    background: #1976d2;
+    background: rgba(255, 176, 0, 0.1);
   }
 
   .skip-btn {
     padding: 0.5rem 1rem;
-    background: #333;
-    border: none;
-    border-radius: 4px;
-    color: #aaa;
-    font-size: 0.95rem;
+    background: transparent;
+    border: 1px solid var(--color-border, #332800);
+    color: var(--color-primary-dim, #805800);
+    font-size: 0.85rem;
+    font-family: 'Fira Code', monospace;
     cursor: pointer;
+    letter-spacing: 0.05em;
   }
 
   .skip-btn:hover {
-    background: #444;
-    color: #e0e0e0;
+    border-color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-mid, #cc8800);
   }
 </style>
