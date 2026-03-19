@@ -1,0 +1,16 @@
+name: crash-game
+rows:
+  - size: 70%
+    panes:
+      - title: Claude 1
+        command: claude
+      - title: Claude 2
+        command: claude
+      - title: Claude 3
+        command: claude
+  - panes:
+      - title: Client (Vite)
+        command: npm run dev:client
+      - title: Server (Wrangler)
+        command: npm run dev:server
+      - title: Shell (zsh)
