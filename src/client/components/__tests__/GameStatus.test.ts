@@ -1,39 +1,9 @@
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
 import { gameState, players } from '../../lib/stores';
 import GameStatus from '../GameStatus.svelte';
-
-function makeGameState(overrides: Partial<GameStateSnapshot> = {}): GameStateSnapshot {
-  return {
-    phase: 'WAITING',
-    roundId: 1,
-    countdown: 10000,
-    multiplier: 1.0,
-    elapsed: 0,
-    crashPoint: null,
-    players: [],
-    chainCommitment: '',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-    ...overrides,
-  };
-}
-
-function makePlayer(id: string): PlayerSnapshot {
-  return {
-    id,
-    playerId: id,
-    name: `Player ${id}`,
-    wager: 100,
-    cashedOut: false,
-    cashoutMultiplier: null,
-    payout: null,
-    autoCashout: null,
-  };
-}
 
 beforeEach(() => {
   gameState.set(null);
@@ -106,7 +76,7 @@ describe('GameStatus component', () => {
 
     it('shows "CRASHED!" when there are players', () => {
       gameState.set(makeGameState({ phase: 'CRASHED' }));
-      players.set({ p1: makePlayer('p1') });
+      players.set({ p1: makePlayer({ id: 'p1', playerId: 'p1', name: 'Player p1' }) });
       render(GameStatus);
       expect(screen.getByText('CRASHED!')).toBeTruthy();
     });

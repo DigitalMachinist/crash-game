@@ -3,12 +3,11 @@
  * Used by both server (drand.ts, hash-chain.ts) and client (verify.ts) code.
  */
 
-/**
- * Decodes a lowercase hex string into a `Uint8Array`.
- *
- * @remarks Synchronous.
- */
+/** Decodes a lowercase hex string into a `Uint8Array`. */
 export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
+    throw new Error('hexToBytes: invalid hex string');
+  }
   const buf = new ArrayBuffer(hex.length / 2);
   const bytes = new Uint8Array(buf);
   for (let i = 0; i < hex.length; i += 2) {
@@ -17,11 +16,7 @@ export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/**
- * Encodes a `Uint8Array` as a lowercase hex string.
- *
- * @remarks Synchronous.
- */
+/** Encodes a `Uint8Array` as a lowercase hex string. */
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))

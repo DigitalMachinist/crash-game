@@ -220,7 +220,7 @@ describe('computeChainSeedForGame', () => {
 
   it('throws for gameNumber < 1', async () => {
     const root = await generateRootSeed();
-    await expect(computeChainSeedForGame(root, 0)).rejects.toThrow(
+    expect(() => computeChainSeedForGame(root, 0)).toThrow(
       `gameNumber must be between 1 and ${CHAIN_LENGTH}, got 0`,
     );
   });
@@ -228,7 +228,7 @@ describe('computeChainSeedForGame', () => {
   it('throws for gameNumber > CHAIN_LENGTH', async () => {
     const root = await generateRootSeed();
     const over = CHAIN_LENGTH + 1;
-    await expect(computeChainSeedForGame(root, over)).rejects.toThrow(
+    expect(() => computeChainSeedForGame(root, over)).toThrow(
       `gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${over}`,
     );
   });

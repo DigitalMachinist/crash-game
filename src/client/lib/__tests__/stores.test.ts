@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot, ServerMessage } from '../../../types';
+import type { ServerMessage } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
 import {
   connectionStatus,
   countdown,
@@ -16,37 +17,6 @@ import {
   players,
   playersList,
 } from '../stores';
-
-function makeGameState(overrides: Partial<GameStateSnapshot> = {}): GameStateSnapshot {
-  return {
-    phase: 'WAITING',
-    roundId: 1,
-    countdown: 5000,
-    multiplier: 1.0,
-    elapsed: 0,
-    crashPoint: null,
-    players: [],
-    chainCommitment: 'abc',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-    ...overrides,
-  };
-}
-
-function makePlayer(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
-  return {
-    id: 'conn-1',
-    playerId: 'player-1',
-    name: 'Alice',
-    wager: 100,
-    cashedOut: false,
-    cashoutMultiplier: null,
-    payout: null,
-    autoCashout: null,
-    ...overrides,
-  };
-}
 
 beforeEach(() => {
   gameState.set(null);

@@ -514,6 +514,9 @@ export function buildStateSnapshot(
   const multiplier =
     state.phase === 'RUNNING' && state.roundStartTime !== null ? multiplierAtTime(elapsed) : 1.0;
 
+  // Security invariant: crashPoint, drandRound, and drandRandomness are only
+  // revealed after the round crashes. Exposing them earlier would let clients
+  // predict or verify the crash point while the round is still live.
   return {
     phase: state.phase,
     roundId: state.roundId,

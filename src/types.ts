@@ -1,5 +1,10 @@
 /**
- * Shared TypeScript types used by both server and client.
+ * TypeScript types shared across server and client.
+ *
+ * Some types are consumed by only one side (e.g., `Player` is server-only,
+ * theme types like `ThreatLevel` are client-only) but are co-located here
+ * because they describe the same domain model and may be referenced by
+ * shared interfaces (`PlayerSnapshot`, `ServerMessage`).
  *
  * Key type relationships:
  * - `ServerMessage` — all server → client message variants (@see websocket-protocol.md §4.3)
@@ -123,7 +128,7 @@ export type ServerMessage =
   | { type: 'pong'; t: number }
   | { type: 'error'; message: string };
 
-// ─── Hacker theme client types ────────────────────────────────────────────────
+// ─── Client-only theme types (used by client rendering, not by server) ───────
 
 export type ThreatLevel = 'GHOST' | 'LOW' | 'ELEVATED' | 'HIGH' | 'SEVERE' | 'CRITICAL';
 
