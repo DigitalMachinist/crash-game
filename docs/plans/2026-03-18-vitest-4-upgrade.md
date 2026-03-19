@@ -14,19 +14,29 @@
 
 ## Chunk 1: Dependency Upgrade and Config Migration
 
-### Task 1: Create feature branch and upgrade dependencies
+### Task 1: Establish baseline, create feature branch, and upgrade dependencies
 
 **Files:**
 - Modify: `package.json:32` (@cloudflare/vitest-pool-workers), `package.json:37` (@vitest/coverage-v8), `package.json:45` (vitest), `package.json:46` (wrangler)
 - Regenerate: `package-lock.json`
 
-- [ ] **Step 1: Create feature branch**
+- [ ] **Step 1: Confirm baseline tests pass**
+
+Before making any changes, confirm the test suite is green:
+
+```bash
+npm run test:all
+```
+
+Expected: All tests pass. If any tests fail, stop and resolve them before proceeding — this is the baseline we're protecting.
+
+- [ ] **Step 2: Create feature branch**
 
 ```bash
 git checkout -b chore/vitest-4-upgrade
 ```
 
-- [ ] **Step 2: Update package.json dependency versions**
+- [ ] **Step 3: Update package.json dependency versions**
 
 In `package.json`, change these 4 lines in `devDependencies`:
 
@@ -39,7 +49,7 @@ In `package.json`, change these 4 lines in `devDependencies`:
 
 Note: The version specifier for vitest changes from `~` (patch-only) to `^` (minor-compatible) and for @vitest/coverage-v8 from `~` to `^`. This matches the other dependencies' convention and is appropriate since Vitest follows semver.
 
-- [ ] **Step 3: Install updated dependencies**
+- [ ] **Step 4: Install updated dependencies**
 
 ```bash
 nvm use v24.14.0 && npm install
@@ -47,7 +57,7 @@ nvm use v24.14.0 && npm install
 
 Expected: Clean install with no peer dependency warnings. The lockfile will be regenerated.
 
-- [ ] **Step 4: Verify undici vulnerability is resolved**
+- [ ] **Step 5: Verify undici vulnerability is resolved**
 
 ```bash
 npm audit
@@ -55,18 +65,47 @@ npm audit
 
 Expected: 0 high-severity vulnerabilities. The `undici` transitive dependency should now be >=7.24.0 (patched).
 
+- [ ] **Step 6: Commit the dependency upgrade**
+
+```bash
+git add package.json package-lock.json
+git commit -m "chore: upgrade vitest 3→4 dependencies
+
+- vitest ~3.2.4 → ^4.1.0
+- @vitest/coverage-v8 ~3.2.4 → ^4.1.0
+- @cloudflare/vitest-pool-workers ^0.12.21 → ^0.13.2
+- wrangler ^4.72.0 → ^4.75.0
+- Resolves 6 high-severity undici vulnerabilities"
+```
+
 ---
 
-### Task 2: Migrate vitest.workers.config.ts to new API
+### Task 2: Verify workers config compatibility and migrate if needed
 
 **Files:**
-- Modify: `vitest.workers.config.ts`
+- Possibly modify: `vitest.workers.config.ts`
 
-The `@cloudflare/vitest-pool-workers` 0.13.x replaced `defineWorkersConfig` with a `cloudflareTest()` Vite plugin. The config shape changes from `poolOptions.workers` to plugin options.
+The spec notes that `defineWorkersConfig` with `poolOptions.workers` is Cloudflare's custom API key (not the built-in Vitest `poolOptions` removed in v4), so it *may* still work in 0.13.x. Verify before migrating.
 
-- [ ] **Step 1: Rewrite vitest.workers.config.ts**
+- [ ] **Step 1: Run worker tests with existing config**
 
-Replace the entire contents of `vitest.workers.config.ts` with:
+```bash
+npm run test:workers
+```
+
+**If all worker tests pass:** The existing `defineWorkersConfig` API is still supported in 0.13.x. Skip to Task 4 (no config migration needed).
+
+**If the run fails with a config or import error:** Proceed to Step 2.
+
+- [ ] **Step 2 (conditional): Rewrite vitest.workers.config.ts**
+
+Only perform this step if Step 1 failed. The `@cloudflare/vitest-pool-workers` 0.13.x replaced `defineWorkersConfig` with a `cloudflareTest()` Vite plugin. Before writing, verify the correct import path in the installed package:
+
+```bash
+ls node_modules/@cloudflare/vitest-pool-workers/dist/
+```
+
+Then replace the entire contents of `vitest.workers.config.ts` with:
 
 ```typescript
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
@@ -94,7 +133,11 @@ Key changes:
 - `poolOptions.workers.miniflare` → plugin option `miniflare`
 - `isolatedStorage: false` removed (option no longer exists in 0.13.x; per-file isolation is the new default). This is safe because there is only 1 worker test file, so per-file vs shared isolation is equivalent.
 
-- [ ] **Step 2: Verify the config file has no TypeScript errors**
+> **Note:** If `cloudflareTest` is not exported from the main `@cloudflare/vitest-pool-workers` package, check its sub-path exports (e.g., `@cloudflare/vitest-pool-workers/config`) and update the import path accordingly.
+
+- [ ] **Step 3 (conditional): Verify the config file has no TypeScript errors**
+
+Only perform if Step 2 was executed:
 
 ```bash
 npx tsc --noEmit --strict vitest.workers.config.ts 2>&1 || echo "Note: standalone typecheck may fail due to missing project context — this is verified in the full test run"
@@ -102,12 +145,12 @@ npx tsc --noEmit --strict vitest.workers.config.ts 2>&1 || echo "Note: standalon
 
 ---
 
-### Task 3: Migrate worker test imports
+### Task 3: Migrate worker test imports (only if Task 2 migration was performed)
 
 **Files:**
-- Modify: `src/server/__tests__/workers/crash-game.do.test.ts:11`
+- Possibly modify: `src/server/__tests__/workers/crash-game.do.test.ts:11`
 
-The `cloudflare:test` module is removed in 0.13.x. `SELF` is replaced by `exports.default` from `cloudflare:workers`.
+The `cloudflare:test` module is removed in 0.13.x. `SELF` is replaced by the `exports` export from `cloudflare:workers`. Import it aliased as `workerExports` to avoid shadowing the well-known Node.js `exports` global.
 
 - [ ] **Step 1: Update the import statement**
 
@@ -120,7 +163,7 @@ import { SELF } from 'cloudflare:test';
 
 New:
 ```typescript
-import { exports } from 'cloudflare:workers';
+import { exports as workerExports } from 'cloudflare:workers';
 ```
 
 - [ ] **Step 2: Update the comment on line 2**
@@ -132,15 +175,15 @@ Old:
 
 New:
 ```typescript
-// These exercise the full CrashGame Durable Object lifecycle via exports.default.fetch().
+// These exercise the full CrashGame Durable Object lifecycle via workerExports.default.fetch().
 ```
 
-- [ ] **Step 3: Replace all SELF.fetch() calls with exports.default.fetch()**
+- [ ] **Step 3: Replace all SELF.fetch() calls with workerExports.default.fetch()**
 
 Search and replace throughout `src/server/__tests__/workers/crash-game.do.test.ts`:
 
 Old: `SELF.fetch(`
-New: `exports.default.fetch(`
+New: `workerExports.default.fetch(`
 
 There are 5 code occurrences:
 - Line 16: `connectWS` helper function
@@ -152,16 +195,11 @@ There are 5 code occurrences:
 - [ ] **Step 4: Commit config and test migration**
 
 ```bash
-git add package.json package-lock.json vitest.workers.config.ts src/server/__tests__/workers/crash-game.do.test.ts
-git commit -m "chore: upgrade vitest 3→4 and migrate cloudflare pool-workers config
+git add vitest.workers.config.ts src/server/__tests__/workers/crash-game.do.test.ts
+git commit -m "chore: migrate cloudflare pool-workers config to 0.13.x API
 
-- vitest ~3.2.4 → ^4.1.0
-- @vitest/coverage-v8 ~3.2.4 → ^4.1.0
-- @cloudflare/vitest-pool-workers ^0.12.21 → ^0.13.2
-- wrangler ^4.72.0 → ^4.75.0
 - Migrate defineWorkersConfig → cloudflareTest() Vite plugin
-- Migrate SELF import → exports.default from cloudflare:workers
-- Resolves 6 high-severity undici vulnerabilities"
+- Migrate SELF import → workerExports.default from cloudflare:workers"
 ```
 
 ---
@@ -208,13 +246,13 @@ Most likely cause: none expected. If `@testing-library/svelte` has a compatibili
 npm run test:workers
 ```
 
-Expected: All worker integration tests pass with the new `cloudflareTest()` config and `exports.default.fetch()` API.
+Expected: All worker integration tests pass with the updated config and `workerExports.default.fetch()` API (if migration was performed).
 
 - [ ] **Step 2: If tests fail, diagnose**
 
 Likely causes:
 - **Import error on `cloudflare:workers`**: Verify the import path is exactly `cloudflare:workers` (not `cloudflare:test`)
-- **`exports.default.fetch` is not a function**: Check if the API surface differs — may need `exports.fetch()` instead of `exports.default.fetch()`
+- **`workerExports.default.fetch` is not a function**: Check if the API surface differs — may need `workerExports.fetch()` instead of `workerExports.default.fetch()`
 - **Config validation error**: The `cloudflareTest()` plugin options may have a different shape than documented — check the TypeScript types from the installed package
 
 - [ ] **Step 3: Fix any issues and re-run**
@@ -275,7 +313,7 @@ Expected: Clean. Format any files that need it with `npm run format`.
 npm run test:all
 ```
 
-Expected: All 37 tests across all 3 configs pass.
+Expected: All 37 test files across all 3 configs pass.
 
 - [ ] **Step 2: Verify audit is clean**
 
@@ -287,10 +325,10 @@ Expected: 0 high-severity vulnerabilities.
 
 - [ ] **Step 3: Commit any fixes from verification**
 
-If any adjustments were needed during verification (coverage thresholds, minor fixes):
+If any adjustments were needed during verification (coverage thresholds, minor fixes), name the specific files changed:
 
 ```bash
-git add -A
+git add vitest.config.ts  # list specific files that were adjusted
 git commit -m "fix: adjust tests/config for vitest 4 compatibility"
 ```
 
