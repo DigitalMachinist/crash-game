@@ -50,7 +50,7 @@ function closeVerify() {
   .panel-label {
     font-family: 'Space Mono', system-ui, monospace;
     font-size: 9px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.1em;
     margin-bottom: 0.4rem;
   }
@@ -58,7 +58,7 @@ function closeVerify() {
   .empty {
     font-family: 'Fira Code', monospace;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     font-style: normal;
     margin: 0;
   }
@@ -80,7 +80,7 @@ function closeVerify() {
   }
 
   .round-id {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     min-width: 2.5rem;
   }
 
@@ -95,7 +95,7 @@ function closeVerify() {
   .verify-btn {
     background: none;
     border: 1px solid var(--color-primary-dim);
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     padding: 0.1rem 0.3rem;
     cursor: pointer;
     font-family: 'Fira Code', monospace;

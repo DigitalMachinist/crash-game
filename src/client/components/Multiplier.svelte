@@ -89,7 +89,7 @@ const isRunning = $derived($phase === 'RUNNING');
   .live-label {
     font-family: 'Space Mono', system-ui, monospace;
     font-size: 9px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.15em;
     margin-bottom: 0.25rem;
   }
@@ -117,7 +117,7 @@ const isRunning = $derived($phase === 'RUNNING');
 
   .starting {
     font-size: 2rem;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     animation: pulse 1s ease-in-out infinite;
   }
 

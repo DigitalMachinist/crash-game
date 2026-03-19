@@ -39,7 +39,7 @@ let { target }: { target: RoundTarget | null } = $props();
     font-family: 'Space Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.12em;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     white-space: nowrap;
   }
 
@@ -47,7 +47,7 @@ let { target }: { target: RoundTarget | null } = $props();
     font-size: 0.65rem;
     letter-spacing: 0.2em;
     opacity: 0.5;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 
   .grid {
@@ -58,7 +58,7 @@ let { target }: { target: RoundTarget | null } = $props();
   }
 
   .key {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     white-space: nowrap;
   }
 
@@ -79,6 +79,6 @@ let { target }: { target: RoundTarget | null } = $props();
   }
 
   .val.dim {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 </style>

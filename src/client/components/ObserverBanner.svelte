@@ -21,7 +21,7 @@ let {
   .observer-banner {
     font-family: 'Fira Code', monospace;
     font-size: 11px;
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
     text-align: center;
   }
 

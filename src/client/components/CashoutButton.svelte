@@ -35,7 +35,7 @@ const payoutColor = $derived(
     ? 'var(--color-critical-dim)'
     : isMid
       ? 'var(--color-elevated-dim)'
-      : 'var(--color-success-dim)',
+      : 'var(--color-success-dim-text)',
 );
 
 function handleCashout() {
