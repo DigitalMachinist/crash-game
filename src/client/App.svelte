@@ -347,6 +347,36 @@ onDestroy(() => {
 </div>
 
 <style>
+  /* ─── Self-hosted fonts ─── */
+  @font-face {
+    font-family: 'Fira Code';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/fira-code-latin-400-normal.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Fira Code';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/fira-code-latin-700-normal.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Space Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/space-mono-latin-400-normal.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Space Mono';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/space-mono-latin-700-normal.woff2') format('woff2');
+  }
+
   /* ─── Global reset ─── */
   :global(*, *::before, *::after) {
     box-sizing: border-box;
