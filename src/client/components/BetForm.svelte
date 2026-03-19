@@ -149,7 +149,7 @@ function handleJoin() {
   label {
     display: block;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     margin-bottom: 0.25rem;
     letter-spacing: 0.08em;
   }
@@ -177,7 +177,7 @@ function handleJoin() {
   }
 
   input::placeholder {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     opacity: 0.5;
   }
 
@@ -192,7 +192,7 @@ function handleJoin() {
     padding: 0.25rem 0;
     background: transparent;
     border: 1px solid var(--color-border);
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     font-size: 10px;
     font-family: 'Fira Code', monospace;
     cursor: pointer;
@@ -207,7 +207,7 @@ function handleJoin() {
 
   .field-secondary label {
     font-size: 9px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     opacity: 0.7;
   }
 
@@ -241,14 +241,14 @@ function handleJoin() {
     opacity: 0.35;
     cursor: not-allowed;
     border-color: var(--color-border);
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 
   .join-status {
     margin-top: 0.25rem;
     text-align: center;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.08em;
   }
 
@@ -256,14 +256,14 @@ function handleJoin() {
     margin-top: 0.4rem;
     text-align: center;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.08em;
   }
 
   .balance-row {
     margin-top: 0.4rem;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.06em;
   }
 

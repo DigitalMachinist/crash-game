@@ -44,7 +44,7 @@ const levelLabel = $derived(isCritical ? '!! CRITICAL' : threatLevel);
   }
 
   .label {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
     white-space: nowrap;
   }
 
@@ -76,6 +76,6 @@ const levelLabel = $derived(isCritical ? '!! CRITICAL' : threatLevel);
 
   .sub {
     font-size: 10px;
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
   }
 </style>

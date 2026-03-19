@@ -45,7 +45,7 @@ const isHighThreat = $derived(
   .panel-label {
     font-family: 'Space Mono', system-ui, monospace;
     font-size: 9px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     letter-spacing: 0.1em;
     margin-bottom: 0.4rem;
   }
@@ -53,7 +53,7 @@ const isHighThreat = $derived(
   .empty {
     font-family: 'Fira Code', monospace;
     font-size: 10px;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     font-style: normal;
     margin: 0;
   }
@@ -80,7 +80,7 @@ const isHighThreat = $derived(
 
   .operator-row.crossed .handle {
     text-decoration: line-through;
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 
   .handle {
@@ -92,7 +92,7 @@ const isHighThreat = $derived(
   }
 
   .wager {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     white-space: nowrap;
   }
 
@@ -111,6 +111,6 @@ const isHighThreat = $derived(
   }
 
   .dash {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 </style>

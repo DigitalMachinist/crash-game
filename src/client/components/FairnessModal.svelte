@@ -147,7 +147,7 @@ function handleCancel(e: Event) {
 
   .modal-jp {
     font-size: 0.65rem;
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     letter-spacing: 0.2em;
     margin-bottom: 0.25rem;
   }
@@ -175,7 +175,7 @@ function handleCancel(e: Event) {
 
   .section p,
   .section ol {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-size: 0.85rem;
     line-height: 1.6;
     margin: 0 0 0.5rem 0;
@@ -201,7 +201,7 @@ function handleCancel(e: Event) {
   button {
     background: transparent;
     border: 1px solid var(--color-border, #332800);
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     padding: 0.5rem 1rem;
     font-family: 'Fira Code', monospace;
     font-size: 0.85rem;

@@ -39,7 +39,7 @@ const isReconnecting = $derived(
   }
 
   .dot.reconnecting {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
   }
 
   .dot.offline {
@@ -53,7 +53,7 @@ const isReconnecting = $derived(
   }
 
   .label.reconnecting {
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     white-space: nowrap;
   }
 

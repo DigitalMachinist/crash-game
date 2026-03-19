@@ -95,6 +95,39 @@ describe("dispatchMessage — 'state'", () => {
     expect(get(history)).toEqual([histEntry]);
   });
 
+  it('deduplicates history entries by roundId, keeping first occurrence', () => {
+    const entry1 = {
+      roundId: 1,
+      crashPoint: 2.5,
+      roundSeed: 'seed-1',
+      drandRound: 50,
+      drandRandomness: 'rand-1',
+      chainCommitment: 'chain-1',
+    };
+    const entry2 = {
+      roundId: 2,
+      crashPoint: 3.0,
+      roundSeed: 'seed-2',
+      drandRound: 51,
+      drandRandomness: 'rand-2',
+      chainCommitment: 'chain-2',
+    };
+    const duplicate1 = {
+      roundId: 1,
+      crashPoint: 9.99,
+      roundSeed: 'seed-dup',
+      drandRound: 999,
+      drandRandomness: 'rand-dup',
+      chainCommitment: 'chain-dup',
+    };
+    const state = makeGameState({ history: [entry1, entry2, duplicate1] });
+    dispatchMessage({ type: 'state', ...state });
+    const h = get(history);
+    expect(h).toHaveLength(2);
+    expect(h[0]).toEqual(entry1);
+    expect(h[1]).toEqual(entry2);
+  });
+
   it('overwrites existing players Record on each state message', () => {
     players.set({ old: makePlayerSnapshot({ playerId: 'old' }) });
     const state = makeGameState({ players: [makePlayerSnapshot({ playerId: 'new-player' })] });

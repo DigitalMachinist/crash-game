@@ -95,7 +95,7 @@ function handleKeydown(e: KeyboardEvent) {
 
   .modal-jp {
     font-size: 0.65rem;
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     letter-spacing: 0.2em;
     margin-bottom: 0.25rem;
   }
@@ -109,7 +109,7 @@ function handleKeydown(e: KeyboardEvent) {
   }
 
   .hint {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-size: 0.75rem;
     margin: 0 0 1rem;
   }
@@ -127,7 +127,7 @@ function handleKeydown(e: KeyboardEvent) {
   }
 
   input::placeholder {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     opacity: 0.6;
   }
 
@@ -167,7 +167,7 @@ function handleKeydown(e: KeyboardEvent) {
     padding: 0.5rem 1rem;
     background: transparent;
     border: 1px solid var(--color-border, #332800);
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-size: 0.85rem;
     font-family: 'Fira Code', monospace;
     cursor: pointer;

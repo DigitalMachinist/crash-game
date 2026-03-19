@@ -45,7 +45,14 @@ export function dispatchMessage(msg: ServerMessage): void {
         record[p.playerId] = p;
       }
       players.set(record);
-      history.set(snapshot.history);
+      // Deduplicate by roundId to prevent Svelte each_key_duplicate errors
+      const seen = new Set<number>();
+      const uniqueHistory = snapshot.history.filter((entry) => {
+        if (seen.has(entry.roundId)) return false;
+        seen.add(entry.roundId);
+        return true;
+      });
+      history.set(uniqueHistory);
       // WAITING: new round starting — generate deterministic target and reset hacker stores.
       if (snapshot.phase === 'WAITING') {
         const rng = mulberry32(snapshot.roundId);

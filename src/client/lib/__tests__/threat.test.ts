@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ThreatLevel } from '../../../types';
 import {
   getDangerColors,
   getSubIndicators,
@@ -146,6 +147,23 @@ describe('getDangerColors', () => {
     const ghost = getDangerColors('GHOST').glowAlpha;
     const critical = getDangerColors('CRITICAL').glowAlpha;
     expect(critical).toBeGreaterThan(ghost);
+  });
+});
+
+describe('getDangerColors dimText', () => {
+  it('GHOST dimText is brighter than dim', () => {
+    const colors = getDangerColors('GHOST');
+    expect(colors.dimText).toBe('#c08400');
+    expect(colors.dim).toBe('#805800');
+  });
+
+  it('every threat level has a dimText field', () => {
+    const levels: ThreatLevel[] = ['GHOST', 'LOW', 'ELEVATED', 'HIGH', 'SEVERE', 'CRITICAL'];
+    for (const level of levels) {
+      const colors = getDangerColors(level);
+      expect(typeof colors.dimText).toBe('string');
+      expect(colors.dimText).toMatch(/^#[0-9a-f]{6}$/);
+    }
   });
 });
 

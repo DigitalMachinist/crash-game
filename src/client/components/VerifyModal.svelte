@@ -110,7 +110,7 @@ function handleCancel(e: Event) {
 
   .modal-jp {
     font-size: 0.65rem;
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     letter-spacing: 0.2em;
     margin-bottom: 0.25rem;
   }
@@ -124,7 +124,7 @@ function handleCancel(e: Event) {
   }
 
   p {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-size: 0.85rem;
     margin: 0.35rem 0;
   }
@@ -150,7 +150,7 @@ function handleCancel(e: Event) {
   }
 
   .status-loading {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-style: italic;
     font-size: 0.85rem;
   }
@@ -169,7 +169,7 @@ function handleCancel(e: Event) {
 
   .computed,
   .mismatch-detail {
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     font-size: 0.8rem;
     margin-top: 0.25rem;
   }
@@ -177,7 +177,7 @@ function handleCancel(e: Event) {
   button {
     background: transparent;
     border: 1px solid var(--color-border, #332800);
-    color: var(--color-primary-dim, #805800);
+    color: var(--color-primary-dim-text, #c08400);
     padding: 0.5rem 1rem;
     font-family: 'Fira Code', monospace;
     font-size: 0.85rem;

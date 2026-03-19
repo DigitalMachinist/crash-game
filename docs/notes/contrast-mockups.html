@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Contrast Options — Lighthouse Fix Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Fira Code', monospace;
+    background: #111;
+    color: #ccc;
+    padding: 1.5rem;
+  }
+  h1 { font-size: 14px; color: #888; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+  .options { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .option {
+    flex: 1;
+    min-width: 340px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .option-header {
+    padding: 0.75rem 1rem;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+  }
+  .option-header strong { color: #ddd; font-size: 12px; }
+  .option-header .ratio { float: right; }
+  .option-header .pass { color: #00cc66; }
+  .option-header .fail { color: #ff4444; }
+
+  /* Shared mock layout */
+  .mock {
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* Header bar */
+  .mock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .mock-header .name-btn {
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    cursor: pointer;
+  }
+  .mock-header .rnd { color: var(--dim); font-size: 11px; }
+  .mock-header .fairness { color: var(--dim); font-size: 11px; }
+  .mock-header .wallet-label { color: var(--green-dim); font-size: 11px; }
+  .mock-header .wallet-val { color: var(--green); font-size: 11px; }
+
+  /* Panel */
+  .mock-panel {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 0.5rem;
+  }
+  .panel-content { color: var(--dim); font-size: 11px; }
+  .panel-content .key { color: var(--dim); }
+  .panel-content .val { color: var(--primary); }
+  .panel-content .sub { color: var(--dim); font-size: 10px; }
+  .panel-empty { color: var(--dim); font-style: italic; font-size: 11px; }
+
+  /* Terminal */
+  .mock-terminal {
+    padding: 0.5rem 0.75rem;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .term-line { color: var(--dim); }
+  .term-line.bright { color: var(--primary); }
+  .term-line .prompt { color: var(--green-dim); }
+
+  /* History */
+  .mock-history {
+    padding: 0.75rem;
+  }
+  .history-entry {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 2px 0;
+  }
+  .history-entry .round-id { color: var(--dim); }
+  .history-entry .verify { color: var(--dim); }
+  .history-entry .multiplier { color: var(--primary); }
+
+  /* Status bar */
+  .mock-status {
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .status-text { color: var(--dim); font-size: 12px; }
+  .live-label { color: var(--dim); font-size: 10px; }
+  .threat-label { color: var(--dim); font-size: 10px; }
+
+  /* ====== OPTION A: Current (failing) ====== */
+  .option-a .mock {
+    --bg: #0a0800;
+    --primary: #ffb000;
+    --dim: #805800;
+    --green: #00cc66;
+    --green-dim: #006633;
+    --border: #332800;
+    background: var(--bg);
+  }
+
+  /* ====== OPTION B: Brighten all dim globally ====== */
+  .option-b .mock {
+    --bg: #0a0800;
+    --primary: #ffb000;
+    --dim: #c08400;
+    --green: #00cc66;
+    --green-dim: #1a9956;
+    --border: #332800;
+    background: var(--bg);
+  }
+
+  /* ====== OPTION C: Split — bright text, dim decorative ====== */
+  .option-c .mock {
+    --bg: #0a0800;
+    --primary: #ffb000;
+    --dim: #805800;          /* kept for borders/decorative */
+    --dim-text: #c08400;     /* new: brightened for text */
+    --green: #00cc66;
+    --green-dim: #006633;    /* kept for borders/decorative */
+    --green-dim-text: #1a9956; /* new: brightened for text */
+    --border: #332800;
+    background: var(--bg);
+  }
+  /* Override text-bearing elements in option C */
+  .option-c .mock-header .name-btn { color: var(--dim-text); }
+  .option-c .mock-header .rnd { color: var(--dim-text); }
+  .option-c .mock-header .fairness { color: var(--dim-text); }
+  .option-c .mock-header .wallet-label { color: var(--green-dim-text); }
+  .option-c .panel-label { color: var(--dim-text); }
+  .option-c .panel-content { color: var(--dim-text); }
+  .option-c .panel-content .key { color: var(--dim-text); }
+  .option-c .panel-content .sub { color: var(--dim-text); }
+  .option-c .panel-empty { color: var(--dim-text); }
+  .option-c .term-line { color: var(--dim-text); }
+  .option-c .term-line .prompt { color: var(--green-dim-text); }
+  .option-c .history-entry .round-id { color: var(--dim-text); }
+  .option-c .history-entry .verify { color: var(--dim-text); }
+  .option-c .status-text { color: var(--dim-text); }
+  .option-c .live-label { color: var(--dim-text); }
+  .option-c .threat-label { color: var(--dim-text); }
+
+  /* Notes section */
+  .notes {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px solid #333;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.8;
+  }
+  .notes h2 { font-size: 12px; color: #aaa; margin-bottom: 0.5rem; }
+  .notes .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #555;
+    vertical-align: middle;
+    margin: 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Lighthouse Color Contrast Fix — Three Options</h1>
+
+<div class="options">
+
+  <!-- OPTION A: Current (failing) -->
+  <div class="option option-a">
+    <div class="option-header">
+      <strong>A) Current (No Change)</strong>
+      <span class="ratio fail">2.7:1 / 2.8:1 — FAIL</span>
+    </div>
+    <div class="mock">
+      <div class="mock-header">
+        <span class="name-btn">[ Jeff ]</span>
+        <span class="rnd">RND #2821</span>
+        <span class="fairness">PROVABLY FAIR</span>
+        <span><span class="wallet-label">WALLET:</span> <span class="wallet-val">$1,000</span></span>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">OPERATORS</div>
+        <div class="panel-empty">No operators</div>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">THREAT ASSESSMENT</div>
+        <div class="panel-content">
+          <span class="key">STATUS:</span> <span class="val">GHOST</span><br>
+          <span class="sub">PROXIES: 6/6 &nbsp; IDS: silent &nbsp; COVER: intact</span>
+        </div>
+      </div>
+      <div class="mock-terminal">
+        <div class="term-line"><span class="prompt">$</span> initializing crash-override v0.1.0...</div>
+        <div class="term-line">loading threat matrix... done</div>
+        <div class="term-line">scanning network perimeter...</div>
+        <div class="term-line bright">SYSTEM READY &mdash; awaiting operator</div>
+      </div>
+      <div class="mock-history">
+        <div class="history-entry">
+          <span class="round-id">#2820</span>
+          <span class="multiplier">3.42x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+        <div class="history-entry">
+          <span class="round-id">#2819</span>
+          <span class="multiplier">1.12x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+      </div>
+      <div class="mock-status">
+        <span class="live-label">LIVE HACK</span>
+        <span class="threat-label">&nbsp; THREAT: GHOST</span>
+        <span class="status-text">&nbsp; OBSERVING &mdash; NOT IN THIS OP</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B: Brighten all dim globally -->
+  <div class="option option-b">
+    <div class="option-header">
+      <strong>B) Brighten Dim Colors Globally</strong>
+      <span class="ratio pass">5.1:1 / 4.7:1 — PASS</span>
+    </div>
+    <div class="mock">
+      <div class="mock-header">
+        <span class="name-btn">[ Jeff ]</span>
+        <span class="rnd">RND #2821</span>
+        <span class="fairness">PROVABLY FAIR</span>
+        <span><span class="wallet-label">WALLET:</span> <span class="wallet-val">$1,000</span></span>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">OPERATORS</div>
+        <div class="panel-empty">No operators</div>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">THREAT ASSESSMENT</div>
+        <div class="panel-content">
+          <span class="key">STATUS:</span> <span class="val">GHOST</span><br>
+          <span class="sub">PROXIES: 6/6 &nbsp; IDS: silent &nbsp; COVER: intact</span>
+        </div>
+      </div>
+      <div class="mock-terminal">
+        <div class="term-line"><span class="prompt">$</span> initializing crash-override v0.1.0...</div>
+        <div class="term-line">loading threat matrix... done</div>
+        <div class="term-line">scanning network perimeter...</div>
+        <div class="term-line bright">SYSTEM READY &mdash; awaiting operator</div>
+      </div>
+      <div class="mock-history">
+        <div class="history-entry">
+          <span class="round-id">#2820</span>
+          <span class="multiplier">3.42x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+        <div class="history-entry">
+          <span class="round-id">#2819</span>
+          <span class="multiplier">1.12x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+      </div>
+      <div class="mock-status">
+        <span class="live-label">LIVE HACK</span>
+        <span class="threat-label">&nbsp; THREAT: GHOST</span>
+        <span class="status-text">&nbsp; OBSERVING &mdash; NOT IN THIS OP</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C: Split text vs decorative -->
+  <div class="option option-c">
+    <div class="option-header">
+      <strong>C) Split: Bright Text, Dim Decorative</strong>
+      <span class="ratio pass">Text 5.1:1 PASS / Borders 2.7:1</span>
+    </div>
+    <div class="mock">
+      <div class="mock-header">
+        <span class="name-btn">[ Jeff ]</span>
+        <span class="rnd">RND #2821</span>
+        <span class="fairness">PROVABLY FAIR</span>
+        <span><span class="wallet-label">WALLET:</span> <span class="wallet-val">$1,000</span></span>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">OPERATORS</div>
+        <div class="panel-empty">No operators</div>
+      </div>
+      <div class="mock-panel">
+        <div class="panel-label">THREAT ASSESSMENT</div>
+        <div class="panel-content">
+          <span class="key">STATUS:</span> <span class="val">GHOST</span><br>
+          <span class="sub">PROXIES: 6/6 &nbsp; IDS: silent &nbsp; COVER: intact</span>
+        </div>
+      </div>
+      <div class="mock-terminal">
+        <div class="term-line"><span class="prompt">$</span> initializing crash-override v0.1.0...</div>
+        <div class="term-line">loading threat matrix... done</div>
+        <div class="term-line">scanning network perimeter...</div>
+        <div class="term-line bright">SYSTEM READY &mdash; awaiting operator</div>
+      </div>
+      <div class="mock-history">
+        <div class="history-entry">
+          <span class="round-id">#2820</span>
+          <span class="multiplier">3.42x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+        <div class="history-entry">
+          <span class="round-id">#2819</span>
+          <span class="multiplier">1.12x</span>
+          <span class="verify">[ verify ]</span>
+        </div>
+      </div>
+      <div class="mock-status">
+        <span class="live-label">LIVE HACK</span>
+        <span class="threat-label">&nbsp; THREAT: GHOST</span>
+        <span class="status-text">&nbsp; OBSERVING &mdash; NOT IN THIS OP</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="notes">
+  <h2>Color Reference</h2>
+  <p>
+    <strong>Current dim amber:</strong> <span class="swatch" style="background:#805800"></span> #805800 on <span class="swatch" style="background:#0a0800"></span> #0a0800 = 2.7:1 ratio
+  </p>
+  <p>
+    <strong>Proposed dim amber:</strong> <span class="swatch" style="background:#c08400"></span> #c08400 on <span class="swatch" style="background:#0a0800"></span> #0a0800 = 5.1:1 ratio (passes AA)
+  </p>
+  <p>
+    <strong>Current dim green:</strong> <span class="swatch" style="background:#006633"></span> #006633 on <span class="swatch" style="background:#0a0800"></span> #0a0800 = 2.8:1 ratio
+  </p>
+  <p>
+    <strong>Proposed dim green:</strong> <span class="swatch" style="background:#1a9956"></span> #1a9956 on <span class="swatch" style="background:#0a0800"></span> #0a0800 = 4.7:1 ratio (passes AA)
+  </p>
+  <p style="margin-top:0.5rem; color:#aaa;">
+    <strong>Option A</strong> keeps the current look but fails WCAG AA.<br>
+    <strong>Option B</strong> brightens all dim colors everywhere — text, borders, backgrounds all shift brighter. Simpler change, but the "ghostly" quality of borders and decorative elements is reduced.<br>
+    <strong>Option C</strong> adds <code>--color-primary-dim-text</code> and <code>--color-success-dim-text</code> variables that are brighter, used only where text needs AA compliance. Borders and decorative uses keep the original dim values. More variables to maintain, but preserves the moody aesthetic for non-text elements.
+  </p>
+</div>
+
+</body>
+</html>

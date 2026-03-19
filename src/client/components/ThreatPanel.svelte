@@ -68,13 +68,13 @@ const displayStatus = $derived(disconnected ? 'OFFLINE' : traced ? 'TRACED' : th
   .panel-label {
     font-family: 'Space Mono', system-ui, monospace;
     font-size: 8px;
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
     letter-spacing: 0.1em;
     margin-bottom: 0.25rem;
   }
 
   .divider {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
     margin-bottom: 0.35rem;
     font-size: 9px;
     overflow: hidden;
@@ -88,7 +88,7 @@ const displayStatus = $derived(disconnected ? 'OFFLINE' : traced ? 'TRACED' : th
   }
 
   .key {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
   }
 
   .val {

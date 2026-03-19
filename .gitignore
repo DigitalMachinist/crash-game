@@ -5,7 +5,7 @@
 coverage/
 dist/
 node_modules/
-public/
+/public/
 .env*
 !.env.example
 *.local
