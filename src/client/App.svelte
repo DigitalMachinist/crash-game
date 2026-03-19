@@ -148,6 +148,7 @@ $effect(() => {
   const root = document.documentElement;
   root.style.setProperty('--threat-color', colors.color);
   root.style.setProperty('--threat-dim', colors.dim);
+  root.style.setProperty('--threat-dim-text', colors.dimText);
   root.style.setProperty('--threat-bg', colors.bg);
   root.style.setProperty('--threat-border', colors.border);
   root.style.setProperty('--threat-glow-alpha', String(colors.glowAlpha));
@@ -356,12 +357,14 @@ onDestroy(() => {
     /* Base palette (GHOST / LOW) */
     --color-primary: #ffb000;
     --color-primary-dim: #805800;
+    --color-primary-dim-text: #c08400;
     --color-primary-mid: #cc8800;
     --color-bg: #0a0800;
     --color-bg-card: #080600;
     --color-border: #332800;
     --color-success: #00cc66;
     --color-success-dim: #006633;
+    --color-success-dim-text: #1a9956;
 
     /* Threat level colors */
     --color-elevated: #ff8c00;
@@ -379,6 +382,7 @@ onDestroy(() => {
     /* Dynamic threat-level properties — updated via JS */
     --threat-color: var(--color-primary);
     --threat-dim: var(--color-primary-dim);
+    --threat-dim-text: var(--color-primary-dim-text);
     --threat-bg: var(--color-bg);
     --threat-border: var(--color-border);
     --threat-glow-alpha: 0.3;
@@ -541,15 +545,15 @@ onDestroy(() => {
   }
 
   .sep {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
   }
 
   .rnd {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
   }
 
   .tgt-label {
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
   }
 
   .tgt-value {
@@ -563,7 +567,7 @@ onDestroy(() => {
   }
 
   .wallet-label {
-    color: var(--color-success-dim);
+    color: var(--color-success-dim-text);
   }
 
   .wallet-value {
@@ -574,7 +578,7 @@ onDestroy(() => {
   .name-btn {
     background: transparent;
     border: none;
-    color: var(--threat-dim, var(--color-primary-dim));
+    color: var(--threat-dim-text, var(--color-primary-dim-text));
     padding: 0;
     font-size: 11px;
     cursor: pointer;
@@ -588,7 +592,7 @@ onDestroy(() => {
   .fairness-btn {
     background: transparent;
     border: 1px solid var(--color-border);
-    color: var(--color-primary-dim);
+    color: var(--color-primary-dim-text);
     padding: 0.2rem 0.5rem;
     font-size: 10px;
     cursor: pointer;
