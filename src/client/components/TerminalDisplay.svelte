@@ -17,10 +17,13 @@ let {
 let container: HTMLDivElement | undefined = $state();
 
 $effect(() => {
-  // Scroll to bottom whenever lines change
+  // Scroll to bottom whenever lines change — deferred to avoid forced reflow
   lines;
   if (container) {
-    container.scrollTop = container.scrollHeight;
+    const el = container;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
   }
 });
 </script>
