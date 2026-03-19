@@ -11,7 +11,7 @@
  * Worker DO integration tests live in src/server/__tests__/workers/.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COUNTDOWN_TICK_MS, CRASHED_DISPLAY_MS } from '../../config';
 import { createInitialState } from '../game-state';
 
@@ -107,6 +107,10 @@ describe('CrashGame.onMessage() — validation logging', () => {
 
     conn = makeMockConn();
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('calls console.warn when message fails isValidClientMessage (missing type)', async () => {

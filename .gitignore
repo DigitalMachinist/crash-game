@@ -2,6 +2,7 @@
 .claude/worktrees/
 .desloppify/
 .wrangler/
+coverage/
 dist/
 node_modules/
 public/

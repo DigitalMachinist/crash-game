@@ -1,5 +1,5 @@
 // DO integration tests using @cloudflare/vitest-pool-workers.
-// These exercise the full CrashGame Durable Object lifecycle via SELF.fetch().
+// These exercise the full CrashGame Durable Object lifecycle via workerExports.default.fetch().
 //
 // URL routing note: partyserver converts the DO binding name "CrashGame" to
 // kebab-case "crash-game", so WebSocket/HTTP party requests go to
@@ -8,12 +8,12 @@
 // Each test uses a unique room name to get a fresh DO instance (DO state is
 // isolated per unique room name via idFromName).
 
-import { SELF } from 'cloudflare:test';
+import { exports as workerExports } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
 // Helper: open a WebSocket to the DO and return the accepted client socket.
 async function connectWS(room: string): Promise<WebSocket> {
-  const resp = await SELF.fetch(`http://localhost/parties/crash-game/${room}`, {
+  const resp = await workerExports.default.fetch(`http://localhost/parties/crash-game/${room}`, {
     headers: { Upgrade: 'websocket' },
   });
   if (resp.status !== 101) {
@@ -63,7 +63,9 @@ function waitForMessage(ws: WebSocket, timeoutMs = 2000): Promise<string> {
 describe('CrashGame DO (integration)', () => {
   // ── 1. Debug HTTP endpoint ──────────────────────────────────────────────────
   it('debug endpoint returns initial game state', async () => {
-    const resp = await SELF.fetch('http://localhost/parties/crash-game/debug-test-1?debug=true');
+    const resp = await workerExports.default.fetch(
+      'http://localhost/parties/crash-game/debug-test-1?debug=true',
+    );
     expect(resp.status).toBe(200);
     const data = (await resp.json()) as {
       phase: string;
@@ -234,14 +236,16 @@ describe('CrashGame DO (integration)', () => {
 
   // ── 9. Unknown HTTP route returns 404 ─────────────────────────────────────
   it('returns 404 for unknown routes', async () => {
-    const resp = await SELF.fetch('http://localhost/this-route-does-not-exist');
+    const resp = await workerExports.default.fetch('http://localhost/this-route-does-not-exist');
     expect(resp.status).toBe(404);
   });
 
   // ── 10. Debug endpoint without ASSETS falls through to Not found ──────────
   it('non-debug DO request returns 404 from onRequest', async () => {
     // A non-debug request to the DO's onRequest handler returns 404
-    const resp = await SELF.fetch('http://localhost/parties/crash-game/http-404-test-1');
+    const resp = await workerExports.default.fetch(
+      'http://localhost/parties/crash-game/http-404-test-1',
+    );
     expect(resp.status).toBe(404);
   });
 
@@ -430,7 +434,7 @@ describe('CrashGame DO (integration)', () => {
     // serving requests. The alarm scheduling itself is tested indirectly by
     // the game progressing through phases over time in the live environment;
     // alarm injection from integration tests is not supported by the test harness.
-    const resp = await SELF.fetch(
+    const resp = await workerExports.default.fetch(
       'http://localhost/parties/crash-game/onstart-alarm-test-1?debug=true',
     );
     expect(resp.status).toBe(200);

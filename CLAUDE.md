@@ -17,6 +17,7 @@
 ## Commands to Use
 
 When making tool calls to execute commands defined in package.json, prefer using them as written in this section.
+ALWAYS prefer use commands in this format unless you have a good reason not to, then you should confirm with me.
 
 - Set correct node version: `nvm use v24.14.0`
 - Build client: `npm run build:client`
