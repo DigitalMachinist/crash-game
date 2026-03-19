@@ -214,6 +214,13 @@ export class CrashGame extends Server<Env> {
           await this.persistState();
         } catch (err) {
           console.error('[onMessage/join] failed to persist state:', err);
+          conn.send(
+            JSON.stringify({
+              type: 'error',
+              message:
+                'Join accepted but persistence failed — wager may not survive a server restart',
+            } satisfies ServerMessage),
+          );
         }
       }
 
@@ -244,6 +251,13 @@ export class CrashGame extends Server<Env> {
           await this.persistState();
         } catch (err) {
           console.error('[onMessage/cashout] failed to persist state:', err);
+          conn.send(
+            JSON.stringify({
+              type: 'error',
+              message:
+                'Cashout accepted but persistence failed — payout may not survive a server restart',
+            } satisfies ServerMessage),
+          );
         }
       }
 
@@ -505,7 +519,11 @@ export class CrashGame extends Server<Env> {
         ...pending,
       } satisfies ServerMessage),
     );
-    await this.persistState();
+    try {
+      await this.persistState();
+    } catch (error) {
+      console.error('CrashGame: failed to persist after pending payout delivery:', error);
+    }
   }
 
   /**

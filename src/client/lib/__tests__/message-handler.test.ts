@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
+import type { GameStateSnapshot } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
 import { dispatchMessage } from '../message-handler';
 import {
   balance,
@@ -15,37 +16,6 @@ import {
   myPlayerId,
   players,
 } from '../stores';
-
-function makeGameState(overrides: Partial<GameStateSnapshot> = {}): GameStateSnapshot {
-  return {
-    phase: 'RUNNING',
-    roundId: 42,
-    countdown: 0,
-    multiplier: 2.5,
-    elapsed: 5000,
-    crashPoint: null,
-    players: [],
-    chainCommitment: 'chain-abc',
-    drandRound: 100,
-    drandRandomness: null,
-    history: [],
-    ...overrides,
-  };
-}
-
-function makePlayerSnapshot(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
-  return {
-    id: 'conn-1',
-    playerId: 'player-1',
-    name: 'Alice',
-    wager: 100,
-    cashedOut: false,
-    cashoutMultiplier: null,
-    payout: null,
-    autoCashout: null,
-    ...overrides,
-  };
-}
 
 beforeEach(() => {
   gameState.set(null);
@@ -72,8 +42,8 @@ describe("dispatchMessage — 'state'", () => {
   });
 
   it('converts players array to Record keyed by playerId', () => {
-    const p1 = makePlayerSnapshot({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
-    const p2 = makePlayerSnapshot({ playerId: 'p2', id: 'conn-2', name: 'Bob' });
+    const p1 = makePlayer({ playerId: 'p1', id: 'conn-1', name: 'Alice' });
+    const p2 = makePlayer({ playerId: 'p2', id: 'conn-2', name: 'Bob' });
     const state = makeGameState({ players: [p1, p2] });
     dispatchMessage({ type: 'state', ...state });
     const ps = get(players);
@@ -129,8 +99,8 @@ describe("dispatchMessage — 'state'", () => {
   });
 
   it('overwrites existing players Record on each state message', () => {
-    players.set({ old: makePlayerSnapshot({ playerId: 'old' }) });
-    const state = makeGameState({ players: [makePlayerSnapshot({ playerId: 'new-player' })] });
+    players.set({ old: makePlayer({ playerId: 'old' }) });
+    const state = makeGameState({ players: [makePlayer({ playerId: 'new-player' })] });
     dispatchMessage({ type: 'state', ...state });
     const ps = get(players);
     expect('old' in ps).toBe(false);
@@ -183,7 +153,7 @@ describe("dispatchMessage — 'state' with phase CRASHED", () => {
   });
 
   it('sets players Record with final player outcomes', () => {
-    const p = makePlayerSnapshot({
+    const p = makePlayer({
       playerId: 'p1',
       cashedOut: true,
       cashoutMultiplier: 2.0,
@@ -252,7 +222,7 @@ describe("dispatchMessage — 'playerJoined'", () => {
   });
 
   it('does not remove existing players', () => {
-    players.set({ existing: makePlayerSnapshot({ playerId: 'existing' }) });
+    players.set({ existing: makePlayer({ playerId: 'existing' }) });
     dispatchMessage({
       type: 'playerJoined',
       id: 'conn-100',
@@ -299,8 +269,8 @@ describe("dispatchMessage — 'playerJoined'", () => {
 describe("dispatchMessage — 'playerCashedOut'", () => {
   it('updates the correct player by playerId', () => {
     players.set({
-      p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1', cashedOut: false }),
-      p2: makePlayerSnapshot({ playerId: 'p2', id: 'conn-2', cashedOut: false }),
+      p1: makePlayer({ playerId: 'p1', id: 'conn-1', cashedOut: false }),
+      p2: makePlayer({ playerId: 'p2', id: 'conn-2', cashedOut: false }),
     });
     dispatchMessage({
       type: 'playerCashedOut',
@@ -318,7 +288,7 @@ describe("dispatchMessage — 'playerCashedOut'", () => {
   });
 
   it('does nothing if playerId is not in players', () => {
-    const original = { p1: makePlayerSnapshot({ playerId: 'p1', id: 'conn-1' }) };
+    const original = { p1: makePlayer({ playerId: 'p1', id: 'conn-1' }) };
     players.set(original);
     dispatchMessage({
       type: 'playerCashedOut',

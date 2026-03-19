@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot } from '../../../types';
+import { makeGameState } from '../../__tests__/factories';
 import {
   dangerColors,
   displayMultiplier,
@@ -10,20 +10,6 @@ import {
   threatLevel,
 } from '../../lib/stores';
 import Multiplier from '../Multiplier.svelte';
-
-const makeGameState = (phase: GameStateSnapshot['phase']): GameStateSnapshot => ({
-  phase,
-  roundId: 1,
-  countdown: 0,
-  multiplier: 1.5,
-  elapsed: 1000,
-  crashPoint: null,
-  players: [],
-  chainCommitment: 'abc',
-  drandRound: null,
-  drandRandomness: null,
-  history: [],
-});
 
 beforeEach(() => {
   gameState.set(null);
@@ -38,39 +24,39 @@ describe('Multiplier component', () => {
   });
 
   it('renders BREACHING... text when phase is STARTING', () => {
-    gameState.set(makeGameState('STARTING'));
+    gameState.set(makeGameState({ phase: 'STARTING' }));
     render(Multiplier);
     expect(screen.getByText('BREACHING...')).toBeTruthy();
   });
 
   it('does NOT render multiplier value when phase is STARTING', () => {
-    gameState.set(makeGameState('STARTING'));
+    gameState.set(makeGameState({ phase: 'STARTING' }));
     render(Multiplier);
     expect(screen.queryByText('1.00x')).toBeNull();
   });
 
   it('has class live when phase is RUNNING', () => {
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     render(Multiplier);
     const el = screen.getByText('1.00x');
     expect(el.classList.contains('live')).toBe(true);
   });
 
   it('has class crashed when phase is CRASHED', () => {
-    gameState.set(makeGameState('CRASHED'));
+    gameState.set(makeGameState({ phase: 'CRASHED' }));
     render(Multiplier);
     const el = screen.getByText('1.00x');
     expect(el.classList.contains('crashed')).toBe(true);
   });
 
   it('does NOT render CRASHED! label (CrashScreen handles crash display)', () => {
-    gameState.set(makeGameState('CRASHED'));
+    gameState.set(makeGameState({ phase: 'CRASHED' }));
     render(Multiplier);
     expect(screen.queryByText('CRASHED!')).toBeNull();
   });
 
   it('does NOT have class live or crashed when phase is WAITING', () => {
-    gameState.set(makeGameState('WAITING'));
+    gameState.set(makeGameState({ phase: 'WAITING' }));
     render(Multiplier);
     const el = screen.getByText('1.00x');
     expect(el.classList.contains('live')).toBe(false);
@@ -102,19 +88,19 @@ describe('Multiplier component', () => {
   });
 
   it('shows 侵入中 LIVE HACK label when phase is RUNNING', () => {
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     render(Multiplier);
     expect(screen.getByText(/LIVE HACK/)).toBeTruthy();
   });
 
   it('does NOT show LIVE HACK label when phase is WAITING', () => {
-    gameState.set(makeGameState('WAITING'));
+    gameState.set(makeGameState({ phase: 'WAITING' }));
     render(Multiplier);
     expect(screen.queryByText(/LIVE HACK/)).toBeNull();
   });
 
   it('applies glitch class at CRITICAL threat level during RUNNING', async () => {
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     displayMultiplier.set(30.0); // CRITICAL
     render(Multiplier);
     await tick();
@@ -123,7 +109,7 @@ describe('Multiplier component', () => {
   });
 
   it('does NOT apply glitch class below CRITICAL during RUNNING', () => {
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     displayMultiplier.set(5.0); // HIGH, not CRITICAL
     render(Multiplier);
     const el = screen.getByText('5.00x');

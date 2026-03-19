@@ -10,70 +10,70 @@ export function getPrepLines(secondsRemaining: number, target: RoundTarget | nul
   const lineMap: Record<number, TerminalLine> = {
     10: {
       id: nextLineId(),
-      text: `[${fmt(10)}] Initializing proxy chain...`,
+      text: `[${fmtCountdown(10)}] Initializing proxy chain...`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     9: {
       id: nextLineId(),
-      text: `[${fmt(9)}]  > route add via tor-exit-DE`,
+      text: `[${fmtCountdown(9)}]  > route add via tor-exit-DE`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     8: {
       id: nextLineId(),
-      text: `[${fmt(8)}]  > route add via tor-exit-BR`,
+      text: `[${fmtCountdown(8)}]  > route add via tor-exit-BR`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     7: {
       id: nextLineId(),
-      text: `[${fmt(7)}]  > route add via tor-exit-JP`,
+      text: `[${fmtCountdown(7)}]  > route add via tor-exit-JP`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     6: {
       id: nextLineId(),
-      text: `[${fmt(6)}]  Proxy chain: 6 bounces active.`,
+      text: `[${fmtCountdown(6)}]  Proxy chain: 6 bounces active.`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     5: {
       id: nextLineId(),
-      text: `[${fmt(5)}]  Loading exploit kit... [████████████████████] 100%`,
+      text: `[${fmtCountdown(5)}]  Loading exploit kit... [████████████████████] 100%`,
       color: '#c08400',
       type: 'progress',
       timestamp: ts,
     },
     4: {
       id: nextLineId(),
-      text: `[${fmt(4)}]  $ nmap -sS ${ip}`,
+      text: `[${fmtCountdown(4)}]  $ nmap -sS ${ip}`,
       color: '#c08400',
       type: 'command',
       timestamp: ts,
     },
     3: {
       id: nextLineId(),
-      text: `[${fmt(3)}]  Payload staged. Awaiting operator.`,
+      text: `[${fmtCountdown(3)}]  Payload staged. Awaiting operator.`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     2: {
       id: nextLineId(),
-      text: `[${fmt(2)}]  Standing by...`,
+      text: `[${fmtCountdown(2)}]  Standing by...`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     1: {
       id: nextLineId(),
-      text: `[${fmt(1)}]  LAUNCH IMMINENT`,
+      text: `[${fmtCountdown(1)}]  LAUNCH IMMINENT`,
       color: '#cc8800',
       type: 'warning',
       timestamp: ts,
@@ -89,6 +89,6 @@ export function getPrepLines(secondsRemaining: number, target: RoundTarget | nul
   return lines;
 }
 
-function fmt(s: number): string {
+function fmtCountdown(s: number): string {
   return `00:${String(s).padStart(2, '0')}`;
 }

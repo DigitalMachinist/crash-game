@@ -12,14 +12,15 @@ import type { ClientMessage } from '../../types';
 import { getSocket } from './socket';
 import { myPlayerId } from './stores';
 
-function send(msg: ClientMessage): void {
+function send(msg: ClientMessage): boolean {
   const socket = getSocket();
-  if (!socket) return;
+  if (!socket) return false;
   socket.send(JSON.stringify(msg));
+  return true;
 }
 
-export function sendJoin(wager: number, autoCashout: number | null): void {
-  send({
+export function sendJoin(wager: number, autoCashout: number | null): boolean {
+  return send({
     type: 'join',
     playerId: get(myPlayerId),
     wager,
@@ -27,14 +28,14 @@ export function sendJoin(wager: number, autoCashout: number | null): void {
   });
 }
 
-export function sendSetName(name: string): void {
-  send({
+export function sendSetName(name: string): boolean {
+  return send({
     type: 'setName',
     playerId: get(myPlayerId),
     name,
   });
 }
 
-export function sendCashout(): void {
-  send({ type: 'cashout' });
+export function sendCashout(): boolean {
+  return send({ type: 'cashout' });
 }

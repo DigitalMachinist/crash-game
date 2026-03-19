@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
-import { displayMultiplier, gameState, myPlayerId, players, threatLevel } from '../../lib/stores';
+import type { PlayerSnapshot } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
+import { displayMultiplier, gameState, myPlayerId, players } from '../../lib/stores';
 import CashoutButton from '../CashoutButton.svelte';
 
 vi.mock('../../lib/commands', () => ({
@@ -12,32 +13,7 @@ vi.mock('../../lib/commands', () => ({
 
 import { sendCashout } from '../../lib/commands';
 
-function makeGameState(phase: GameStateSnapshot['phase']): GameStateSnapshot {
-  return {
-    phase,
-    roundId: 1,
-    countdown: 0,
-    multiplier: 2.0,
-    elapsed: 5000,
-    crashPoint: null,
-    players: [],
-    chainCommitment: '',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-  };
-}
-
-const activePlayer: PlayerSnapshot = {
-  id: 'conn-1',
-  playerId: 'player-1',
-  name: 'Alice',
-  wager: 100,
-  cashedOut: false,
-  cashoutMultiplier: null,
-  payout: null,
-  autoCashout: null,
-};
+const activePlayer = makePlayer();
 
 const cashedOutPlayer: PlayerSnapshot = {
   ...activePlayer,
@@ -49,7 +25,7 @@ const cashedOutPlayer: PlayerSnapshot = {
 function setupInRound() {
   myPlayerId.set('player-1');
   players.set({ 'player-1': activePlayer });
-  gameState.set(makeGameState('RUNNING'));
+  gameState.set(makeGameState({ phase: 'RUNNING' }));
 }
 
 beforeEach(() => {
@@ -67,14 +43,14 @@ afterEach(() => {
 
 describe('CashoutButton component', () => {
   it('does NOT render when phase is WAITING', () => {
-    gameState.set(makeGameState('WAITING'));
+    gameState.set(makeGameState({ phase: 'WAITING' }));
     render(CashoutButton);
     expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('does NOT render when phase is RUNNING but player is not in round', () => {
     // RUNNING phase but stores are empty — isInRound is false
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     render(CashoutButton);
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -139,7 +115,7 @@ describe('CashoutButton component', () => {
     // Set up player data so isInRound would otherwise be true, but phase is CRASHED
     myPlayerId.set('player-1');
     players.set({ 'player-1': activePlayer });
-    gameState.set(makeGameState('CRASHED'));
+    gameState.set(makeGameState({ phase: 'CRASHED' }));
     render(CashoutButton);
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -173,7 +149,7 @@ describe('CashoutButton component', () => {
     expect(button).toBeDisabled();
 
     // Simulate server ACK: phase goes to CRASHED → isInRound becomes false
-    gameState.set(makeGameState('CRASHED'));
+    gameState.set(makeGameState({ phase: 'CRASHED' }));
     await tick();
     await Promise.resolve();
     await tick();
@@ -212,7 +188,7 @@ describe('CashoutButton component', () => {
     expect(button).toBeDisabled();
 
     // Reactive reset fires at t=0 (phase changes)
-    gameState.set(makeGameState('CRASHED'));
+    gameState.set(makeGameState({ phase: 'CRASHED' }));
     await tick();
     await Promise.resolve();
     await tick();

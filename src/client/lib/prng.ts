@@ -11,9 +11,13 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** Pick a random element from an array using the provided RNG. */
-export function seededPick<T>(arr: T[], rng: () => number): T {
-  return arr[Math.floor(rng() * arr.length)] as T;
+/** Pick a random element from a non-empty array using the provided RNG. */
+export function seededPick<T>(arr: readonly T[], rng: () => number): T {
+  if (arr.length === 0) {
+    throw new Error('seededPick called with empty array');
+  }
+  const index = Math.floor(rng() * arr.length);
+  return arr[index] as T;
 }
 
 const ORGS = [
@@ -34,7 +38,7 @@ const ORGS = [
   'ATLAS DEFENSE SYSTEMS',
 ];
 
-const HOSTNAMES = [
+export const HOSTNAMES = [
   'api.nexus-biotech.net',
   'db-primary.ellingson.corp',
   'mail.orca-capital.io',
@@ -47,7 +51,7 @@ const HOSTNAMES = [
   'log-agg.initech-systems.internal',
 ];
 
-const IP_PREFIXES = ['198.51.100', '203.0.113', '192.0.2', '198.18.0', '198.19.255'];
+export const IP_PREFIXES = ['198.51.100', '203.0.113', '192.0.2', '198.18.0', '198.19.255'];
 
 /** Generate a deterministic RoundTarget from a round ID seeded RNG. */
 export function generateRoundTarget(roundId: number, rng: () => number): RoundTarget {

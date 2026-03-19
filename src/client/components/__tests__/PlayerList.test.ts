@@ -1,40 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameStateSnapshot, PlayerSnapshot } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
 import { displayMultiplier, gameState, myPlayerId, players } from '../../lib/stores';
 import PlayerList from '../PlayerList.svelte';
-
-type Phase = 'WAITING' | 'STARTING' | 'RUNNING' | 'CRASHED';
-
-function makePlayer(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
-  return {
-    id: 'conn-1',
-    playerId: 'p1',
-    name: 'Alice',
-    wager: 100,
-    cashedOut: false,
-    cashoutMultiplier: null,
-    payout: null,
-    autoCashout: null,
-    ...overrides,
-  };
-}
-
-function makeGameState(phase: Phase): GameStateSnapshot {
-  return {
-    phase,
-    roundId: 1,
-    countdown: 0,
-    multiplier: 1.0,
-    elapsed: 0,
-    crashPoint: null,
-    players: [],
-    chainCommitment: '',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-  };
-}
 
 beforeEach(() => {
   players.set({});
@@ -98,14 +66,14 @@ describe('PlayerList component', () => {
   });
 
   it('shows RDY status during WAITING phase', () => {
-    gameState.set(makeGameState('WAITING'));
+    gameState.set(makeGameState({ phase: 'WAITING' }));
     players.set({ p1: makePlayer({ cashedOut: false }) });
     render(PlayerList);
     expect(screen.getByText('RDY')).toBeTruthy();
   });
 
   it('shows — during RUNNING when player has not cashed out yet', () => {
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     players.set({ p1: makePlayer({ cashedOut: false }) });
     render(PlayerList);
     expect(screen.getByText('—')).toBeTruthy();
@@ -113,7 +81,7 @@ describe('PlayerList component', () => {
 
   it('applies crossed class at HIGH+ threat for cashed-out players', async () => {
     displayMultiplier.set(6.0); // HIGH threat
-    gameState.set(makeGameState('RUNNING'));
+    gameState.set(makeGameState({ phase: 'RUNNING' }));
     players.set({
       p1: makePlayer({ playerId: 'p1', cashedOut: true, cashoutMultiplier: 2.5, payout: 250 }),
     });

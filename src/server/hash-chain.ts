@@ -16,8 +16,6 @@ import { bytesToHex, sha256Hex } from '../crypto-hex';
 /**
  * Generates a cryptographically random 256-bit root seed (32 bytes as hex).
  * Called on first DO initialization and on chain rotation.
- *
- * @see docs/provably-fair.md §1.2
  */
 export function generateRootSeed(): string {
   return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
@@ -25,8 +23,6 @@ export function generateRootSeed(): string {
 
 /**
  * Computes `SHA-256^index(rootSeed)` by applying SHA-256 `index` times forward.
- *
- * @see docs/provably-fair.md §1.2
  */
 export async function computeSeedAtIndex(rootSeed: string, index: number): Promise<string> {
   let current = rootSeed;
@@ -40,10 +36,8 @@ export async function computeSeedAtIndex(rootSeed: string, index: number): Promi
  * Computes the terminal hash (`SHA-256^CHAIN_LENGTH(rootSeed)`).
  * This is published as the initial `chainCommitment`, committing to all future
  * game seeds in the chain without revealing any of them.
- *
- * @see docs/provably-fair.md §1.2
  */
-export async function computeTerminalHash(rootSeed: string): Promise<string> {
+export function computeTerminalHash(rootSeed: string): Promise<string> {
   return computeSeedAtIndex(rootSeed, CHAIN_LENGTH);
 }
 
@@ -65,13 +59,8 @@ export async function verifySeedAgainstHash(seed: string, expectedHash: string):
  *
  * Games consume the chain in reverse so that the published `terminalHash`
  * commits to all future seeds without revealing them.
- *
- * @see docs/provably-fair.md §1.2 (two numbering systems)
  */
-export async function computeChainSeedForGame(
-  rootSeed: string,
-  gameNumber: number,
-): Promise<string> {
+export function computeChainSeedForGame(rootSeed: string, gameNumber: number): Promise<string> {
   if (gameNumber < 1 || gameNumber > CHAIN_LENGTH) {
     throw new Error(`gameNumber must be between 1 and ${CHAIN_LENGTH}, got ${gameNumber}`);
   }

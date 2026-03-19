@@ -1,6 +1,6 @@
 import type { TerminalLine } from '../../types';
 import { nextLineId } from './line-id';
-import { mulberry32, seededPick } from './prng';
+import { HOSTNAMES, IP_PREFIXES, mulberry32, seededPick } from './prng';
 import { POOLS, TIERS } from './terminal-content-pools';
 
 export interface TerminalSession {
@@ -67,17 +67,8 @@ export function startTerminalSession(
   // Stable per-round variables
   const stableRng = mulberry32(roundId);
   const stable = {
-    hostname: seededPick(
-      [
-        'api.nexus-biotech.net',
-        'db-primary.ellingson.corp',
-        'mail.orca-capital.io',
-        'cdn-prod.axiom-financial.net',
-        'auth.meridian-labs.corp',
-      ],
-      stableRng,
-    ),
-    ip: seededPick(['198.51.100.██', '203.0.113.██', '10.0.14.██'], stableRng),
+    hostname: seededPick(HOSTNAMES, stableRng),
+    ip: `${seededPick(IP_PREFIXES, stableRng)}.██`,
   };
 
   // Session-local RNG (random seed for per-session variety)

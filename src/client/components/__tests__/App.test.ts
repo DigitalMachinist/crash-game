@@ -3,6 +3,7 @@ import { tick } from 'svelte';
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameStateSnapshot } from '../../../types';
+import { makeGameState } from '../../__tests__/factories';
 import App from '../../App.svelte';
 import {
   balance,
@@ -42,27 +43,6 @@ import {
 } from '../../lib/balance';
 import { connect, disconnect } from '../../lib/socket';
 
-function makeGameState(
-  phase: GameStateSnapshot['phase'],
-  roundId = 1,
-  overrides: Partial<GameStateSnapshot> = {},
-): GameStateSnapshot {
-  return {
-    phase,
-    roundId,
-    countdown: 5000,
-    multiplier: 1.0,
-    elapsed: 0,
-    crashPoint: null,
-    players: [],
-    chainCommitment: 'abc',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-    ...overrides,
-  };
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   gameState.set(null);
@@ -77,7 +57,7 @@ beforeEach(() => {
   vi.mocked(getOrCreatePlayerId).mockReturnValue('test-player-id');
   vi.mocked(getBalance).mockReturnValue(100);
   vi.mocked(applyPendingPayout).mockReturnValue({ payout: 120, cashoutMultiplier: 2.4 });
-  vi.mocked(applyRoundResult).mockReturnValue(undefined);
+  vi.mocked(applyRoundResult).mockReturnValue(null);
 });
 
 describe('App component', () => {
@@ -204,7 +184,7 @@ describe('App component', () => {
       roundId: number,
       players: GameStateSnapshot['players'],
     ): GameStateSnapshot {
-      return makeGameState('CRASHED', roundId, { crashPoint: 2.0, players });
+      return makeGameState({ phase: 'CRASHED', roundId, crashPoint: 2.0, players });
     }
 
     it('calls applyRoundResult with the snapshot and current playerId', async () => {

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameStateSnapshot } from '../../../types';
+import { makeGameState, makePlayer } from '../../__tests__/factories';
 import { balance, gameState, lastError, myPlayerId, players } from '../../lib/stores';
 import BetForm from '../BetForm.svelte';
 
@@ -11,22 +11,6 @@ vi.mock('../../lib/commands', () => ({
 }));
 
 import { sendJoin } from '../../lib/commands';
-
-function makeGameState(phase: GameStateSnapshot['phase']): GameStateSnapshot {
-  return {
-    phase,
-    roundId: 1,
-    countdown: 5000,
-    multiplier: 1.0,
-    elapsed: 0,
-    crashPoint: null,
-    players: [],
-    chainCommitment: 'abc',
-    drandRound: null,
-    drandRandomness: null,
-    history: [],
-  };
-}
 
 beforeEach(() => {
   gameState.set(null);
@@ -45,25 +29,25 @@ describe('BetForm component', () => {
     });
 
     it('is visible when gameState phase is explicitly WAITING', () => {
-      gameState.set(makeGameState('WAITING'));
+      gameState.set(makeGameState({ phase: 'WAITING' }));
       render(BetForm);
       expect(screen.getByText(/RESOURCES/)).toBeTruthy();
     });
 
     it('is NOT visible when phase is RUNNING', () => {
-      gameState.set(makeGameState('RUNNING'));
+      gameState.set(makeGameState({ phase: 'RUNNING' }));
       render(BetForm);
       expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
 
     it('is NOT visible when phase is STARTING', () => {
-      gameState.set(makeGameState('STARTING'));
+      gameState.set(makeGameState({ phase: 'STARTING' }));
       render(BetForm);
       expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
 
     it('is NOT visible when phase is CRASHED', () => {
-      gameState.set(makeGameState('CRASHED'));
+      gameState.set(makeGameState({ phase: 'CRASHED' }));
       render(BetForm);
       expect(screen.queryByText(/RESOURCES/)).toBeNull();
     });
@@ -280,22 +264,9 @@ describe('BetForm component', () => {
   });
 
   describe('hasJoined state', () => {
-    function makePlayerSnapshot() {
-      return {
-        id: 'conn1',
-        playerId: 'test-player-id',
-        name: 'Test',
-        wager: 100,
-        cashedOut: false,
-        cashoutMultiplier: null,
-        payout: null,
-        autoCashout: null,
-      };
-    }
-
     it('shows [ BREACH INITIATED ] and is disabled when player has joined', async () => {
       myPlayerId.set('test-player-id');
-      players.set({ 'test-player-id': makePlayerSnapshot() });
+      players.set({ 'test-player-id': makePlayer({ playerId: 'test-player-id' }) });
       render(BetForm);
       await tick();
       const button = screen.getByRole('button', { name: '[ BREACH INITIATED ]' });
@@ -304,7 +275,7 @@ describe('BetForm component', () => {
 
     it('shows AWAITING ROUND START status when player has joined', async () => {
       myPlayerId.set('test-player-id');
-      players.set({ 'test-player-id': makePlayerSnapshot() });
+      players.set({ 'test-player-id': makePlayer({ playerId: 'test-player-id' }) });
       render(BetForm);
       await tick();
       expect(screen.getByText('AWAITING ROUND START')).toBeTruthy();

@@ -12,14 +12,6 @@ export function getThreatLevel(multiplier: number): ThreatLevel {
 export function getDangerColors(level: ThreatLevel): DangerColors {
   switch (level) {
     case 'GHOST':
-      return {
-        color: '#ffb000',
-        dim: '#805800',
-        dimText: '#c08400',
-        bg: '#0a0800',
-        border: '#332800',
-        glowAlpha: 0.15,
-      };
     case 'LOW':
       return {
         color: '#ffb000',
@@ -27,7 +19,7 @@ export function getDangerColors(level: ThreatLevel): DangerColors {
         dimText: '#c08400',
         bg: '#0a0800',
         border: '#332800',
-        glowAlpha: 0.2,
+        glowAlpha: level === 'GHOST' ? 0.15 : 0.2,
       };
     case 'ELEVATED':
       return {
@@ -100,6 +92,8 @@ export function getThreatFillCount(multiplier: number): number {
       return Math.round(y0 + t * (y1 - y0));
     }
   }
+  // Unreachable: loop covers all values in (1.0, 25.0) since last breakpoint is 25.0,
+  // but TypeScript cannot infer numeric range exhaustiveness.
   return 20;
 }
 
@@ -113,7 +107,6 @@ export function getSubIndicators(
 ): { proxies: string; ids: string; cover: string } {
   switch (level) {
     case 'GHOST':
-      return { proxies: '6/6', ids: 'silent', cover: 'intact' };
     case 'LOW':
       return { proxies: '6/6', ids: 'silent', cover: 'intact' };
     case 'ELEVATED':
@@ -129,7 +122,5 @@ export function getSubIndicators(
     }
     case 'CRITICAL':
       return { proxies: '0/6 EXPOSED', ids: 'ACTIVE HUNT', cover: 'burning' };
-    default:
-      return { proxies: '6/6', ids: 'silent', cover: 'intact' };
   }
 }

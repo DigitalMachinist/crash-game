@@ -124,7 +124,9 @@ export function dispatchMessage(msg: ServerMessage): void {
       lastError.set(msg.message);
       break;
     }
-    default:
-      break;
+    default: {
+      const _exhaustive: never = msg;
+      console.warn('Unhandled message type:', (_exhaustive as ServerMessage).type);
+    }
   }
 }

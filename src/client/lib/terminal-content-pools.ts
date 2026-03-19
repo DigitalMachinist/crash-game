@@ -1,6 +1,6 @@
 import type { TerminalLine } from '../../types';
 
-export type LineTemplate = Omit<TerminalLine, 'id' | 'timestamp'>;
+type LineTemplate = Omit<TerminalLine, 'id' | 'timestamp'>;
 
 export const POOLS = {
   user: ['admin', 'deploy', 'root', 'svc-account', 'jenkins'],
@@ -16,7 +16,7 @@ export const POOLS = {
 };
 
 /** Tier 1 — Initial Access (1.0x–1.5x) */
-export const TIER1: LineTemplate[] = [
+const TIER1: LineTemplate[] = [
   { text: '$ ssh -i exploit.key {user}@{ip}', color: '#c08400', type: 'command' },
   { text: 'Connecting to {hostname}:{port}...', color: '#c08400', type: 'normal' },
   { text: '[+] Authentication successful', color: '#00cc66', type: 'success' },
@@ -31,7 +31,7 @@ export const TIER1: LineTemplate[] = [
 ];
 
 /** Tier 2 — Reconnaissance (1.5x–3.0x) */
-export const TIER2: LineTemplate[] = [
+const TIER2: LineTemplate[] = [
   { text: '$ find / -perm -u=s -type f 2>/dev/null', color: '#c08400', type: 'command' },
   { text: '$ cat /etc/passwd | grep -v nologin', color: '#c08400', type: 'command' },
   { text: '[*] Scanning internal network...', color: '#cc8800', type: 'warning' },
@@ -46,7 +46,7 @@ export const TIER2: LineTemplate[] = [
 ];
 
 /** Tier 3 — Privilege Escalation (3.0x–6.0x) */
-export const TIER3: LineTemplate[] = [
+const TIER3: LineTemplate[] = [
   { text: '[+] ROOT ACCESS GRANTED', color: '#00cc66', type: 'success' },
   { text: 'root@{hostname}:~# ls /opt/.secrets/', color: '#c08400', type: 'command' },
   { text: 'master.key  vpn-gateway.ovpn  credentials.kdbx', color: '#cc8800', type: 'warning' },
@@ -60,7 +60,7 @@ export const TIER3: LineTemplate[] = [
 ];
 
 /** Tier 4 — Exfiltration (6.0x–15.0x) */
-export const TIER4: LineTemplate[] = [
+const TIER4: LineTemplate[] = [
   { text: '[*] Beginning data extraction...', color: '#ff8c00', type: 'warning' },
   { text: '[EXFIL] {filename} — transferring...', color: '#ff8c00', type: 'progress' },
   { text: '[*] Lateral movement: jumping to {next_host}', color: '#ff8c00', type: 'warning' },
@@ -74,7 +74,7 @@ export const TIER4: LineTemplate[] = [
 ];
 
 /** Tier 5 — Deep Access (15.0x–30.0x) */
-export const TIER5: LineTemplate[] = [
+const TIER5: LineTemplate[] = [
   { text: '[!] SOC ALERT: Ticket #{ticket} — Priority CRITICAL', color: '#ff4400', type: 'danger' },
   { text: '[*] Counter-intrusion payload detected on {iface}', color: '#ff6600', type: 'warning' },
   { text: '[!] Proxy node compromised — rerouting', color: '#ff4400', type: 'danger' },
@@ -88,7 +88,7 @@ export const TIER5: LineTemplate[] = [
 ];
 
 /** Tier 6 — Danger Zone (30.0x+) */
-export const TIER6: LineTemplate[] = [
+const TIER6: LineTemplate[] = [
   { text: '[!] ██ {agency} — TRACKING ██', color: '#ff0040', type: 'danger' },
   { text: '[!] ██ DIRECT EXPOSURE IMMINENT ██', color: '#ff0040', type: 'danger' },
   { text: '[!] P4CKET L0SS: {pct1}%... {pct2}%...', color: '#ff0040', type: 'danger' },

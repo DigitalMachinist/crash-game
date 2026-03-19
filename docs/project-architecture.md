@@ -10,7 +10,7 @@
 | Randomness | drand quicknet via Cloudflare relay | `drand.cloudflare.com` |
 | Build | Vite (client) + Wrangler (server) | Separate build pipelines |
 | Language | TypeScript (strict mode) | Two separate tsconfig files |
-| Node | v20.20.1 | Required for component tests (`node:util` `styleText`) |
+| Node | v24.14.0 | Required for component tests (`node:util` `styleText`) |
 | Linter | Biome v2 | Pre-commit via `simple-git-hooks` + `lint-staged` |
 
 ---
@@ -113,8 +113,8 @@ All constants are defined in `src/config.ts`.
 
 | Constant | Value | Unit | Description | Tuning |
 |---|---|---|---|---|
-| `WAITING_DURATION_MS` | `10_000` | ms | Countdown before each round | Decrease for faster rounds; minimum ~3 s to allow bets |
-| `CRASHED_DISPLAY_MS` | `5_000` | ms | Results screen duration | Controls how long crash info is visible before next round |
+| `WAITING_DURATION_MS` | `15_000` | ms | Countdown before each round | Decrease for faster rounds; minimum ~3 s to allow bets |
+| `CRASHED_DISPLAY_MS` | `10_000` | ms | Results screen duration | Controls how long crash info is visible before next round |
 | `TICK_INTERVAL_MS` | `100` | ms | Server broadcast interval during RUNNING | Lower = smoother client animation; higher = less bandwidth |
 | `COUNTDOWN_TICK_MS` | `1_000` | ms | State broadcast interval during WAITING | Drives per-second countdown display |
 
@@ -197,7 +197,7 @@ Defined in `wrangler.toml`:
 | `ASSETS` | Auto-binding | Serves `./public` (Vite build output); generated from `[assets]` section |
 | `CRASH_DEBUG` | Var | Set `"true"` to enable debug HTTP endpoint on the DO |
 
-> The `CRASH_DEBUG` var is set to `"true"` by default in `wrangler.toml` (local dev). Remove or set to `"false"` in production deployments.
+> `CRASH_DEBUG` defaults to absent (disabled). To enable locally, add `CRASH_DEBUG = "true"` to a `.dev.vars` file (gitignored by wrangler). Do not set in production.
 
 ---
 
@@ -214,7 +214,7 @@ npm run build:client   # vite build → public/
 # Tests
 npm run test                                            # unit tests (vitest)
 npm run test:workers                                    # server worker tests
-~/.nvm/versions/node/v20.20.1/bin/node ./node_modules/.bin/vitest run \
+~/.nvm/versions/node/v24.14.0/bin/node ./node_modules/.bin/vitest run \
   --config vitest.svelte.config.ts                     # component tests (requires Node ≥20.12)
 
 # Type checking
@@ -227,4 +227,4 @@ npm run format     # biome format src --write
 npm run check      # biome check src (lint + format)
 ```
 
-> Component tests require Node v20.20.1 (for `node:util` `styleText`). The system default Node may be older; use the full NVM path shown above.
+> Component tests require Node v24.14.0 (for `node:util` `styleText`). The system default Node may be older; use the full NVM path shown above.

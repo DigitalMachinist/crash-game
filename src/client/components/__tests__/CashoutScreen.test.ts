@@ -35,20 +35,20 @@ describe('CashoutScreen', () => {
 
   it('applies tier3 class at CRITICAL', () => {
     render(CashoutScreen, { payout: 5000, cashoutMultiplier: 30.0, threatLevel: 'CRITICAL' });
-    const screen_el = document.querySelector('.cashout-screen');
-    expect(screen_el?.classList.contains('tier3')).toBe(true);
+    const screenEl = document.querySelector('.cashout-screen');
+    expect(screenEl?.classList.contains('tier3')).toBe(true);
   });
 
   it('applies tier2 class at SEVERE', () => {
     render(CashoutScreen, { payout: 500, cashoutMultiplier: 12.0, threatLevel: 'SEVERE' });
-    const screen_el = document.querySelector('.cashout-screen');
-    expect(screen_el?.classList.contains('tier2')).toBe(true);
+    const screenEl = document.querySelector('.cashout-screen');
+    expect(screenEl?.classList.contains('tier2')).toBe(true);
   });
 
   it('applies large class to payout at CRITICAL', () => {
     render(CashoutScreen, { payout: 5000, cashoutMultiplier: 30.0, threatLevel: 'CRITICAL' });
-    const payout_el = document.querySelector('.payout');
-    expect(payout_el?.classList.contains('large')).toBe(true);
+    const payoutEl = document.querySelector('.payout');
+    expect(payoutEl?.classList.contains('large')).toBe(true);
   });
 
   it('footer shows DISCONNECTED @ multiplier for tier 1', () => {

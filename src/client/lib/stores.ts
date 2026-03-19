@@ -41,36 +41,20 @@ export const connectionStatus = writable<
 >('connecting');
 export const latency = writable<number | null>(null);
 
-/**
- * Set by message-handler when a state{phase:'CRASHED'} message arrives.
- * App.svelte watches this store and applies round-result accounting.
- * Reset to null after consumption to avoid re-triggering the effect.
- *
- * Single-consumer contract: only one component may subscribe and reset this
- * store. If a second consumer subscribes, both must coordinate reset logic.
- */
+// --- Single-consumer event stores ---
+// Each store below is set once (by message-handler) and consumed + reset by
+// exactly one component. If a second consumer subscribes, both must coordinate
+// reset logic to avoid missed or duplicated events.
+
+/** Set on state{phase:'CRASHED'}; App.svelte applies round-result accounting. */
 export const lastCrashResult = writable<GameStateSnapshot | null>(null);
 
-/**
- * Set by message-handler when a pendingPayout message arrives.
- * App.svelte watches this store and credits disconnected auto-cashout payouts.
- * Reset to null after consumption to avoid re-triggering the effect.
- *
- * Single-consumer contract: only one component may subscribe and reset this
- * store. If a second consumer subscribes, both must coordinate reset logic.
- */
+/** Set on pendingPayout message; App.svelte credits disconnected auto-cashout payouts. */
 export const lastPendingPayout = writable<Extract<ServerMessage, { type: 'pendingPayout' }> | null>(
   null,
 );
 
-/**
- * Set by message-handler when an error message arrives from the server.
- * BetForm.svelte watches this store to surface server-side validation errors.
- * Reset to null after consumption.
- *
- * Single-consumer contract: only one component may subscribe and reset this
- * store. If a second consumer subscribes, both must coordinate reset logic.
- */
+/** Set on error message; BetForm.svelte surfaces server-side validation errors. */
 export const lastError = writable<string | null>(null);
 
 /**
