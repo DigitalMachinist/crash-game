@@ -145,6 +145,7 @@ export interface RoundTarget {
 export interface DangerColors {
   color: string;
   dim: string;
+  dimText: string;
   bg: string;
   border: string;
   glowAlpha: number;

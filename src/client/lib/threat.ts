@@ -15,18 +15,34 @@ export function getDangerColors(level: ThreatLevel): DangerColors {
       return {
         color: '#ffb000',
         dim: '#805800',
+        dimText: '#c08400',
         bg: '#0a0800',
         border: '#332800',
         glowAlpha: 0.15,
       };
     case 'LOW':
-      return { color: '#ffb000', dim: '#805800', bg: '#0a0800', border: '#332800', glowAlpha: 0.2 };
+      return {
+        color: '#ffb000',
+        dim: '#805800',
+        dimText: '#c08400',
+        bg: '#0a0800',
+        border: '#332800',
+        glowAlpha: 0.2,
+      };
     case 'ELEVATED':
-      return { color: '#ff8c00', dim: '#803000', bg: '#0f0800', border: '#332800', glowAlpha: 0.3 };
+      return {
+        color: '#ff8c00',
+        dim: '#803000',
+        dimText: '#c04800',
+        bg: '#0f0800',
+        border: '#332800',
+        glowAlpha: 0.3,
+      };
     case 'HIGH':
       return {
         color: '#ff6600',
         dim: '#803000',
+        dimText: '#c04800',
         bg: '#100700',
         border: '#331800',
         glowAlpha: 0.35,
@@ -35,12 +51,20 @@ export function getDangerColors(level: ThreatLevel): DangerColors {
       return {
         color: '#ff4400',
         dim: '#800020',
+        dimText: '#c00030',
         bg: '#120600',
         border: '#331800',
         glowAlpha: 0.45,
       };
     case 'CRITICAL':
-      return { color: '#ff0040', dim: '#400000', bg: '#1a0000', border: '#400000', glowAlpha: 0.6 };
+      return {
+        color: '#ff0040',
+        dim: '#400000',
+        dimText: '#800020',
+        bg: '#1a0000',
+        border: '#400000',
+        glowAlpha: 0.6,
+      };
   }
 }
 
