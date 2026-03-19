@@ -1,4 +1,5 @@
 import type { TerminalLine } from '../../types';
+import { nextLineId } from './line-id';
 import { mulberry32, seededPick } from './prng';
 import { POOLS, TIERS } from './terminal-content-pools';
 
@@ -24,11 +25,6 @@ export function getBaseInterval(multiplier: number): number {
   if (multiplier >= 3) return 750;
   if (multiplier >= 1.5) return 1250;
   return 1750;
-}
-
-let _lineIdCounter = 0;
-function nextId(): number {
-  return ++_lineIdCounter;
 }
 
 /**
@@ -106,7 +102,7 @@ export function startTerminalSession(
 
     const text = fillVars(template.text, stable, rng);
     const line: TerminalLine = {
-      id: nextId(),
+      id: nextLineId(),
       text,
       color: template.color,
       type: template.type,

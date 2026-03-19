@@ -1,10 +1,5 @@
 import type { RoundTarget, TerminalLine } from '../../types';
-
-let lineIdCounter = 0;
-
-function makeId(): number {
-  return ++lineIdCounter;
-}
+import { nextLineId } from './line-id';
 
 /** Returns countdown-synced prep lines for the WAITING phase terminal. */
 export function getPrepLines(secondsRemaining: number, target: RoundTarget | null): TerminalLine[] {
@@ -14,70 +9,70 @@ export function getPrepLines(secondsRemaining: number, target: RoundTarget | nul
   // Lines indexed by which second they appear (countdown from 10 to 0)
   const lineMap: Record<number, TerminalLine> = {
     10: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(10)}] Initializing proxy chain...`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     9: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(9)}]  > route add via tor-exit-DE`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     8: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(8)}]  > route add via tor-exit-BR`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     7: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(7)}]  > route add via tor-exit-JP`,
       color: '#00cc66',
       type: 'success',
       timestamp: ts,
     },
     6: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(6)}]  Proxy chain: 6 bounces active.`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     5: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(5)}]  Loading exploit kit... [████████████████████] 100%`,
       color: '#c08400',
       type: 'progress',
       timestamp: ts,
     },
     4: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(4)}]  $ nmap -sS ${ip}`,
       color: '#c08400',
       type: 'command',
       timestamp: ts,
     },
     3: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(3)}]  Payload staged. Awaiting operator.`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     2: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(2)}]  Standing by...`,
       color: '#c08400',
       type: 'normal',
       timestamp: ts,
     },
     1: {
-      id: makeId(),
+      id: nextLineId(),
       text: `[${fmt(1)}]  LAUNCH IMMINENT`,
       color: '#cc8800',
       type: 'warning',
